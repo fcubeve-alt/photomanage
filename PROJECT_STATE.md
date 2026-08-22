@@ -22,6 +22,12 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Validation matrix built for all three tiers with measurable pass criteria.
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
+## Tier 0 gate
+`20_TIER0/TIER0_GO_NO_GO.md` — template in place, gate logic fixed in advance:
+**A or B FAIL → NO-GO/PIVOT · A+B PASS but C FAIL → COMMERCIAL PIVOT (the product survives, DEC-002) · D FAIL → escalate to Owner as a potential Kill (DEC-014, PF-08).**
+Within A: **A3 survivability failure is fatal**; an A1-only failure degrades scope to "recent N months" rather than killing the product.
+**`NO DATA` is never a soft PASS** — a workstream not run leaves the gate INCOMPLETE, and Tier 1 may not begin on partial evidence.
+
 ## Doing now
 ✅ **Repo live. First CI build GREEN** (run 32579093228, 48 s, **0 billable macOS minutes**). One compile error across ~1,400 lines of blind-written Swift, fixed in one round.
 

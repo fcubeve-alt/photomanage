@@ -59,8 +59,8 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | | |
 |---|---|
 | **Rule** | A or B FAIL → **NO-GO / PIVOT**, stop. · A+B PASS and C PASS → **Tier 1**. · A+B PASS but C FAIL → **TECHNICAL/PRODUCT GO + COMMERCIAL PIVOT**: fix the commercial model and retest before heavy investment. · **D FAIL → escalate to Owner** — it contradicts Constitution §5–§7/§17, so it is an Owner decision, not an engineering adjustment (DEC-014). D is reported alongside A/B/C and is never substituted for B. |
-| **Deliverable** | `TIER0_GO_NO_GO.md` — mandatory before any Tier 1 work begins. |
-| **Status** | NOT REACHED. |
+| **Deliverable** | `20_TIER0/TIER0_GO_NO_GO.md` — **template written 2026-08-23**. Gate logic and failure handling fixed in advance, so completing it is transcription rather than argument. Every verdict slot must name the artifact it came from. Mandatory before any Tier 1 work begins. |
+| **Status** | **NOT REACHED — zero measurements taken.** All four workstreams instrumented and blocked on Owner gates. |
 
 ---
 
