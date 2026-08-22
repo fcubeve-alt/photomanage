@@ -45,3 +45,14 @@ Part 2 is this project. Append a new entry every time a real failure happens her
 **Risk.** Writing long English prose into files through a quoted shell heredoc failed with an EOF parse error when the content contained an odd number of apostrophes, because the command is wrapped in single quotes by the harness. Silent truncation or a lost file is possible.
 **Guard.** Use the Write tool for prose documents. Reserve heredocs for code and short content without apostrophes.
 **Status.** Occurred 2026-08-22 while writing `VALIDATION_MATRIX.md`. Recovered by switching tools; no data lost.
+
+### PF-06 · Becoming another Lucent — capability parity mistaken for differentiation
+**Risk.** Lucent Pro shipped natural-language search, OCR, object/face recognition, 200+ smart collections and duplicate detection, entirely on-device, in 262 MB — and got rating volume too low for Apple to display. The tempting reading is "we need *more* capability". That is the wrong lesson and the expensive one: Lucent had capability. What it appears to have lacked is a reason for the user to feel, quickly, that something valuable had already been done for them.
+**Sharper form of the risk.** Our differentiators (risk-aware autonomy, continuous hygiene, personal policy) accrue over weeks and months. Lucent's differentiator (NL search) is demoable in ten seconds and *still* did not convert. So "we are more differentiated" may in practice mean **"we are harder to sell"**.
+**Guard.** (a) The first session must produce a **quantified receipt of work already done**, including how little is left for the user — not a promise of future upkeep. (b) Feature additions are judged by whether they are *felt in the first session*, not by whether they extend the capability list. (c) Any comparison against Lucent must run under the fair-configuration rule (`LUCENT_PRO_BENCHMARK_COMPETITOR.md` Part 5) — beating a paywalled competitor proves nothing.
+**Status.** Guard active. No occurrence yet. Full analysis: `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`.
+
+### PF-07 · Rigging a comparative study through competitor configuration
+**Risk.** Lucent's free tier analyses only 1,000 photos. A 3-way study run against free Lucent on a 20,000-photo library would measure Lucent's paywall and report it as our advantage — a result that collapses the first time anyone checks, after we have already made decisions on it.
+**Guard.** Fair-configuration rule, fixed before data collection: every competitor is tested **fully paid, fully permissioned and fully finished analysing**. If that state cannot be reached, the comparison is not run and the limitation is reported. Task order counterbalanced across participants. Session facilitator follows a fixed script or is not the prototype's author.
+**Status.** Guard active. Caught during study design, before any data was collected.

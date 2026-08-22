@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (3 deliverables complete; HG-3 approved in principle)
+Last updated: 2026-08-22 · Session 001 (4 deliverables; HG-3 approved in principle; Lucent = Benchmark Competitor No.1)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -22,7 +22,7 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 **T0-B-PREP · Retrieval Entry study protocol** (`WINDOWS_OK`).
 Target: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`.
 
-⚠️ **Awaiting Owner approval of spend: EUR 2.64 (Scaleway 24h M1 block) + 99 USD (Apple Developer Program).** Nothing purchased. See `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. Work continues on everything that does not depend on it.
+⚠️ **Awaiting Owner approval of spend: EUR 2.64 (Scaleway 24h M1 block) + 99 USD (Apple Developer Program) + 29.99 USD (Lucent Premium, required for a valid 3-way study — DEC-010).** Nothing purchased. See `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. Work continues on everything that does not depend on it.
 
 ## Work queue
 
@@ -31,8 +31,9 @@ Target: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`.
 2. ~~**T0-A-PREP** Device benchmark harness spec~~ — ✅ **DONE** → `20_TIER0/T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`
 3. ~~**T0-A-MAC-PLAN** Cloud Mac environment + device gradient plan~~ — ✅ **DONE** → `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` (pre-payment report, awaiting approval)
 4. **T0-B-PREP** Retrieval-entry study protocol: task set, standard test-library definition, script, scoring sheet, anti-bias rules. — **NEXT**
-5. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring.
-6. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
+5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
+6. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring.
+7. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
 
 ### RESEARCH
 - Apple-native on-device capability survey (Vision, Core ML, Live Text/OCR, PhotoKit limits) — FACT/INTERPRETATION separated, feeds the T0-A compute budget and the P-04 route decision. **No model dependency may be added without benchmark evidence.**
@@ -72,7 +73,9 @@ Write `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md` (task set, standard test 
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.
 - Category monetises via weekly subs $4-12/wk ($207-623/yr) with documented predatory patterns. Credible non-predatory price point is a **$29.99-49.99 lifetime/one-off**.
 - Search rung is thin: Queryable $4.99 one-off, 88 US ratings despite HN #1.
-- **Lucent Pro** (id 6749473261) occupies this project's exact positioning — on-device AI photo manager, NL search, 200+ smart collections — and has **0 ratings**. Recorded as **UNKNOWN-1**: demand verdict vs distribution verdict, unresolved. Do not cite either way.
+- **Lucent Pro** (id 6749473261) = **Benchmark Competitor No.1**. Read `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md` before citing anything about it. Corrections on record: rating volume is **below Apple's display threshold**, NOT "0 ratings"; development was **dense v1.5→v2.0 (Dec 2025 → 2026-02-04)**, quiet since — not abandoned after launch. **UNKNOWN-1 stands**: weak demand vs weak distribution is unresolved; do not cite either way. **UNKNOWN-5**: the $29.99 SKU period is not stated — do not call it lifetime.
+- **Lucent free tier analyses only 1,000 photos.** Any comparative study must buy Premium ($29.99) or it measures their paywall, not their product (PF-07).
+- **The sharpest lesson (PF-06):** our differentiators accrue over weeks; Lucent's was instant and still did not convert. "More differentiated" may mean "harder to sell". The first session must show a **quantified receipt of work already done**, not promise future upkeep.
 - On-device semantic search ships in 206-262MB binaries → no 2GB+ model dependency is implied (supports P-04).
 
 ### T0-A environment (DEC-008, do not re-derive)

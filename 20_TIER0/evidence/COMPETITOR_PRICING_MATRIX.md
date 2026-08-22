@@ -25,7 +25,7 @@ Every figure below was read from the Apple US storefront on 2026-08-22. Confiden
 | Cleansmith: Photo Cleaner | Monocraft | Free | 4.68 | 4,076 | 2014-10-07 | 2026-08-21 | 93 MB |
 | Photo cleaner - Swipick | Krobe.net | Free | 4.47 | 3,425 | 2024-01-10 | 2025-07-07 | 73 MB |
 | **Queryable — Photo Search** | SmashMelon | **$4.99 paid up-front** | 4.73 | **88** | 2022-12-28 | 2026-08-11 | 206 MB |
-| **Lucent Pro** | Allan Smeyatsky | Free | — | **0** | **2025-12-12** | 2026-02-04 | 262 MB |
+| **Lucent Pro** | Allan Smeyatsky | Free | n/a | **below display threshold** | **2025-12-12** | 2026-02-04 | 262 MB |
 
 ## 1.2 In-app purchase tiers (verbatim labels and prices)
 
@@ -40,7 +40,7 @@ Every figure below was read from the Apple US storefront on 2026-08-22. Confiden
 | ↳ *Gemini Photos SKUs inside the same app* | — | $2.99 / $4.99 | $19.99 / $39.99 | — |
 | Smart Cleaner | $5.99 / $6.99 / $9.99 | $12.99 | $19.99 / $34.99 | $23.99 / $39.99 |
 | Slidebox | $1.99 / $2.99 | — | $19.99 / $29.99 | $29.99 / $49.99 |
-| **Lucent Pro** | — | — | — | **$2.99 / $29.99** |
+| **Lucent Pro** | — | — | — | **$2.99 / $29.99** — periods not stated (UNKNOWN-5) |
 | **Queryable** | — | — | — | **$4.99 (up-front, no IAP block on page)** |
 
 Annualised weekly pricing: **$3.99/wk = $207/yr · $7.99/wk = $415/yr · $11.99/wk = $623/yr.**
@@ -57,7 +57,9 @@ Annualised weekly pricing: **$3.99/wk = $207/yr · $7.99/wk = $415/yr · $11.99/
 
 **FACT.** **Queryable** states it reached #1 on the Hacker News front page, topped the paid tools chart across all European countries and ranked #2 in the US on the same day. It is open-source, fully offline, pay-once. It has **88 US ratings**. *(Source: App Store description — the ranking claims are the developer's own; confidence MEDIUM. The 88-rating figure is HIGH.)*
 
-**FACT.** **Lucent Pro** describes itself as: *"a private AI photo manager that organizes your entire photo library using on-device artificial intelligence"* — natural-language search, **200+ auto-generated smart collections**, duplicate detection, photo map, face/object recognition, OCR, voice search, iCloud support, everything on the Apple Neural Engine, "no subscription required for core features". Released 2025-12-12, last updated 2026-02-04, 262 MB, **0 ratings**. No press coverage, reviews or third-party mentions were found. *(Confidence HIGH for listing data; HIGH for absence of coverage within the searches run — see UNKNOWN-1.)*
+**FACT (CORRECTED 2026-08-22 — see `LUCENT_PRO_BENCHMARK_COMPETITOR.md`).** **Lucent Pro**: individual developer, ~261.7 MB, iOS 16+, privacy label Data Not Collected. Shipped v2.0 capability: natural-language search, 200+ AI-generated smart collections, duplicate detection, photo map, face/object recognition, OCR, voice search, iCloud support, Timeline, Quality Scores — all on-device. Version history: v1.5–1.8 shipped 2025-12-13 to 12-15, **v2.0 on 2026-02-04**, quiet since. Free tier = 7-day full trial, then a **1,000-analysed-photo cap**; two IAPs both labelled "Lucent Pro", **$29.99** and **$2.99**, **periods not stated (UNKNOWN-5 — $29.99 is NOT confirmed to be lifetime)**. Rating volume is **below Apple's threshold for displaying a public overview** in every storefront checked.
+
+> ⚠️ **Two corrections to the first version of this file.** (1) It said "0 ratings" — the API zero means *too few to display*, not literally none. (2) It said "no update in six months", which understated a dense v1.5→v2.0 development run. (3) A pricing string on the same page — "$1.99 per week or $9.99 per year… export without watermarks" — belongs to a **recommended app**, not Lucent, and must not be attributed to it.
 
 **FACT.** Queryable (206 MB) and Lucent Pro (262 MB) both ship on-device semantic-search capability inside a normal App Store binary.
 
@@ -81,6 +83,7 @@ Combined with the documented tracking-after-payment, permission over-reach and p
 Queryable is the cleanest available experiment on the Search rung: technically excellent, offline, privacy-first, widely publicised (HN #1, top of EU paid charts), pay-once at $4.99 — and **88 US ratings** in 3.5 years. Interpretation: *Search alone is a $5 one-off feature, not a business.* It supports the Constitution's decision (§17, §24 Gate 4) to anchor paid value above Search, at Continuous Management and Visual Memory.
 
 ## 2.4 The Continuous-Management / Visual-Library rung is essentially unoccupied
+> **Superseded in part.** Lucent Pro is now analysed in depth as **Benchmark Competitor No.1** — see `LUCENT_PRO_BENCHMARK_COMPETITOR.md`. It occupies the *search + collections* half of this rung but not the *risk-aware management* half. Read that file before citing this section.
 Across this search, exactly one product occupies the position this project is aiming at — Lucent Pro — and it has zero traction, zero coverage and no update in six months. Every other product is a cleaner or a search tool.
 
 **This does not establish demand.** An empty rung is equally consistent with "nobody has served it well" and with "nobody wants it". Distinguishing those two is precisely what Tier 0-B and Tier 0-C2 exist to do, and this matrix cannot settle it. See UNKNOWN-1.
@@ -98,6 +101,7 @@ Two shipping apps deliver on-device natural-language photo search in 206–262 M
 | **UNKNOWN-2** | Actual revenue and conversion rates for any app here | Rating counts are a proxy for installs, not for revenue. Whether the weekly model is highly profitable or merely noisy is unmeasured. | Third-party estimates (Appfigures/Sensor Tower) are paid. Defer — not required for the Tier 0 gate. |
 | **UNKNOWN-3** | Non-US storefront pricing | Pricing power may differ materially by region. | Defer to Tier 2-F unit economics. Out of Tier 0 scope. |
 | **UNKNOWN-4** | Whether Gemini Photos was formally withdrawn or merely delisted from search | Minor; affects only the MacPaw consolidation narrative. | Low priority. |
+| **UNKNOWN-5** | Whether Lucent Pro's $29.99 SKU is lifetime, annual or something else | It is the closest real price point to our own proposed anchor | The App Store page does not state a period. Resolve by installing the app during T0-B setup and reading the purchase sheet. |
 
 ---
 

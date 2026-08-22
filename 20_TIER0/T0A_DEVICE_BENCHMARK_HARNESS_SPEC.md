@@ -114,6 +114,20 @@ Tier 0 §2 requires these; they are cheap to check once the harness exists and e
 
 **V-5 is the most important item in this section.** The Constitution's automation argument (§7: tolerate low-cost recoverable errors) is only valid if errors *are* recoverable. Verify it, do not assume it.
 
+## 7A. Competitor-derived test cases (added 2026-08-22)
+
+Lucent Pro spent three consecutive releases (v1.6–1.8, Dec 2025) fixing library plumbing, **after** its AI features already worked. Their public release notes are free intelligence about where this breaks in the field. Each becomes an explicit test case here.
+
+| # | Their reported problem (verbatim source: Lucent release notes) | Our test case |
+|---|---|---|
+| CD-1 | *"Enhanced PhotoKit initialization timing to ensure smoother and more reliable photo library access"* | Cold-launch the harness 10× on the largest library; record time-to-first-asset-enumerated and any initialisation failure. Flaky init is a first-impression killer, not a background detail |
+| CD-2 | *"users experiencing problems with photo loading on startup"* | Measure **first-screen stall**: time from launch to first rendered thumbnail grid on a 30k+ library, separately from total index time. This is TTFUV's floor and is invisible in a throughput number |
+| CD-3 | *"Enhanced AI analysis startup — analysis now begins automatically after setup"* | Verify analysis auto-starts after permission grant with no extra tap, and that it survives immediate backgrounding |
+| CD-4 | *"All photos were being analysed instead of the 1000 only from freemium limit"* | Not a quota problem for us — but it shows **analysis scope and app state can desynchronise**. Test: does the index correctly reflect scope after a mid-run scope change? |
+| CD-5 | Implied by CD-1/CD-2 | **Index state recovery after full app restart** — distinct from the existing interrupt/resume test. Kill the app from the switcher, relaunch, confirm the index resumes rather than restarting, and record `assets_reprocessed_after_resume` |
+
+CD-5 is the one most likely to be missed, because checkpoint-resume within a run and state recovery across a process death are different failure modes and only the first is usually tested.
+
 ## 8. Time budget — TARGETS set in advance
 
 Set now, before data exists, so the result cannot be rationalised afterwards.
@@ -124,6 +138,7 @@ Set now, before data exists, so the result cannot be rationalised afterwards.
 | 100k cold index, foreground, lowest tier | **≤ 90 min** | Upper bound of a motivated user leaving the app open |
 | First useful view (TTFUV) | **≤ 30 s** | Constitution §24 Gate 3 / Tier 2-C. Measured here only as a sanity floor |
 | Incremental, 100 new assets | **≤ 60 s** | Continuous Hygiene must feel immediate |
+| **First-screen stall (CD-2)**, 30k+ library | **≤ 3 s** to a rendered grid | Competitor evidence shows this is where real users notice failure first |
 | Thermal | **0 s** in `.critical`; `.serious` dwell **< 5%** of run | Sustained `.serious` means throttling and user-visible heat |
 | Battery | **≤ 8%** per 10k assets | 100k overnight must not flatten the device |
 | Index size | **≤ 2 KB/asset** → ≤ 200 MB at 100k | Above this the index competes with the storage the product claims to free |

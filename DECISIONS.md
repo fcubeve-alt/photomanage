@@ -91,3 +91,32 @@ Format: ID · date · decision · rationale · evidence · impact · status
 **Rationale.** There is no other way to reach 30k/100k on-device. But this project's own safety red line is "no silent permanent deletion" (Constitution, `OPERATING_RULES.md` P-03) — that rule has to bind the tooling too, not only the product, or it is not a real rule.
 **Impact.** Adds a mandatory pre-flight step before the main campaign. Open question 3 to Owner.
 **Status.** ACTIVE, pending Owner confirmation.
+
+---
+
+### DEC-010 · 2026-08-22 · Lucent Pro becomes Benchmark Competitor No.1; Tier 0-B becomes a 3-way study under a fair-configuration rule
+**Decision.**
+1. Lucent Pro is promoted from a matrix row to **Benchmark Competitor No.1**, with its own analysis file.
+2. Tier 0-B changes from **Apple Photos vs us** to **Apple Photos vs Lucent Pro vs our prototype**.
+3. A **fair-configuration rule** binds every comparative study: competitors are tested **fully paid, fully permissioned and fully finished analysing**, or the comparison is not run and the limitation is reported. Task order is counterbalanced; the facilitator follows a fixed script or is not the prototype's author.
+4. The Tier 0-B prototype must include a **first-run quantified receipt** of work already done, including how little is left for the user.
+5. Three earlier claims of mine are corrected on the record: "0 ratings" (→ below Apple's display threshold), "no update in six months" (→ dense v1.5→v2.0 run, quiet since February), and a weekly price string wrongly readable as Lucent's (→ it belongs to a recommended app on the same page).
+
+**Rationale.**
+- Lucent occupies the *search + collections* half of our target rung with a real shipped product. Testing only against Apple Photos would measure us against the wrong baseline and produce an easy win that tells us nothing about the competitor we would actually face.
+- **The fair-configuration rule is not politeness, it is validity.** Lucent's free tier analyses only 1,000 photos. A 3-way study on a 20,000-photo library with free Lucent would measure Lucent's paywall and report it as our advantage — a result that collapses under the first challenge, after decisions have been made on it. Requires purchasing Lucent Premium ($29.99).
+- The first-run receipt addresses the sharpest finding of the analysis: our differentiators accrue over weeks, Lucent's was instant and still did not convert. Being "more differentiated" may mean "harder to sell" unless autonomy is made visible in session one.
+
+**Evidence.** `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`, verified against the archived App Store page retrieved 2026-08-22.
+
+**Impact.** T0-B protocol is written against this design. Adds a **$29.99** spend item. Adds `FAILURE_PATTERNS.md` PF-06 and PF-07. Tightens `OPERATING_RULES.md` P-04.
+
+**Status.** ACTIVE.
+
+---
+
+### DEC-011 · 2026-08-22 · Recorded: our primary differentiator is unfalsifiable until Tier 2
+**Decision.** Log explicitly that a Tier 0-B PASS proves users prefer our **structure and retrieval**, and proves nothing about whether they want, or will pay for, **autonomous management**. `TIER0_GO_NO_GO.md` must carry this limitation in its own words.
+**Rationale.** The Tier 0-B prototype will not contain risk, lifecycle or same-entity capability, because building those now would violate the Execution Index (see DEC-003, P-01). So the differentiator we consider decisive cannot be tested in the tier that decides whether to continue. Naming that gap is the honest move; discovering it later while reading a B PASS as validation of the whole thesis is the failure mode.
+**Consequence for study design.** The Owner's proposed sixth task — cleaning 8 near-identical burst photos — is an Equivalence Margin task (Tier 2-B). It is **kept but inverted**: the user performs it **manually in each app** and the effort is measured. That captures the pain our differentiator would remove, produces a baseline to beat later, and builds nothing that belongs to a later tier.
+**Status.** ACTIVE. Revisit at the Tier 0 gate and again at Tier 2-A/C.
