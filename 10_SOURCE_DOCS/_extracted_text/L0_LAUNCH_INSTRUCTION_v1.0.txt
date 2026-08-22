@@ -1,0 +1,90 @@
+
+Personal Visual Memory
+Claude Code 正式启动指令 v1.0
+项目总设计 + P0/P1/P2 + Engineering Playbook + Skills 的正式装配与开工指令
+使用方法
+将本文件与项目总设计、P0/P1/P2、Cross-Project Engineering Playbook v1.1、Skills/工具资料放在项目目录。首次启动 Claude Code 时，将下面整段正式启动指令交给它。
+正式启动
+现在正式启动 Personal Visual Memory / 智能照片管理系统项目。
+项目目录中已经包含：项目总设计 / Product Constitution / 总项目书；P0、P1、P2 前期技术验证与 Kill Test 文档；Cross-Project Engineering Playbook v1.1；项目相关 Skills / 工具资料；以及其他相关技术与产品资料。
+第一步不要立即大规模写代码。先进行 Bootstrap / Documentation Audit，建立完整项目地图，识别所有核心文档的用途、权威级别、版本、新旧关系和适用阶段。不要把所有文档视为同等级指令，也不要同时执行互相冲突的历史版本。
+文档优先级
+LEVEL 1 — Product Constitution / 总项目书
+定义 WHAT：产品目标、产品哲学、用户体验、Visual Library / Personal Visual Memory 长期方向、照片分类体系、风险等级、自动化哲学、生命周期、搜索、隐私和产品边界。除非有明确技术不可行或重大冲突，不得自行改变产品目标。
+LEVEL 2 — P0 / P1 / P2
+定义 NOW：当前首先必须证明什么。禁止因为长期愿景很大而跳过验证直接全面开发。按依赖关系推进 P0 → P1 → P2。失败时先分析根因、可修复性和替代路线，不得掩盖失败。
+LEVEL 3 — Cross-Project Engineering Playbook v1.1
+定义 HOW TO WORK。继承 Engineering Core、Autonomous Supervisor、Failure Patterns、Session Recovery、Persistent State、Context Protection、Token/Compute Efficiency、最小必要测试、增量 Checkpoint。不要带入 Money OS 的业务内容。
+强制原则：Optimize Waste, Not Thinking。省重复读取、重复搜索、重复测试和无效 Token，但不减少必要推理、真实测试和关键验证。
+LEVEL 4 — Skills / Tools
+Skills 是能力库，不是需求。按当前任务选择，不要为了使用 Skill 改变产品架构。
+Phase A — Bootstrap
+1. 扫描项目目录，但遵守 Progressive Reading / Context Protection。
+2. 先看目录结构、文件名和核心状态文件。
+3. 大文件先搜索定位，再读必要部分。
+4. 找出当前权威总项目书、P0/P1/P2 当前版本、Engineering Playbook、Skills/Tools、历史版本、重复和冲突文档。
+5. 建立 Documentation Map。
+Phase B — 持久状态
+检查已有文件；没有等价文件时再建立：
+MISSION_SPEC.md
+MASTER_PLAN.md
+PROJECT_STATE.md
+OPERATING_RULES.md
+DECISIONS.md
+FAILURE_PATTERNS.md
+SESSION_HANDOFF.md
+不要制造重复 canonical 文件。所有重要状态必须落盘。Chat history is not project state。换 Session、换模型、换电脑后，必须能通过 Git + Persistent State 恢复。
+Phase C — 验证矩阵
+阅读 P0/P1/P2 后形成：
+TEST → SUCCESS CRITERIA → MEASUREMENT → PASS/FAIL → NEXT ACTION
+每个 Kill Test 必须有明确、可测量的通过标准。“看起来可以”“理论上应该可以”“代码已经实现”都不能算 PASS，必须有真实运行证据。
+Phase D — 自动执行
+Documentation Audit 完成后不要等待 Owner 说“继续”。自动开始当前最高优先级且无外部阻塞的验证任务。
+循环：Build → Run → Measure → Diagnose → Fix → Re-run → Persist
+每完成有意义阶段：保存代码/实验结果；保存 benchmark/test evidence；更新 PROJECT_STATE；必要时更新 DECISIONS；更新下一任务；自动继续。
+Task completed ≠ Mission completed。
+Human Gate
+只有账号/凭据、Apple Developer/KYC/CAPTCHA、实际付款、不可逆或高风险操作、重大 Scope 改变、重大长期架构分叉、真正可能 Kill Project 的结果、或所有有价值工作都被外部条件阻塞时才找 Owner。
+普通 Bug、测试失败、依赖、研究、重构、文档维护和局部技术选择自主解决。一个 Human Gate 只能阻塞相关动作，不能阻塞整个 Mission。
+当前设备现实
+主要开发环境为 Windows；Owner 有 iPhone，目前没有本地 Mac。
+不要假装已经完成必须依赖 macOS/Xcode/真实 iOS 环境的验证。Windows 能完成的架构、算法、模型、数据结构、测试和研究继续完成。必须依赖 Mac/Xcode/iPhone 真机的项目标记 REQUIRES_MAC / REQUIRES_DEVICE。不要因为没有 Mac 停止整个项目，把 Mac 依赖压缩到真正必须验证的阶段。
+端侧 AI 原则
+不要预设必须使用 Gemma，也不要预设必须使用外部 GPT API。先按 P0/P1/P2 验证 Apple 原生能力和当前技术路线。真实测试证明不足后，再建立替代方案 benchmark，包括适合设备端的本地模型。
+没有测试证据前，不增加 2GB+ 模型依赖。最终路线由 benchmark 决定，不由模型名称决定。
+最重要的要求
+不要重新设计一个与现有文档不同的产品。
+不要从零重复讨论已经决定的问题。
+不要一次性铺开整个长期愿景。
+不要为了显得有进展制造大量文件和代码。
+先证明核心技术假设，再开发。
+首次报告要求
+第一次启动完成后，简洁报告：
+1. 找到哪些核心文档；
+2. 哪一份是当前权威版本；
+3. 是否存在冲突/重复/过时文档；
+4. P0/P1/P2 的实际执行顺序；
+5. 哪些 Windows 现在可完成；
+6. 哪些未来必须 Mac/iPhone 真机；
+7. 已开始执行的第一项验证是什么。
+报告后继续执行，不等待“继续”指令。
+文件权威关系速查
+资料
+回答的问题
+角色
+总项目书 / Product Constitution
+我们到底要做什么？
+WHAT
+P0 / P1 / P2
+现在首先必须证明什么？
+NOW
+Engineering Playbook v1.1
+Claude 应该怎样工作？
+HOW
+Skills / Tools
+可以调用什么能力？
+TOOLS
+PROJECT_STATE / DECISIONS
+项目现在真实处于什么状态？
+STATE
+一句话原则：总项目书定方向，P0/P1/P2 定先后，Playbook 定工作纪律，Skills 提供工具，PROJECT_STATE 保存真实进度。

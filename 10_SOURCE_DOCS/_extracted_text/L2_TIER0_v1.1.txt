@@ -1,0 +1,43 @@
+
+P0 Kill Test ｜ Tier 0
+生死开关：几天内必须回答的三个问题
+文档地位：Personal Visual Memory Engine v1.3 Product Constitution 为最高产品依据。本文件是 P0 三段式验证的第一段，也是唯一一段在开始任何 Taxonomy / Entity Resolver / Policy Engine 工程之前必须先跑完的部分。Tier 0 不追求覆盖面，只追求以最低成本，最快找到足以直接否决项目的证据。
+原则：Tier 0 不写代码写到「完整」为止，写到「能不能回答问题」为止。A（设备可行性）或 B（Retrieval Entry）任一 FAIL，直接停止并 NO-GO/PIVOT；C（真实付费信号）FAIL 不单独杀死产品，但必须触发 Commercial Model PIVOT，并禁止在商业模型未修正前进入重投入开发。
+1. 为什么先做这三项，而不是先做分类/风险引擎
+v1.3 把产品定位从「Cleaner + Search」升级为「Visual Library + Risk-Aware Autonomous Management」，这个方向是对的，但方向对不等于可以跳过风险排序。三个最可能直接杀死项目的假设分别是：手机扛不扛得住、用户会不会真的把这里当入口、用户愿不愿意为此付费。这三个不需要精细分类体系或 Entity Resolver 就能测——先测这三个，比先搭一整套 Taxonomy 更便宜也更诚实。
+2. Tier 0 - A｜真实设备硬件与热管理极限
+对应原 P0 Mission Workstream A + Gate 1（21.1）。
+在真实 iPhone（至少覆盖 3 档机型：入门/中端/旗舰，记录机型与 iOS 版本）上，对 10k / 30k / 100k 张真实照片跑首次索引。
+记录：耗时、内存峰值、CPU、发热、电量消耗、索引体积、中断后能否 checkpoint 续跑。
+验证 PhotoKit 完整/有限权限、删除边界、change observer、iCloud-only asset 的原图/缩略图请求行为。
+只做 Layer 1（metadata/time/GPS/hash/基础 OCR）+ Layer 2（轻量视觉 embedding）两层，不做完整 8 层 Progressive Intelligence Pipeline。
+PASS 标准：100k 图库首次索引可在合理时间内完成（不发烫降频、不被系统杀后台到无法恢复），且可增量更新，不需要每次全量重扫。
+FAIL 即止损：如果连轻量信号层都撑不住 100k 图库，后续所有 Taxonomy/Risk/Policy 工程都没有地基，直接 NO-GO 或大幅降级到「仅处理近 N 个月」的缩小范围产品。
+3. Tier 0 - B｜Retrieval Entry 假设（这是你们的核心差异化主张，必须最先验证）
+对应原文档 Gate 4 / 21.4。这一项直接对应你们的判断——苹果原生功能弱、分类要人工来、界面乱、搜索不好用。这个判断很可能是对的，但目前是团队内部的主观经验，需要变成可复现的用户证据。
+做一个极简原型：不需要完整 UI，只需要 Structure First 首页骨架（Documents / People / Screenshots / Places / Timeline / Objects 六个入口即可）。
+找真实用户（不是团队内部），用真实图库或标准化测试图库，分别用【苹果原生 Photos App】和【本产品原型】完成同一组任务：找身份证、找某人某次旅行的照片、找某张收据、找某个截图。
+记录：成功率、步骤数、耗时、用户主观「哪个更愿意长期用」的选择。
+同时记录用户对苹果原生功能的具体吐槽点（分类粗、界面乱、搜不到），把「感觉」变成结构化的失败案例清单——这些案例后续会直接变成你们产品的分类粒度和 UI 设计依据。
+PASS 标准：在盲测/半盲测条件下，多数测试用户明确表示本产品原型比苹果原生更好用、更愿意作为找照片的第一入口。
+FAIL 即止损：如果用户觉得苹果原生「已经够用」，说明差异化没有真正建立，需要重新设计首页体验或收窄目标用户群，而不是急着往下堆 Taxonomy 精细度。
+4. Tier 0 - C｜真实付费信号（替换原 Workstream F 的「假想定价」）
+原 P0 Mission 第 9 节提出的验证方式是「三个不接真实支付的付费方案原型」——这是最弱的证据形式，没有人真的付钱，容易得到虚假的乐观结果。既然市场上已经有大量免费/低价 Cleaner，也有 Lucent Pro 这类同定位第三方产品，「用户会不会为此真的付费」应该和硬件性能一样，是 Tier 0 级别的生死题，不能放在技术验证做完之后才问。
+建立竞品 Pricing Matrix（沿用原文档第 9 节要求：CleanMyPhone、Clever Cleaner、Slidebox、Queryable、Lucent Pro 等，记录免费层/价格/评分/近期更新/用户对订阅的抱怨）。
+至少用以下一种方式获取真实付费信号，而不是问卷式假设：候补名单 + 意向金（哪怕几美元）；或极小范围 TestFlight 付费 beta；或落地页 + 真实价格 + 点击「立即购买」的转化率（哪怕最后不完成扣款，但要走到真实支付环节前一步）。
+明确测试 Value Ladder 中哪一级用户愿意付费：Cleaner（大概率不愿意，已被免费产品教育）→ Search → 持续自动管理 → 长期 Visual Memory。
+PASS 标准：在「持续自动管理」或更高层级，能拿到真实意向付费信号（不只是问卷好感度）。
+FAIL 的处理：如果付费意愿只停留在「免费/一次性小额买断」，判定为 COMMERCIAL MODEL PIVOT，而不是单独判定整个产品 NO-GO。必须重新测试价格、免费/Pro 边界、买断/订阅/广告等模型，并明确哪一种模式有机会覆盖长期维护成本。
+5. 安全红线（贯穿所有 Tier，Tier 0 阶段即生效）
+禁止静默永久删除。
+证件、合同、家庭/人物记忆默认 Protect，即使在最简原型阶段也不做自动删除测试。
+所有建议必须能解释原因；即使是 Tier 0 的简化原型，也要预留「为什么」的展示位。
+6. Tier 0 必须提交
+DEVICE_BENCHMARK_TIER0.csv / md（10k/30k/100k，至少 3 档机型）
+RETRIEVAL_ENTRY_USABILITY_TIER0.md（含用户任务成功率、步骤数、主观选择、失败案例清单）
+COMPETITOR_PRICING_MATRIX.md
+REAL_PAYMENT_SIGNAL_TIER0.md（真实转化数据，不是问卷假设）
+TIER0_GO_NO_GO.md —— A/B 任一 FAIL：NO-GO/PIVOT；A/B PASS 且 C PASS：进入 Tier 1；A/B PASS 但 C FAIL：标记 TECHNICAL/PRODUCT GO + COMMERCIAL PIVOT，先修正商业验证，再决定是否进入 Tier 1。
+7. 给 Claude Code 的一次性开工指令（Tier 0）
+以 Personal Visual Memory Engine v1.3 Product Constitution 为最高产品依据。当前只执行 Tier 0，不要提前开发 Taxonomy、Entity Resolver、Risk Policy Engine 或完整首页原型。目标是用最低成本回答三个问题：iPhone 真实设备能否撑住 30k-100k 图库的首次索引与增量更新；用户在真实任务对比测试中是否明确更愿意用本产品而不是苹果原生 Photos 找东西；用户是否有真实付费意愿（真实转化行为，不是问卷）。A 或 B 任一 FAIL，停止并输出 NO-GO/PIVOT，不得继续开发。A/B PASS 而 C FAIL 时，不得把产品直接判死：输出 COMMERCIAL MODEL PIVOT，先修正价格/免费层/Pro/买断/广告等商业假设并复测；A/B/C 全部 PASS 后直接进入 Tier 1。所有结论必须来自真实实验和真实用户，不得用团队内部感受替代用户证据。
+版本：P0 Kill Test Tier 0 v1.1 ｜ 日期：2026-08-20 ｜ 上级文档：Personal Visual Memory Engine v1.3 Product Constitution ｜ 下一步：Tier 1

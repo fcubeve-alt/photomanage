@@ -1,0 +1,292 @@
+
+跨项目 AI 开发与自主执行标准 v1.0
+Cross-Project Engineering Playbook · Failure Patterns · Project Bootstrap Checklist
+依据 Money OS Evolution Patch 001–011 的真实项目故障与修正经验整理
+用途：照片管理系统及后续 App / 游戏 / 音乐 / Money OS 子项目的可复用开发规则
+0. 这份文档解决什么问题
+这不是把 11 份 Patch 原样塞进新项目，而是把已经发生过的失败提炼成可执行的跨项目规则。目标是：新项目从第一天就继承“不会重复踩坑”的运行方式，同时避免把 Money OS 商业研究专属规则强行带进普通软件开发。
+项目状态不能依赖某个聊天窗口、某个模型或某个 Agent。
+任务完成不等于 Mission 完成；普通任务结束后应自动选择下一项高价值工作。
+Owner 定义 WHAT、边界和重大授权；AI 在授权范围内负责 HOW。
+重大结论要有证据；忙碌、搜索次数、文件数量都不等于进展。
+资源耗尽只阻塞对应能力，不应自动让整个项目停摆。
+长任务必须增量保存，使 Session/额度中断最多损失最后一个小批次。
+1. 三层规则架构：不要把所有规则混在一起
+层级
+适用范围
+应进入照片项目？
+代表规则
+A. Engineering Core
+所有软件/AI 项目
+必须
+持久状态、Bootstrap、增量保存、验证、上下文/成本控制、模型可替换
+B. Autonomous Supervisor
+需要持续自主推进的项目
+建议启用
+Work Queue、Human Gate、Heartbeat、Wake Condition、自动继续、Auditor
+C. Business Opportunity Governance
+市场发现/商业机会研究
+按需，不默认塞入
+Portfolio、Buyer Intent、Kill Test、Opportunity State、市场证据审计
+照片管理 App 当前应默认安装 A 层；如果 Claude Code 需要长时间自主开发，再安装 B 层。C 层只在做竞品、定价、需求验证、Go/Hold/Kill 等商业决策时调用，避免污染日常编码上下文。
+2. ENGINEERING PLAYBOOK — 所有项目必须继承
+E-01 Mission 与执行计划分离
+项目目标、硬约束、安全/预算/授权边界稳定；实现方法、技术路线和任务顺序可以根据证据调整。计划不是不可修改的圣旨。
+E-02 Owner 定义 WHAT，AI 负责 HOW
+Owner 明确目标、范围、不可越界事项与真正的人类授权点。AI 自主决定研究、实现、测试、修复和任务顺序；不得悄悄改写 Scope。
+E-03 Canonical State 必须落盘
+至少维护 PROJECT_STATE.md；较大项目再维护 MASTER_PLAN.md、DECISIONS.md、OPERATING_RULES.md。聊天记录不是项目数据库。
+E-04 Session is disposable; State is not
+换窗口、换模型、额度耗尽、Agent 交接都视为正常运行事件。新 Session 必须先恢复真实状态，再开始 Mission 工作。
+E-05 Bootstrap Integrity Check
+恢复时先核对 repository、remote、branch、commit、handoff、PROJECT_STATE 和 Git status。若坐标不一致，先修复状态；禁止直接重做 Phase 0。
+E-06 Local absence ≠ Remote absence
+本地找不到文件/branch/commit，不得推出远端不存在，更不得声称“从未存在”。先检查 remote refs 与权威分支。
+E-07 Incremental Checkpoint
+研究、审计、批量处理、长测试、大规模数据采集必须按小批次保存。中断时最多损失最后一个小阶段，不允许整段工作归零。
+E-08 Capability Failure ≠ Mission Failure
+Search、Fetch、Subagent、模型、API、上下文、现金预算必须分开管理。单一能力触顶时，切换替代能力、缓存或 Search-Free Queue。
+E-09 Context & Knowledge Reuse
+优先读取当前状态和相关局部文件；避免每次全仓库重扫、全文重读和重复研究。缓存事实时记录来源、日期、置信度与 freshness/TTL。
+E-10 Optimize Waste, Not Thinking
+节省 token/成本的对象是重复读取、重复搜索、重复 Agent 工作和不必要的高价模型；不能以省 token 为理由降低必要推理、验证和测试质量。
+E-11 Model Is Replaceable Labor
+Mission、状态、决策、证据和队列必须在模型之外。模型按复杂度、风险、成本和可用性路由；更换模型不能让项目失忆。
+E-12 Minimum Necessary Verification
+每个有意义的改动后做最小充分验证：针对性测试优先；重大里程碑再做更宽的回归。不得把“写完代码”当成“功能已完成”。
+E-13 Fact / Interpretation / Recommendation 分离
+外部规则、平台政策、技术边界等先记录事实，再记录推断，最后给行动建议。UNKNOWN 保持 UNKNOWN，不能偷偷当作否定证据。
+E-14 Evidence Scope
+结论只能覆盖实际检查过的范围。局部测试不能升级为全局断言；失败路径不能升级为能力不存在。
+E-15 Learn Once
+修复问题后提炼可复用 lesson，写入 Operating Rules / Failure Patterns；目标不是只修这一次，而是让同类错误以后更难发生。
+3. AUTONOMOUS SUPERVISOR — 需要 Claude Code 持续推进时启用
+S-01 Task Completion Must Not End the Mission
+完成一个 task 后：更新状态 → 重新排序可执行队列 → 自动执行下一项最高价值任务。
+S-02 Persistent Work Queue
+至少维护 ACTIVE / RESEARCH / EXPERIMENT / HUMAN_GATE / CAPABILITY / MAINTENANCE；商业研究项目再加 OPPORTUNITY / WATCHLIST。
+S-03 Action Blocked ≠ Mission Blocked
+某一分支被权限、账号、支付或工具阻塞时，继续其他授权工作。
+S-04 Mandatory Idle Justification
+进入 WAITING 前必须证明当前没有任何值得做且可执行的授权工作。
+S-05 Human Gate 最小化
+只把凭据、KYC/CAPTCHA、付款、不可逆操作、重大架构决策、正式发布门槛等真正需要人的事项升级给 Owner。
+S-06 Human Gate 动态优先级
+DORMANT → UPCOMING → BLOCKING → URGENT；非关键路径的人类动作排队、批处理，不反复打断 Owner。
+S-07 Wake Condition
+每个 WAITING 都必须写 blocker、wake_condition、next action；无唤醒条件的 WAITING 等同静默放弃。
+S-08 Orchestrator Owns Continuity
+模型负责判断与执行；runtime/orchestrator 负责 queue、retry、checkpoint、scheduler、wake、session replacement。
+S-09 Agent 状态必须有证据
+CREATED/STARTED/RUNNING/PARTIAL_RESULT_SAVED/COMPLETED/FAILED/BLOCKED 必须有任务状态或 artifact 支持，不能口头声称“正在跑”。
+S-10 Independent Review at Material Gates
+Reviewer/Auditor 是挑战者，不是老板。主 Agent 必须重新验证其批评，明确接受、部分接受或拒绝及理由。
+4. FAILURE PATTERNS — 已经真实踩过的坑
+F-01 第一条可行路线绑架整个 Mission
+发现一个可行方向后立刻深挖，导致没有完成横向比较。防护：先覆盖搜索空间，再进入深执行。
+F-02 Scope Drift
+AI 把“怎么做”的自主权误解成“做什么”的自主权。防护：MISSION_SPEC + IN/OUT OF SCOPE + scope-change gate。
+F-03 Sunk Cost Bias
+已经写了代码/文档/素材，所以继续投入。防护：问“如果今天从零开始，我还会把下一单位资源投这里吗？”
+F-04 Chat Completion = Project Completion
+模型交付一个结果就等待。防护：持续运行循环与 Mandatory Idle Justification。
+F-05 Tool Outage = Brain Outage
+Search 没额度就全停。防护：资源分层 + Capability Recovery + Search-Free Queue。
+F-06 Local Not Found = Never Existed
+新 Session 看不到 sibling branch 就重建项目。防护：Remote verification + Bootstrap fail-closed。
+F-07 Big-Bang Research
+大量研究结果只存在上下文，额度耗尽后全部重来。防护：batch checkpoint + evidence store。
+F-08 Busy = Progress
+搜索很多、文件很多、token 很多，却没有减少关键不确定性。防护：进展只按决策不确定性、验证、可复用证据或经济价值衡量。
+F-09 UNKNOWN = Negative
+找不到证据就给候选打零分。防护：UNKNOWN 独立状态 + resolution plan。
+F-10 Reviewer = Boss
+Reviewer 提意见后主 Agent 机械照做。防护：独立复核，Reviewer 只提供 challenge/evidence。
+F-11 Token Saving = Underthinking
+为了省上下文/额度跳过必要验证。防护：Optimize Waste, Not Thinking。
+F-12 One Model = Project Identity
+换模型后上下文断裂。防护：状态、决策、队列、证据全部外置。
+5. PROJECT BOOTSTRAP CHECKLIST — 新项目第一天执行
+☐ 建立 MISSION_SPEC.md：Mission、Success Criteria、IN-SCOPE、OUT-OF-SCOPE、Hard Constraints、Human Gates。
+☐ 建立 MASTER_PLAN.md：里程碑、阶段目标、验收标准；不是逐日微管理清单。
+☐ 建立 PROJECT_STATE.md：当前 Stage、已完成、正在做、下一步、Blockers、Decisions、Tests、Risks。
+☐ 建立 OPERATING_RULES.md：本项目继承的 Engineering Core + 项目专属规则。
+☐ 建立 FAILURE_PATTERNS.md：把跨项目已知坑写入，并允许本项目追加新坑。
+☐ 建立 DECISIONS.md：记录重大架构/产品决策、理由、证据、日期、是否 superseded。
+☐ 建立 SESSION_HANDOFF.md 模板：Repository / Remote / Branch / Full SHA / Current Stage / Next Action / Must Read / Do Not Repeat。
+☐ 定义最小验证策略：单元/集成/E2E/构建/静态检查分别何时触发。
+☐ 定义 checkpoint 节奏：重大变更前后、长任务每小批次、Session 轮换前必须保存。
+☐ 启用 Autonomous Supervisor 时，建立持久 Work Queue 与 WAITING/Wake 规则。
+☐ 涉及外部事实时，建立 Evidence Store；事实记录 source/date/confidence/UNKNOWN。
+☐ 做一次 Cold-Start Recovery Test：假设换了新模型/新 Session，验证能否不靠 Owner 解释继续。
+5A. Context Protection & Token / Compute Efficiency Protocol（强制）
+本章为所有新项目默认继承的强制工程协议。目标不是减少必要思考，而是系统性消除重复读取、无边界输出、重复测试、重复搜索和无效上下文占用。任何 Claude Code / Codex / Agent 在执行项目前都应遵守。
+T-01 渐进式读取（Progressive Reading）
+先读 PROJECT_STATE / 当前任务 / 最小相关文件；只有证据不足时才扩大读取范围。禁止默认全仓库、全历史、全日志扫描。
+T-02 大文件先搜索，再读局部
+对大型源码、Markdown、日志、JSON、CSV 等，先用文件名/符号/关键词搜索定位，再读取命中区段及必要上下文；不要为了找一个函数把整个文件灌入上下文。
+T-03 大命令输出先落盘
+构建、测试、依赖树、扫描、长 diff、模型 benchmark 等可能产生大量输出的命令，优先重定向到临时文件/日志；随后用 tail、head、grep、关键词或分段读取，只把诊断所需片段带入上下文。
+T-04 日志先 Tail / Search
+排错默认从最近错误、异常关键字、失败测试名、stack trace 起点入手；不要反复读取完整日志。需要历史上下文时再向前扩展。
+T-05 Git 先看摘要
+默认先执行等价于 git status --short、git diff --stat 的轻量检查；只有确认需要审查具体变更时再读取局部 diff。不要每轮重复读取完整 diff。
+T-06 测试最小化、逐层扩大
+修改后先跑与变更直接相关的最小测试/类型检查/静态检查；通过后在里程碑或高风险变更时再扩大到模块级、集成级、全量回归。失败时先定位失败测试，不要机械重复全套。
+T-07 禁止无理由重复读取
+同一 Session 已读取且内容未变的文件/证据/网页，不得为了“重新熟悉”再次全文读取。优先依赖已保存摘要、状态文件、Evidence Cache；只有内容变化或当前决策需要更高精度时重读。
+T-08 Context 不是长期存储
+关键事实、决策、测试结果、下一步、失败原因必须及时写入 PROJECT_STATE / DECISIONS / Evidence Store / Handoff。不要靠不断保留旧对话来维持连续性。
+T-09 输出也要有预算
+Agent 内部命令、子 Agent 报告和中间分析应默认 concise + structured。大报告先保存为 artifact，再返回摘要和路径；避免把数千行中间结果直接塞回主 Agent。
+T-10 Search / Fetch 去重
+搜索前先检查 Evidence Cache 与既有研究；同一事实在 freshness 尚有效时复用。只有需要更新、反证、补缺或来源质量不足时再次联网搜索。
+T-11 子 Agent 上下文隔离
+给子 Agent 只传任务所需的最小背景、目标、约束和相关文件，不复制整个主会话。子 Agent 返回结构化结论 + evidence/artifact 路径，不回灌全部过程。
+T-12 模型按任务路由
+简单检索、格式化、机械修改、局部测试不默认使用最昂贵模型；复杂架构、重大决策、困难调试再升级模型。模型升级必须由任务复杂度/风险驱动，而不是习惯。
+T-13 临时文件环境无关
+中间输出使用项目约定的 temp/log/artifacts 目录或系统安全临时目录，不硬编码只在某一台机器存在的路径；避免换设备/Session 后重复生成。
+T-14 先摘要再深入
+面对未知大型模块，先获取目录树、符号索引、文件大小、变更摘要和入口点，形成地图后再钻取；不要从第一个文件开始顺序读完整仓库。
+T-15 Token 节省不得覆盖正确性
+若安全、重大架构、数据完整性、真实 E2E、发布门槛或关键技术 Kill Test 需要完整验证，必须执行。省 Token 的优先级低于正确性、可恢复性和真实业务闭环。
+T-16 每轮结束做 Context Hygiene
+完成一个有意义任务后：保存结论 → 更新状态 → 记录下一步 → 丢弃无价值中间输出。下一 Session 应从持久状态恢复，而不是重新阅读整段历史。
+核心原则：Optimize Waste, Not Thinking —— 省掉重复和噪音，不省掉必要的推理、证据与验证。
+T-17 Claude Code / Codex 默认执行顺序
+1. 读取 PROJECT_STATE / 当前任务。
+2. 用目录/搜索/符号定位最小相关范围。
+3. 只读取需要修改或验证的局部内容。
+4. 做最小必要改动。
+5. 运行最小相关测试；失败时局部诊断。
+6. 大输出落盘，只读取错误/摘要。
+7. 更新 PROJECT_STATE / DECISIONS / Handoff。
+8. 再决定是否需要扩大读取、测试、搜索或升级模型。
+6. 照片管理系统：建议实际安装的规则
+对当前 iOS 照片管理 / Personal Visual Memory 项目，不建议把全部 Money OS 商业规则写进 Claude Code 的常驻上下文。建议如下：
+常驻：E-01～E-15 全部 Engineering Core。
+常驻：S-01～S-09；如果采用 Agent1/Reviewer/QA，则加入 S-10。
+按需：商业竞品、定价、订阅需求验证时才加载 Opportunity / Kill Test / Buyer Intent / Evidence Audit 规则。
+不要常驻：KDP/Vocal/UEFN 等历史项目的具体案例、平台名、旧市场结论。它们是经验来源，不是照片项目需求。
+照片项目自己的核心产品文档仍是最高优先级：产品哲学、风险分级照片分类、自动清理、Visual Library、自然语言检索、生命周期规则、端侧能力验证等。
+7. 可直接丢给 Claude Code 的一次性安装指令
+Install the Cross-Project Engineering Core and Autonomous Supervisor safeguards into this project.
+
+GOAL
+Adopt reusable engineering/runtime lessons from prior projects without changing this project's product goals, business logic, or technical architecture unless current evidence requires it.
+
+DO THIS FIRST
+1. Inspect existing AGENTS.md, MASTER_PLAN.md, PROJECT_STATE.md, OPERATING_RULES.md and related governance files.
+2. Do NOT duplicate rules already present. Merge semantically and keep one canonical rule for each concept.
+3. Do NOT import old project-specific KDP/Vocal/UEFN/business assumptions into this project.
+
+REQUIRED CORE RULES
+- Mission and Scope are distinct. Owner defines WHAT / hard boundaries; AI owns HOW inside the authorized scope.
+- Task completion does not end the Mission. After meaningful work: verify -> persist state -> recompute -> continue to the next highest-value executable task.
+- Session is disposable; state is not. Project truth must live in repository/state files, not chat history.
+- Before work in a new/recovered session, perform Bootstrap Integrity Check: repo, remote, branch, commit, handoff/state, git status.
+- Local absence is not remote absence. Never reconstruct work before checking authoritative remote state.
+- Long tasks must save incremental checkpoints/artifacts.
+- A tool/resource outage blocks that capability, not automatically the whole project. Continue useful search-free/non-blocked work.
+- Separate MODEL / SEARCH / FETCH / SUBAGENT / CONTEXT / API / CASH capacities where relevant.
+- Optimize waste, not necessary thinking. Avoid rereads, rescans, duplicate research and duplicate tests; do not skip necessary reasoning/verification.
+- Models are replaceable labor. Mission/state/decisions/evidence/queues must survive model changes.
+- Use minimum-necessary verification after each meaningful change; wider regression at milestones.
+- Separate FACT / INTERPRETATION / RECOMMENDATION for external claims. UNKNOWN must remain UNKNOWN.
+- Conclusions must not exceed the scope actually tested.
+- Convert recurring failures into reusable operating rules so the same class of mistake is less likely.
+
+AUTONOMOUS SUPERVISOR
+- Maintain a durable next-work queue.
+- DONE/BLOCKED/RETRY are transitions, not conversation endpoints.
+- Enter WAITING only after proving no worthwhile authorized work is executable.
+- Every WAITING state must record blocker, wake_condition, and first action after wake.
+- Human escalation only for credentials/KYC/CAPTCHA, payment/material spend, irreversible or high-risk action, required human approval, unresolved material architecture decision, formal release gate, or when all valuable work is externally blocked.
+- Agent/subagent status must be evidenced by task state or artifacts, not merely claimed.
+
+FILES
+Ensure these canonical artifacts exist, reusing existing equivalents when present:
+- MISSION_SPEC.md
+- MASTER_PLAN.md
+- PROJECT_STATE.md
+- OPERATING_RULES.md
+- FAILURE_PATTERNS.md
+- DECISIONS.md
+- SESSION_HANDOFF.md template
+Do not create duplicate files if equivalent canonical files already exist.
+
+CONTEXT EFFICIENCY
+Read PROJECT_STATE and the smallest relevant files first. Search large files before reading them in full. Use targeted tests. Avoid full repository rescans unless justified.
+
+FINAL REPORT
+After installation, report:
+1. Files changed/created.
+2. Rules merged vs newly added.
+3. Any conflicts found and how resolved.
+4. Current authoritative project state and next executable task.
+Then resume the project automatically. Do not stop merely to ask whether to continue.
+8. 重大商业/方向决策时，额外加载的 Evidence Gate
+以下不是每次编码都执行。只有当结论会 KILL/HOLD 一个方向、改变 Scope、投入显著生产、花费较大预算、选择主要收入路线或建立不可逆依赖时才启用。
+建立 Decision Evidence Pack：Claim、Search Space、Coverage、Evidence、Counter-Evidence、Unknowns、Evidence Grade、Confidence、Decision Impact。
+独立 Auditor 做两遍：Logic Review + Evidence Audit。
+负面结论必须主动寻找反例；不能只寻找支持自己结论的证据。
+Audit Verdict 只能是 PASS / PASS WITH CAVEATS / INSUFFICIENT EVIDENCE / REJECT CONCLUSION。
+BUSY ≠ PROGRESS：只有减少关键不确定性、验证/证伪假设、产生可复用证据或经济价值才算进展。
+9. 来源映射（Patch 001–011）
+Patch
+主题
+本 Playbook 吸收内容
+001
+Autonomous Business Brain — First Live-Run Lessons
+Mission over Plan；任务完成不结束 Mission；Reviewer；实时证据；Compute Economics；模型可替换。
+002
+Opportunity Portfolio, Commitment Control & Mission-Level Autonomy
+Portfolio；Commitment Gate；状态机；Sunk Work；Human Gate 不阻塞整个 Mission。
+003
+Mission Scope Integrity, Stage-Gated Discovery & Out-of-Scope Handling
+Mission vs Scope；Owner WHAT / AI HOW；横向发现优先；Scope Drift 防护。
+004
+Persistent Autonomous Memory & State Recovery
+PROJECT_STATE；cold-start recovery；checkpoint；历史/当前真相分离。
+005
+Dynamic Model Router & Compute Economics
+模型路由；成本/质量/风险/可用性平衡。
+006
+Mission Compilation
+把自然语言 Mission 编译成 MISSION_SPEC；IN/OUT Scope；启动一致性检查。
+007
+Learning Cost, Kill Tests & Dynamic Human Gates
+Cost-to-learn；先打关键不确定性；Human Gate 动态优先级；Watchlist budget。
+008
+Autonomous Runtime · Heartbeat · Queue Continuity
+Persistent Queue；Mandatory Idle Check；Orchestrator continuity；Wake Conditions。
+009
+Evidence Governance · Independent Decision Audit
+Decision Evidence Pack；Counter-Evidence；UNKNOWN；BUSY ≠ PROGRESS；Auditor。
+010
+跨 Session 交接、恢复与资源连续性协议
+Bootstrap Integrity；remote refs；handoff coordinates；资源分层；增量 commit；Session Recovery。
+011
+研究成本与搜索预算控制协议
+Search-Free Queue；Capability Recovery；Evidence Cache；增量保存；资源成本账本。
+10. 版本使用原则
+v1.0 是跨项目基线，不意味着所有历史 Patch 都已永久晋升为 Money OS Constitution。原 Patch 中明确标记 Candidate / Live Testing 的内容仍保留其历史状态；本文件做的是工程复用整理。当新项目验证某条规则无效或成本过高时，应记录反例并修订，而不是为了遵守文档而机械执行。
+核心目标只有一个：让每一个新项目继承已经付过学费的经验，而不是重新付一次学费。
+附录 A：给 Claude Code 的 Token / Context 强制补充指令
+CONTEXT / TOKEN EFFICIENCY — MANDATORY
+
+Treat context and token budget as engineering resources.
+
+- Read PROJECT_STATE and the smallest relevant files first.
+- For large files: search first, then read only relevant ranges.
+- For large command output: write to disk first; inspect with tail/head/search/chunks.
+- For logs: inspect recent failures and targeted keywords before reading full logs.
+- For Git: start with status --short and diff --stat; inspect only relevant diffs.
+- Run the smallest relevant tests first; expand regression only when justified.
+- Do not reread unchanged files/evidence without a concrete reason.
+- Reuse Evidence Cache and prior verified results while still fresh.
+- Keep subagent context minimal and task-scoped; return structured conclusions/artifact paths.
+- Persist decisions, test results, blockers and next actions; chat context is not project memory.
+- Route simple work to cheaper/smaller models when available; reserve expensive reasoning for hard/high-risk tasks.
+- Optimize waste, not thinking. Never skip necessary reasoning, safety checks, E2E verification, or critical tests merely to save tokens.

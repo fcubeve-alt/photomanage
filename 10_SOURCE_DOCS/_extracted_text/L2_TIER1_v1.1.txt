@@ -1,0 +1,51 @@
+
+P0 Kill Test ｜ Tier 1
+核心能力可行性：分类、同一实体、生命周期能不能做准
+前置条件：Tier 0 三项（设备性能、Retrieval Entry 假设、真实付费信号）全部 PASS，才能开始本文件。Tier 1 回答的问题是「差异化的核心技术主张，在真实图库上到底做不做得到」，而不是把整套 Taxonomy/Policy 精细度一次做满。
+原则：Tier 1 仍然是验证，不是产品开发。每一项只需要做到「有可信的准确率数据」，不需要做到生产级完整覆盖。
+1. 承接关系
+Tier 0 已经证明：设备扛得住、用户认可 Retrieval Entry 的差异化方向、且有真实付费信号。Tier 1 要回答的是——你们判断苹果「分类粗、体验差」背后，你们自己主张的更细分类和同一实体识别，是不是真能做准、做稳，而不是自己说好用。
+2. Tier 1 - A｜Visual Asset Taxonomy 可行性（原 Workstream G）
+设计分层 Taxonomy，覆盖：临时信息、网络/下载内容、普通截图、普通摄影、人物/家庭、连拍/同一时刻、物品记录、交易/购买、工作/学习、旅行/事件、身份/金融证件、法律/正式文件、珍贵记忆。
+细分类原则：只有当分类会改变 Browse、Risk、Lifecycle 或 Action Policy 时才值得单独存在，不为分而分。
+在真实图库样本上输出 Coverage、Precision/Recall、Confusion Matrix、Unknown/Other 比例。
+允许 Unknown + confidence，不强迫每个资产进入错误类别。
+PASS 标准：多数常见资产能进入有意义类别，Unknown 比例可控，且这套分类明显比苹果原生「只按时间/地点/人物」的粗粒度更细、更贴近用户找东西的真实心智。
+3. Tier 1 - B｜Category-Specific Entity Resolver（原 Workstream B + Gate 2）
+Document：身份证/护照/银行卡/票据/合同/说明书 —— 用 OCR 字段 + 文档类型 + 版式/视觉特征 + 版本信息。
+Screenshot：同一订单/票务/报错/商品页面的不同截图/版本。
+Product/Object：同一设备、商品、家中物品的不同角度/时间/背景照片 —— 视觉 embedding + attribute + temporal evidence。
+建立人工 ground truth，并加入 hard negatives：看起来相似但实际不同的证件页、商品、文件页。
+输出 Precision / Recall / F1、False Merge / False Split，Document 类别单独统计（这是风险最高的类别）。
+低置信度只能进入 Review Queue，不自动合并/删除。
+PASS 标准：Document 类别的 False Merge 率极低（错误合并证件/合同的代价远高于漏检），整体 Same-Entity 判断明显优于「靠用户自己肉眼分辨」。
+4. Tier 1 - C｜Visual Lifecycle Engine（原 Workstream C）
+测试 OTP/验证码、快递/取件码、票务/二维码、订单/收据/保修、技术报错截图、身份证/合同/家庭记忆。
+重点不是总体 Accuracy，而是 Suggest Delete 的 False Positive。
+如果缺乏「任务已完成」的上下文，系统必须降低置信度，而不是猜。
+高风险类别自动删除率必须为 0。
+验证 Protect / Keep / Archive / Review / Suggest Delete 能否可靠分层。
+PASS 标准：临时信息的生命周期判断可靠，且没有出现「误删/误建议删除」高风险内容的案例。
+5. Tier 1 - D｜多维索引骨架（原 Workstream H，简化版）
+验证一个 Asset 能否同时挂载 Content / Time / Place / Person / Object / Event 索引，而不是被复制到多个文件夹。
+验证 Time：Year → Month → Day → Moment；GPS：Country → City → Place。
+无 GPS 的地点推断必须保存 source + confidence，不当作事实。
+本阶段只需证明数据模型可行、可从不同视图到达同一 Asset，不需要做完整的 Documents/People/Screenshots/Places/Timeline/Objects 六视图 UI（那是 Tier 2 的事）。
+6. Tier 1 - E｜四种找回路径的初步验证（原 Workstream M，轻量版）
+Browse、Timeline & Places、Intent Search、Relations 四条路径，各挑 2-3 个真实任务测试成功率。
+记录成功率、步骤数、耗时，和 Tier 0 里「对比苹果原生」的结果放在一起看，确认差距是否稳定存在，而不是原型阶段的偶然结果。
+7. Tier 1 决策规则
+PASS：Taxonomy、Entity Resolver、Lifecycle Engine 三项核心能力都拿到可信数据，且 Document 类别的错误代价可控 → 进入 Tier 2。
+GO WITH CONSTRAINTS：部分类别（例如复杂物品识别）暂时做不到高置信度，可以先把这些类别降级为「Review Queue 优先」上线，不阻塞其他已验证类别进入 Tier 2。
+NO-GO / PIVOT：如果 Document/证件类的 False Merge 无法压低，或者 Taxonomy 的 Unknown 比例过高导致「感觉还是乱」，说明核心技术主张不成立，需要重新评估——这种情况下即使 Tier 0 的用户访谈是正面的，也可能只是原型阶段的「新鲜感效应」，不能真正兑现。
+8. Tier 1 必须提交
+VISUAL_ASSET_TAXONOMY.md + taxonomy schema
+CLASSIFICATION_EVAL.md + confusion matrix
+SAME_ENTITY_EVAL.md（含 Document 类别单独报告）+ labeled test-set schema
+LIFECYCLE_EVAL.md + false-positive analysis
+VISUAL_LIBRARY_DATA_MODEL.md（数据模型，非完整 UI）
+RETRIEVAL_PATHS_EVAL_LITE.md
+TIER1_GO_NO_GO.md
+9. 给 Claude Code 的一次性开工指令（Tier 1）
+仅在 Tier 0 三项全部 PASS 后执行本文件。目标是验证核心技术主张——细粒度分类、同一现实实体识别、生命周期判断——能否在真实图库上做到可信的准确率，重点保护 Document/证件类别的错误代价。不需要做完整首页 UI、不需要做 Risk Policy Engine 的全部 R0-R6 分层细节、不需要做 Equivalence Margin 精选，这些留到 Tier 2。所有结论必须来自真实实验、真实图库样本和标注 ground truth，不得只用少量精心挑选的 demo 样本。最后给出 PASS / GO WITH CONSTRAINTS / NO-GO，并说明是否可以进入 Tier 2。
+版本：P0 Kill Test Tier 1 v1.1 ｜ 日期：2026-08-20 ｜ 前置：Tier 0 全部 PASS ｜ 下一步：Tier 2

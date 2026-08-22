@@ -1,0 +1,186 @@
+
+Project M — AI Development Environment Preflight & Skills Specification v1.0
+For Claude Code / Codex Lead Development Environment
+0. Purpose & Status
+This document is a pre-development technical checklist. It does NOT authorize blind installation of tools. Before major Project M implementation begins, the Lead Coding Agent must inspect the current environment, repository, existing MCP servers, Skills, CLIs, browser tooling, credentials, CI and project-management mechanisms. Install or enable only capabilities that solve a real gap.
+
+Authority order:
+1) Project M Master Specification
+2) Existing repository and verified working code
+3) This Preflight Specification
+4) Individual tool defaults/prompts
+
+No Skill or MCP may redefine Project M product scope or architecture.
+1. Preflight Deliverable — Required Before Installation
+Produce DEVELOPMENT_ENVIRONMENT_PREFLIGHT.md containing:
+- Current coding agent and version
+- Existing Skills / MCP / CLI / browser automation
+- Existing memory/project-context mechanism
+- Existing task tracking
+- Existing web research/crawling capability
+- Existing documentation retrieval capability
+- Existing CI/test stack
+- For each proposed addition: gap solved, exact implementation, permissions, external services, credentials, cost, data exposure, maintenance risk, overlap with existing capability, and recommendation: ENABLE / OPTIONAL / REJECT
+- Installation/configuration plan
+- Rollback plan
+
+Do not install first and explain later.
+2. Capability A — Persistent Project Memory
+REQUIREMENT: Evaluate and enable a persistent project-memory solution if the current environment lacks a reliable one.
+
+Purpose:
+- Preserve architecture decisions and rationale across sessions
+- Record rejected alternatives and why
+- Preserve important implementation constraints and known pitfalls
+- Link decisions to code/modules/issues where practical
+- Reduce repeated repository rediscovery
+
+Important: “MEMORY-MCP” is a capability category, not permission to install an arbitrary similarly named repository.
+
+Selection criteria:
+- Local-first or clearly understood data storage preferred
+- Searchable and structured
+- Repository/project scoped
+- Exportable / recoverable
+- Low lock-in
+- Clear privacy/security model
+- Does not silently store secrets
+- Does not replace Git, source code, ADRs, tests or Master Spec
+
+Memory must never become the source of truth for facts already represented by code/tests/specs. Store decisions and context, not uncontrolled chat history.
+3. Capability B — Playwright Browser Testing [HIGH PRIORITY]
+REQUIREMENT: Enable Playwright or an equivalent already-present browser-testing stack unless a better verified implementation exists.
+
+Use it for:
+- End-to-end UI testing
+- Regression testing
+- Critical user journeys
+- Mobile/responsive checks
+- Screenshots/traces on failure
+- Reproducible browser verification after agent code changes
+
+Project M examples:
+- Monetools calculators and navigation
+- LUVYMIA storefront journeys
+- Cubewithin interactions when that project becomes active
+- Money OS admin/approval/dashboard surfaces
+
+Rules:
+- Prefer deterministic tests over “AI looked at page and thinks it works”
+- Critical flows enter CI when practical
+- Never use browser automation to bypass authentication/security controls
+- Never perform irreversible production actions in automated tests unless explicitly sandboxed and authorized.
+4. Capability C — Taskmaster AI / Structured Task Management
+REQUIREMENT: Evaluate Taskmaster AI or an equivalent structured task/dependency system.
+
+Purpose:
+- Convert approved specifications into implementation tasks
+- Track dependencies, status and acceptance criteria
+- Prevent long autonomous sessions from losing the larger implementation sequence
+- Make unfinished/blocking work visible
+
+Boundary:
+Task management executes the approved roadmap; it does not invent a new roadmap.
+
+Each meaningful task should include:
+- Task ID
+- Source requirement/spec reference
+- Dependencies
+- Scope
+- Files/modules expected to change
+- Acceptance criteria
+- Tests required
+- Risk level
+- Status
+- Completion evidence
+
+If GitHub Issues or the current development environment already provides equivalent functionality, avoid unnecessary duplication.
+5. Capability D — Firecrawl / Web Research & Extraction
+REQUIREMENT: Evaluate Firecrawl or equivalent structured web extraction for research-heavy workflows.
+
+Useful for:
+- Market/competitor research
+- Public documentation discovery
+- Public business/industry information
+- Structured extraction from permitted web sources
+- Future Money OS research tools
+
+Rules:
+- Respect site terms, robots/access restrictions, applicable law and rate limits
+- Do not treat scraped information as automatically authoritative
+- Tax/legal/financial facts require authoritative-source validation
+- Cache/reuse results where permitted to reduce cost
+- Track source URL, retrieval time and provenance for decision-relevant facts
+- Do not expose private credentials or internal data to external crawling services
+
+Firecrawl is not required for ordinary repository coding when direct documentation or existing tools are sufficient.
+6. Capability E — Context7 / Current Documentation Retrieval [HIGH PRIORITY]
+REQUIREMENT: Enable Context7 or equivalent version-aware documentation retrieval if it materially improves current API/library accuracy.
+
+Purpose:
+- Retrieve current library/framework documentation
+- Reduce obsolete API usage
+- Improve version-specific implementation
+- Provide examples aligned with installed dependencies
+
+Rules:
+- Check the repository's actual dependency version first
+- Prefer official/upstream documentation
+- Documentation retrieval informs implementation; tests verify it
+- Do not upgrade dependencies merely because newer documentation exists
+- Dependency upgrades require explicit compatibility assessment and regression testing.
+7. Recommended Priority
+P0 / strongly recommended:
+1. Playwright (or equivalent browser E2E)
+2. Context7 (or equivalent current/version-aware docs)
+
+P1 / recommended where gaps exist:
+3. Persistent Project Memory
+4. Structured Task Management / Taskmaster
+
+P2 / valuable for research-heavy workflows:
+5. Firecrawl
+
+Priority does not override the “no duplicate tooling” rule.
+8. Security & Secrets Gate
+Before enabling any MCP, Skill, CLI or external service:
+- Identify what files it can read/write
+- Identify network access
+- Identify shell execution capability
+- Identify browser/account access
+- Identify external data retention
+- Identify required API keys
+- Store secrets in approved environment/secret storage, never project memory or committed files
+- Apply least privilege
+- Pin/record versions where practical
+- Prefer reputable, maintained implementations
+- Review install scripts and permissions before executing them
+
+A convenient Skill is not worth expanding the attack surface without a clear benefit.
+9. Cost Gate
+For every external paid service record:
+- Pricing model
+- Expected monthly/project usage
+- Hard/soft spending limits if supported
+- Caching strategy
+- Free/local alternative
+- What measurable development or economic benefit justifies the cost
+
+Do not add paid infrastructure simply because an agent recommends it.
+10. Definition of Done for Preflight
+Preflight is complete only when:
+- Environment inventory exists
+- Five capability categories have been evaluated
+- Duplicate tools have been rejected
+- Chosen tools have documented permissions/costs
+- Secrets strategy is defined
+- Installation/configuration is reproducible
+- Basic smoke tests prove each enabled capability works
+- Project M Master Spec remains the highest product authority
+- Lead Developer can begin Repository Reconciliation without needing additional tool-shopping.
+11. Instruction to Lead Coding Agent
+Do not blindly install the five tools named in this document.
+
+First inspect what is already available. For each capability, choose the simplest mature solution that integrates cleanly with the current Lead Coding Agent and repository. If the environment already has an equivalent or superior capability, document that and keep the existing solution.
+
+Return the Preflight Report before making broad environment changes. After approval/accepted plan, configure the selected tools, run smoke tests, then proceed to Project M Repository Reconciliation and implementation.

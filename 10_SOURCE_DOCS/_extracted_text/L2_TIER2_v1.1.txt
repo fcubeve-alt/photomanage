@@ -1,0 +1,56 @@
+
+P0 Kill Test ｜ Tier 2
+完整体验与规模化：值不值得把这做成一个完整产品
+前置条件：Tier 0 的设备性能与 Retrieval Entry 必须 PASS/GO WITH CONSTRAINTS；真实付费信号必须 PASS，或已经完成明确的 Commercial Model PIVOT 并取得可继续验证的商业证据；Tier 1（Taxonomy/Entity Resolver/Lifecycle）必须 PASS 或 GO WITH CONSTRAINTS，才进入本文件。Tier 2 是三段里投入最大的一段，只有前两段都验证过，才值得投入这部分成本。
+原则：Tier 2 做完之后，才第一次真正接近「可以开发完整 App」的判断，之前两段都还只是验证。
+1. 承接关系
+Tier 0 证明了「值得做」的方向性证据（设备扛得住、用户认可差异化、有真实付费信号）；Tier 1 证明了核心技术主张（分类、同一实体、生命周期）能做准。Tier 2 要回答的是：把这些能力组合成一个完整的、风险感知的自主管理系统之后，用户真实使用体验、规模化成本和商业模型是否都站得住——这是最终 GO / NO-GO 之前的最后一段。
+2. Tier 2 - A｜Risk & Importance Policy Engine（原 Workstream I）
+建立 R0 Disposable / R1 Low Value / R2 Normal / R3 Personal / R4 Important / R5 Critical / R6 Irreplaceable 默认风险层。
+Action 由 Category × Importance × Lifecycle × Confidence × Recoverability × Personal Preference 共同决定，不是类别单独决定。
+输出 Policy Table：每个风险层在不同置信度/可恢复条件下对应 Auto-Clean / Suggest / Review / Keep / Archive / Protect。
+PASS 标准：高风险类别（R4-R6）零自动删除，低风险类别（R0-R1）能大量自动处理，Weighted Error Cost 可控。
+3. Tier 2 - B｜Equivalence Margin 等价容忍区（原 Workstream J）
+建立 Same-Moment Group：同主体、同地点/背景、短时间窗口、高视觉相似度。
+验证代表照选择逻辑：清晰度、闭眼/表情、构图、曝光、运动模糊。
+Hard negative：不同表情、不同动作、关键瞬间、文档不同页面不得被误判为等价。
+核心指标：Significant Value Loss Rate —— 自动精选后是否丢失明显不同且有价值的内容。
+4. Tier 2 - C｜首次全库自动编目 + 持续归档（原 Workstream K + L）
+模拟新用户首次进入：扫描 → 理解 → 分类 → 多维索引 → 风险分级 → 重复/同一时刻/同一实体 → 动作准备。
+测量 TTFUV（Time To First Useful View）：目标 <30 秒出现第一批价值、<2 分钟形成基本 Visual Library；未达标必须报告真实数据。
+验证新增照片能否增量处理，不需要周期性全库重扫；记录每 100 个新增 Asset 的自动完成数、需人工确认数。
+5. Tier 2 - D｜完整 Structure First 首页原型 + 找回路径可用性（原 Gate 4 完整版 + Workstream M 完整版）
+首页第一层：Documents、People、Screenshots、Places、Travel、Objects、Clothing、Purchases、Work、Downloads、Timeline。
+每类展示代表图/图标、名称、数量，支持逐层 drill-down；同一 Asset 可从多个入口到达，不复制原始照片。
+用真实图库完成任务测试：找身份证、合同、某人照片、某地照片、某时间照片、订单/收据。记录步骤数、耗时、成功率。
+这一步是 Tier 0 的 Retrieval Entry 假设的正式放大版——用完整原型再测一次，确认不是简化 demo 的偶然结果。
+6. Tier 2 - E｜Multi-Signal Classification（原 Gate 5）
+分类不依赖单一 VLM/单一 embedding，建立 Metadata + OCR + Vision + Embedding + Rules/Small Model 的证据融合。
+每次分类输出 category、confidence、evidence/source。
+输出 ablation：只 OCR、只视觉、组合信号分别表现如何，证明哪些组件真正带来准确率提升，避免为了「看起来先进」堆叠不必要的模型层。
+7. Tier 2 - F｜规模化单位经济与最终商业模型（原第 11 节 + Value Ladder）
+测算 10k / 100k / 1M 活跃用户下的服务器、分析/崩溃、同步、Apple 抽成、客服、必要云能力成本。
+计算 Gross Margin 与 Break-even，不只看 token 成本。
+把 Tier 0 拿到的真实付费信号，代入规模化后的定价假设，验证是否真的能覆盖长期维护成本（尤其 Lifetime 买断模式）。
+Value Ladder 最终定档：Cleaner → Search → Lifecycle/Same-Entity → Continuous Manager → Visual Memory Applications，明确哪一级是免费、哪一级是付费。
+8. Tier 2 - G｜Global Policy + Personal Policy 反馈学习（原 Workstream N）
+Global Default Policy 作为新用户初始规则。
+验证用户连续 Keep/Delete/Protect/Correction 后，系统是否减少同类 Review 和错误建议。
+保存规则来源、样本数、置信度和可重置能力，不做不可解释的黑盒学习。
+9. 最终 GO / NO-GO
+GO：Taxonomy + Visual Library + Risk Policy 能在真实图库中稳定运行；大部分低风险管理可自动完成；重要内容风险可控；Retrieval 明显优于原始 Camera Roll 与苹果原生；持续管理成本可接受；规模化后毛利模型成立。
+GO WITH CONSTRAINTS：基础编目和低风险自动化成立，但部分 Same-Entity、Lifecycle 或高阶推理需降级为 Review/后续版本；或商业模型只在某个 Value Ladder 层级成立，需要收窄首发范围。
+NO-GO / PIVOT：无法形成有意义分类、人工审核负担仍然很高、重要内容错误代价不可控，或持续索引/管理在 iPhone 上资源成本不可接受，或规模化后毛利模型不成立。
+10. Tier 2 必须提交
+RISK_IMPORTANCE_POLICY_ENGINE.md + policy table
+EQUIVALENCE_MARGIN_EVAL.md
+FIRST_RUN_LIBRARY_ORGANIZATION_EVAL.md + TTFUV 数据
+CONTINUOUS_INGESTION_EVAL.md
+VISUAL_LIBRARY_HOME_PROTOTYPE.md（可运行原型）+ RETRIEVAL_PATHS_EVAL_FULL.md
+MULTI_SIGNAL_CLASSIFICATION_EVAL.md（含 ablation）
+UNIT_ECONOMICS_MODEL.md（10k/100k/1M）
+PERSONAL_POLICY_LEARNING_EVAL.md
+FINAL_P0_GO_NO_GO_DECISION.md
+11. 给 Claude Code 的一次性开工指令（Tier 2）
+仅在 Tier 0 与 Tier 1 都达到 PASS 或 GO WITH CONSTRAINTS 后执行本文件。目标是验证完整的 Risk-Aware Autonomous Management 体验能否在真实图库上稳定运行，并且规模化后的商业模型成立。评估时不要只追求 False Positive 接近 0，必须同时报告 Automation Ratio、Human Review Burden、Weighted Error Cost、Catastrophic Error Rate、Significant Value Loss Rate 和规模化毛利模型。首页原型必须 Structure First, Photos Second，不能做成 Cleaner Dashboard。最后给出全项目的最终 GO / GO WITH CONSTRAINTS / NO-GO，并明确说明如果不是完全 GO，具体是哪个环节需要降级或砍掉。
+版本：P0 Kill Test Tier 2 v1.1 ｜ 日期：2026-08-20 ｜ 前置：Tier 0 + Tier 1 全部 PASS/GO WITH CONSTRAINTS ｜ 完成后：正式 GO/NO-GO 决策

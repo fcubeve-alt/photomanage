@@ -1,0 +1,19 @@
+
+P0 KILL TEST｜MASTER EXECUTION INDEX
+Personal Visual Memory Engine｜三段式验证执行索引 v1.0
+用途：只负责控制执行顺序，防止 Claude Code / Agent 提前开发后续 Tier、浪费时间和 Token。产品定义仍以 Personal Visual Memory Engine v1.3 Product Constitution 为最高依据。
+唯一执行规则
+当前只执行一个 Tier。后续 Tier 文档只允许读取前置条件和名称，不允许提前实现其中任务。
+Tier 0 → 决策 → Tier 1 → 决策 → Tier 2 → 最终 GO/NO-GO → 正式 App 开发。
+任何 Agent 不得因为“顺手”而提前建设完整 Taxonomy、Risk Engine、首页、Personal Policy 或规模化系统。验证代码写到足以回答 Kill Question 即停止。
+每个 Tier 完成后必须先生成该 Tier 的 GO/NO-GO 文件；没有明确 Gate 结论，不得进入下一 Tier。
+Tier 0｜现在执行
+Kill Questions：①真实 iPhone 扛不扛得住；②用户是否愿意把本产品作为找照片第一入口；③商业模型是否出现真实付费信号。
+Gate：A/B 任一 FAIL → NO-GO/PIVOT。A/B PASS、C FAIL → Commercial Model Pivot，不单独杀死产品；先修正商业模型并复测。A/B/C PASS → Tier 1。
+Tier 1｜禁止提前执行
+只有 Tier 0 Gate 允许后执行。验证 Taxonomy、Category-Specific Entity Resolver、Lifecycle、多维索引骨架与轻量 Retrieval。重点指标是可接受 Weighted Error Cost 下的 Automation Ratio / Human Review Burden，而不是“AI 是否比人眼聪明”。
+Tier 2｜禁止提前执行
+只有 Tier 1 PASS/GO WITH CONSTRAINTS 后执行。验证完整 Risk-Aware Autonomous Management、Equivalence Margin、首次/持续编目、Structure First 首页、Multi-Signal Classification、单位经济与 Personal Policy。
+Claude Code 当前一次性指令
+只执行《P0 Kill Test Tier0 生死开关_v1.1》。不要执行 Tier 1 或 Tier 2，也不要提前建设它们要求的完整能力。写代码只写到足以回答 Tier 0 三个 Kill Questions 为止。完成后提交 Tier 0 要求的全部证据和 TIER0_GO_NO_GO.md，然后停止等待下一阶段指令。
+版本：MASTER P0 INDEX v1.0｜日期：2026-08-20

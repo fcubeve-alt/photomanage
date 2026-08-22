@@ -1,0 +1,286 @@
+
+Personal Visual Memory Engine
+v1.3 PRODUCT CONSTITUTION
+个人视觉记忆引擎｜产品总纲与系统哲学升级版
+Organize first. Understand deeply. Automate by risk. Ask only when necessary.
+版本说明：本版在 v1.1 基础上继续升级，不改变 Personal Visual Memory Engine 的母项目方向，但重新定义第一阶段产品结构：从“Cleaner + Search”进一步升级为“Visual Library + Risk-Aware Autonomous Management”。新增精细视觉资产分类、图书馆式多维索引、风险分级、等价容忍区、主动清理、持续归档，以及由长期视觉数据自然生长的增值服务。
+1. 最终母命题
+Camera Roll 不是一堆照片，而是一座未经编目的个人视觉图书馆和未经结构化的个人数据库。真正的问题不是照片数量太多，而是没有一套持续理解、分类、索引、清理和维护的体系。
+产品目标：让用户把照片库交给系统后，系统主动把它整理成一个干净、可浏览、可搜索、可关联、可持续生长的个人视觉数据库。
+2. 核心流程重新定义
+Understand → Classify → Index → Assess Risk → Decide → Clean/Protect → Remember → Retrieve → Maintain → Derive Services
+Understand：理解照片/视频内容，而不只是文件格式。
+Classify：尽可能细地归入有实际决策意义的类别。
+Index：同时建立内容、时间、地点、人物、物品、事件、风险等多维索引。
+Assess Risk：判断误处理的潜在损失和内容重要性。
+Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作。
+Clean/Protect：该大胆清理的大胆清理，该保护的保护。
+Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据。
+Retrieve：通过分类浏览、时间地点、自然语言和关系网络快速找回。
+Maintain：每一张新照片进入后自动重复以上过程。
+Derive Services：衣橱、旅行、购物、物品、提醒等从同一记忆底座自然生长。
+3. Visual Library Architecture｜个人视觉图书馆架构
+产品不采用传统“每张照片只能放一个文件夹”的思路。像图书馆一本书同时拥有作者、主题、年代、ISBN 和关键词一样，同一视觉资产同时拥有多个索引维度。底层只保存一个 Asset，上层可以从多个入口找到它。
+索引维度
+示例
+价值
+Content Taxonomy
+Document → Identity → ID Card
+按内容浏览
+Time
+Year → Month → Day → Moment
+按时间轨迹查找
+Place
+Country → City → Place
+按地点聚合
+Person
+Me / Family / Friend
+按人物查找
+Object / Entity
+同一件衣服、设备、证件、商品
+跨时间关联
+Event
+旅行、生日、会议、活动
+按事件聚合
+Risk / Importance
+Disposable → Critical / Irreplaceable
+决定处理强度
+Lifecycle
+Temporary / Active / Expired / Long-term
+决定何时处理
+Equivalence Group
+同一时刻近似照片、重复下载
+支持精选与清理
+4. 精细 Visual Asset Taxonomy
+分类不是为了展示 AI 很聪明，而是为了改变整理、风险、生命周期和动作策略。原则是：尽可能细，但只细到足以改变用户体验或处理决策。
+大类
+细分类示例
+默认风险
+临时信息
+验证码、取件码、停车位置、临时导航、一次性报错
+低
+网络/下载内容
+Meme、表情包、壁纸、社媒图、宣传图
+很低-低
+普通截图
+网页、聊天、新闻、商品、工作截图
+低-中
+普通摄影
+风景、食物、街景、随手拍
+低-中
+人物与家庭
+自拍、朋友、家庭、儿童、合照
+中-高
+连拍/同一时刻
+同人物同场景短时间多张
+低-中
+物品记录
+家电、家具、衣服、商品、设备序列号
+中
+交易与购买
+收据、发票、订单、付款、保修
+高
+工作/学习
+白板、会议、课堂、项目资料
+中-高
+旅行/事件
+机票、登机牌、酒店、门票、活动
+中-高
+身份/金融证件
+身份证、护照、驾照、行驶证、银行卡
+极高
+法律/正式文件
+合同、协议、保险、税务、产权
+极高
+珍贵记忆
+老照片、不可替代家庭影像、特殊人生事件
+极高
+5. Risk-Aware Autonomous Visual Management｜风险感知型自主视觉管理
+系统不追求“AI 永远不能判断错”。真正目标是：在错误代价可控的前提下，把绝大多数照片管理工作从用户身上拿走。
+最终动作由以下因素共同决定：
+Category × Importance × Lifecycle × Confidence × Recoverability × Personal Preference → Action Policy
+6. 风险等级与默认动作
+等级
+含义
+例子
+默认策略
+R0 Disposable
+几乎无长期价值
+完全重复下载、重复 Meme
+激进自动处理
+R1 Low Value
+通常短期/低价值
+过期临时截图、验证码
+自动处理或批量处理
+R2 Normal
+普通生活内容
+风景、食物、普通物品
+按相似度/生命周期处理
+R3 Personal
+具有个人意义
+人物、旅行、生活事件
+保守精选
+R4 Important
+可能承担交易/工作价值
+收据、订单、工作资料
+Protect/Archive 优先
+R5 Critical
+法律/身份/金融价值
+身份证、护照、合同、银行卡
+默认 Protect
+R6 Irreplaceable
+可能不可替代
+老照片、特殊家庭影像
+最高保护
+7. 产品哲学：便利收益不能被极小概率风险绑架
+传统 Cleaner 往往把所有候选项都交还用户审核，以避免任何误判责任。这会把 99% 的管理劳动重新推给用户。本项目采取不同哲学：用户每天确定发生的混乱、搜索困难和整理时间也是实际成本；不能为了极低概率的误判而牺牲绝大多数场景的自动化价值。
+允许 AI 判断偶尔出错，但尽量避免错误成为不可恢复的重大损失。
+低风险、高置信度、可恢复内容可以更激进。
+高风险、不可替代内容即使模型置信度高也应更谨慎。
+用户获得巨大持续便利时，对少量、低代价、可恢复的判断错误可能具有容忍度；这必须通过真实用户测试验证，而不能只凭工程师假设。
+产品不是以“零错误”作为唯一目标，而是优化 Automation Benefit 与 Weighted Error Cost 的平衡。
+8. Equivalence Margin｜等价容忍区
+同一人物、同一地点、几秒内拍摄的多张照片，可能不存在唯一的“绝对最好”。只要候选之间对用户实际价值近似等价，系统不需要证明 92 分一定比 91 分更符合用户审美，只需判断删除其余照片不会造成显著价值损失。
+Same Moment + Same Subject + High Similarity + Low Risk → 选代表照，其余自动进入可恢复清理。
+人物表情明显不同、关键动作不同、文档不同页面 → 不属于等价组。
+Equivalence 判断必须与 Risk Policy 联动；同样的相似度，在 Meme 和家庭照片上采取不同策略。
+9. 清理与分类是一件事
+Cleaner 不应先找相似图再让用户判断。正确顺序是先理解和分类，再决定是否属于重复、版本、同一时刻或同一实体。
+同一合同 Page 1/2/3/4：视觉很像，但属于不同内容，不能删。
+同一张图片重复下载 4 次：内容完全等价，可激进处理。
+同一场景 8 张连拍：形成 Same-Moment Group，保留代表照。
+同一本身份证隔几个月重新拍：属于 Same Entity，但是否替换取决于清晰度、正反面、版本与风险。
+因此：先理解，才能正确整理；先整理，才能安全清理。
+10. 三条并行 Retrieval 路径
+Browse：用户知道类别，直接 Documents → IDs → Person → ID Card。
+Timeline / Places：按年月日、城市、地点、旅行/事件浏览。
+Intent Search：用户直接说“找我的身份证正反面”“找所有有气球的照片”。
+Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据。
+11. 时间与地点成为一级索引
+时间 metadata 直接形成 Year → Month → Day → Moment，并支持 Today/Week/Month/Year。
+GPS 直接形成 Country → City → Place；无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度。
+时间 + 地点 + 人物 + 内容可以自动形成 Event / Trip 候选。
+用户不需要建立旅行相册，旅行视图应从已有数据自动形成。
+12. 首次使用：全库自动编目
+新用户第一次进入，不应该看到一堆工具按钮，而应该看到系统已经开始替他工作。
+扫描全库并建立多维索引。
+自动完成内容分类与风险分级。
+建立 Exact / Near Duplicate / Same Moment / Same Entity 候选。
+自动形成 Documents、People、Screenshots、Places、Timeline、Objects、Travel 等视图。
+低风险高置信度项目按策略处理；真正需要用户决定的内容进入极小 Review Queue。
+第一次价值感应是：『原来我的照片可以这么整齐，而且我不用自己整理。』
+13. 持续管理：每一张新照片自动归档
+首次大整理之后，系统必须进入 Continuous Photo Hygiene 模式。每一张新拍摄、下载、截图或视频都自动经过同一管线。
+理解内容并归类。
+加入时间/地点/人物/实体索引。
+检测完全重复、近似、Same Moment、Same Entity。
+评估 Risk / Importance / Lifecycle。
+执行或准备相应 Action Policy。
+更新 Visual Memory Graph。
+只有必要时才打扰用户。
+14. 用户反馈形成 Personal Policy
+Global Default Policy 是所有用户的初始规则。
+用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy。
+如果用户总是删除某类工作截图，系统以后可以更激进。
+如果用户始终保留人物连拍，系统对该用户自动变得保守。
+最终目标不是所有人共享一个‘正确答案’，而是系统越来越懂这个用户愿意怎样管理。
+15. 后续增值层：从视觉图书馆理解一个人的生活
+当系统长期整理了人物、衣服、地点、旅行、购买、文件、物品和事件后，Visual Memory Graph 自然形成。这时可以产生新的增值服务，但这些服务必须从已有数据自动派生，而不是重新要求用户录入。
+Wardrobe / Clothing View
+从历史人物照片中识别和归纳衣服；新照片持续补充。
+Travel Memory
+从时间、GPS、地标、票务、酒店和人物关系形成旅行记录。
+People & Relationship View
+按共同出现、时间和事件整理人物相关视觉历史；不轻率推断敏感关系。
+Purchase & Warranty Memory
+商品、订单、收据、说明书、保修和现实物品关联。
+Home / Object Memory
+记录物品在何时何地出现，辅助找东西。
+Document Memory
+证件、合同、票据、说明书形成长期可搜索的安全档案。
+Reminders & Services
+在有可靠依据时，对票务、保修、临时信息等提供提醒；不把照片分析扩张成无边界的人格推断。
+16. 关于“人生轨迹”的边界
+长期视觉数据可以形成用户的时间线、旅行、人物共同出现、购买、衣着、事件和物品轨迹，这是未来重要增值层。但产品应优先提供基于可观察证据的结构化记忆和提醒，而不是未经用户要求就对性格、健康、政治、宗教、亲密关系等敏感属性作推断。
+17. 第一阶段产品定位重新确认
+第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager。
+Classification 是骨架。
+Risk-Aware Decision Engine 是自主性的基础。
+Cleaner 是内部动作能力。
+Search 是 Retrieval 能力。
+Continuous Hygiene 是留存机制。
+Visual Memory Graph 是长期资产。
+Derived Applications 是后续增值层。
+18. 新的核心 KPI
+指标
+意义
+Automation Ratio
+系统真正替用户完成多少管理工作
+Human Review Burden
+每 1,000 个资产需要用户人工判断多少
+Weighted Error Cost
+错误 × 内容重要性 × 不可恢复程度
+Catastrophic Error Rate
+真正重要且不可恢复的损失概率
+Classification Coverage
+多少资产能够进入有意义类别
+Retrieval Success
+用户能否通过 Browse/Search/Relations 快速找到
+Continuous Hygiene Rate
+新增内容是否持续被正确归档和维护
+Personalization Gain
+使用时间增加后人工确认是否持续下降
+19. 对 P0 Engineering Validation 的直接影响
+下一版 Claude Code P0 任务必须增加以下验证项：
+Visual Asset Taxonomy：分类覆盖率、混淆矩阵、哪些细分类真正改变 Action Policy。
+Risk/Importance Classification：风险分级是否可靠。
+Equivalence Margin：哪些 Same-Moment Group 可以自动精选而不产生显著价值损失。
+Visual Library 多维索引：Content + Time + Place + Person + Entity + Event。
+首次全库自动编目与分类体验。
+新增照片持续归档与 Continuous Hygiene。
+Browse / Timeline-Places / Intent Search / Relations 四种找回路径。
+Automation Benefit vs Weighted Error Cost，而不是只追求 False Positive=0。
+Global Policy + Personal Policy 的数据结构和反馈闭环。
+20. 最终产品哲学
+不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户。
+系统应该像一个真正的管理员：先把整个视觉图书馆编目清楚，理解每一种资产的意义和风险；对低风险、可恢复、近似等价的内容大胆自动化；对高风险、不可替代内容谨慎保护；随着用户反馈逐渐学会个人偏好。最终用户不是在“使用照片管理工具”，而是拥有一个长期替他维护视觉生活的 AI 管家。
+21. 一句话战略定义
+把 Camera Roll 从混乱的文件堆，变成一座自动编目、自动维护、随时可找到任何东西，并能逐渐理解生活的个人视觉图书馆。
+版本：v1.3｜日期：2026-08-20｜状态：PRODUCT CONSTITUTION / SYSTEM PHILOSOPHY UPDATE
+
+22. Retrieval Entry Strategy｜争夺“找照片”的默认入口
+产品不需要替代 iPhone 的系统级拍摄与照片存储。Apple Camera / Photo Library 继续承担 Capture 与 Storage；我们的目标是成为用户管理、浏览和寻找个人视觉资产时的第一入口。
+北极星行为：当用户想找身份证、合同、人物照片、截图、收据、衣服、旅行或某件物品时，第一反应是打开本产品，而不是在原始 Camera Roll 中翻找。
+核心指标新增 Retrieval Entry Share：用户发生“找视觉资产”意图时，本产品成为首选入口的比例。
+产品长期价值不是“帮 Photos 清一次垃圾”，而是“每天替用户维持一个更容易理解和找回的视觉世界”。
+系统图库是底层事实来源；本产品是 Intelligence + Management + Retrieval Layer。
+23. Structure First, Photos Second｜首页信息架构原则
+首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流。用户应该像进入图书馆目录一样，一眼看到自己的视觉资产已经被组织。
+第一层：Documents、People、Screenshots、Places、Travel、Objects、Clothing、Purchases、Work、Downloads、Timeline 等大类。
+每个大类使用代表图/图标 + 类别名称 + 数量/状态；点击后进入第二级更细分类。
+示例：Documents → Identity Documents → ID Card / Passport / Driver License → Person → Front / Back。
+示例：Travel → Country → City → Trip/Event；Places 和 Timeline 作为独立一级入口。
+同一 Asset 可以从多个入口到达，禁止为了 UI 分类而复制原始照片。
+首页原型必须验证一个问题：真实用户在找东西时，是否更愿意从这个结构化入口开始，而不是回到 Apple Photos。
+24. 四个生死关卡与技术战略
+Gate 1 — Local Hardware & Thermal
+30k–100k 资产的首次编目不能依赖全量重模型。采用分层信号、轻量模型、分块/分时、checkpoint、增量处理和后台机会执行；以真实设备性能为准。
+Gate 2 — Same-Entity & Equivalence
+禁止寻找一个万能 Same-Entity 模型。采用 Category-Specific Entity Resolver：证件用 OCR/版式/字段，合同用文本指纹/页码，普通照片用时间/地点/视觉相似，人物与物品使用适合其类别的组合信号。
+Gate 3 — Time-to-Value
+首次使用必须 Progressive Indexing。先给 Quick Wins 和基本目录，再逐渐补全深度索引。新增 TTFUV（Time To First Useful View）作为 P0 指标。
+Gate 4 — Free Cleaner Competition
+商业定位禁止退化成 Cleaner。Cleaner 作为内部能力；付费价值锚定 Visual Library Manager、Intent Retrieval、持续自动管理与长期 Personal Visual Memory。
+Gate 5 — Classification Reliability
+新架构的前提是分类可靠。采用 Multi-Signal Classification：Metadata + Time/GPS + Hash + OCR + Vision + Embedding + Rules/Small Models；不能只问单一模型“这是什么照片”。
+25. Progressive Intelligence Pipeline
+Layer 1 Cheap Signals：metadata、time、GPS、file/source info、hash、基础 OCR。
+Layer 2 Visual Understanding：Vision / Core ML / lightweight embedding。
+Layer 3 Taxonomy：确定内容类别与置信度。
+Layer 4 Category-Specific Entity Resolution：判断现实实体、版本、页面、Same Moment。
+Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性。
+Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review。
+Layer 7 Visual Library：People / Documents / Objects / Places / Timeline / Events 等结构化视图。
+Layer 8 Personal Memory：Wardrobe / Travel / Purchase / Object / Document Memory 与后续服务。
+26. Monetization Guardrail
+如果未来本产品真正成为高频 Retrieval Entry，可以测试 Free + Pro，以及规模化后的隐私友好型免费层变现。但私人照片、证件、人物关系、购买和旅行数据不得为了广告画像而上传或滥用。广告不是当前 P0 的成立前提，也不应破坏 Privacy-First 的核心信任。
