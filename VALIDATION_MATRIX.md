@@ -41,8 +41,8 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Test** | Obtain a **real** conversion signal by one of: waitlist + deposit (even a few dollars); tiny paid TestFlight beta; or landing page with a real price where the click reaches the step immediately before charging. Surveys are explicitly rejected as evidence. |
 | **Success criteria** | Real intent-to-pay at the **Continuous Automatic Management** rung or above. Cleaner-rung willingness does not count — that market is already trained to free. |
 | **Measurement** | Traffic, click-through to price, reach-checkout rate, deposits collected. Output: `REAL_PAYMENT_SIGNAL_TIER0.md`. |
-| **Status** | **BLOCKED.** Requires domain/landing page, payment processing and spend → **HG-2**. |
-| **Next action** | Windows-side: draft the landing-page value-ladder copy and measurement plan derived from T0-C1, ready for Owner approval and launch. **T0-D now feeds this** — it tells us whether the Continuous Management rung we intend to price is wanted at all. |
+| **Status** | **NOT RUN.** Plan complete; nothing published, no domain, no ads, no money taken. Blocked on **HG-2b**. |
+| **Next action** | Plan complete: `20_TIER0/T0C2_LANDING_PAGE_PLAN.md` — 3-arm rung test (Organised Library / Continuous Manager / Cleaner control) at a constant $39 one-off, full copy, funnel E1–E8, pre-registered C-P1…C-P4, no-charge fake-door with mandatory disclosure. Blocked on **HG-2b** (domain + ~$500-700 ad spend) and Owner approval of positioning/price/disclosure wording. **Run T0-D first** where possible — it tells us whether the rung is wanted before we pay to advertise it. |
 
 ### T0-D · Autonomous Management Value Proposition  `REQUIRES_USERS` `REQUIRES_MAC`
 *Added 2026-08-22 by Owner instruction (DEC-014). Mandated by Constitution §7, absent from the Tier 0 document.*

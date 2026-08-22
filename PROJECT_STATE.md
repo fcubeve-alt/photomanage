@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (9 deliverables; T0-B/D study materials complete)
+Last updated: 2026-08-22 · Session 001 (10 deliverables; **all unblocked Tier-0 work is now complete**)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -20,9 +20,12 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**T0-C2-PREP** — landing-page value-ladder copy + measurement plan, derived from the pricing matrix. (`WINDOWS_OK`)
+**No blocked-free Tier-0 workstream remains.** All four are prepared to the limit of what Windows alone can reach. See "Idle justification" below — S-04 requires proving this, not asserting it.
 
-This is the **last fully unblocked Tier-0 item**. After it, everything remaining needs Owner action (HG-1/2a/4). See S-04: entering WAITING requires proving nothing authorised is executable.
+Build-ahead work that needs no approval (pick up if the gates stay closed):
+- Build the three T0-C2 landing pages + event logging + disclosure interstitial from the plan (local files only; publishing is HG-2b)
+- Finish `PHPhotoLibraryChangeObserver` change-set handling in the harness (edits to old assets — currently unfinished, flagged in the harness README)
+- Source/curate the 136 foreground test-library images per `TEST_LIBRARY_SPEC.md` §3
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
 - **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015).
@@ -40,7 +43,7 @@ This is the **last fully unblocked Tier-0 item**. After it, everything remaining
 5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
 6. ~~**T0-A-HARNESS** Swift benchmark harness~~ — ✅ **DONE** → `20_TIER0/harness/` (13 files, ~1,400 lines, **NEVER COMPILED** — see README known gaps)
 7. ~~**T0-B/D-ASSETS** Study materials~~ — ✅ **DONE** → `20_TIER0/study_assets/` (generator + 4 ledger variants + facilitator script + 2 scoring sheets)
-8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it. — **NEXT**
+8. ~~**T0-C2-PREP** Landing-page plan + copy~~ — DONE → `20_TIER0/T0C2_LANDING_PAGE_PLAN.md`
 
 ### RESEARCH
 - Apple-native on-device capability survey (Vision, Core ML, Live Text/OCR, PhotoKit limits) — FACT/INTERPRETATION separated, feeds the T0-A compute budget and the P-04 route decision. **No model dependency may be added without benchmark evidence.**
@@ -55,7 +58,7 @@ This is the **last fully unblocked Tier-0 item**. After it, everything remaining
 | **HG-2a** (blocking T0-A) | **Spend approval: EUR 2.64 Scaleway only.** Nothing purchased | Owner approves EUR 2.64 | Provision Scaleway M1, install Xcode, compile, run in Simulator, then STOP and report |
 | **HG-1** (blocking T0-A delivery) | Apple Developer enrollment + $99. **Deferred until after a successful compile** (DEC-015). Owner must enroll personally — legal name, own credit card, 2FA, possibly photo ID | Build compiles → Owner enrolls and pays | Archive, sign, upload to App Store Connect, release to TestFlight |
 | **HG-4** (blocking T0-B **and T0-D**) | No recruited external test users (n>=10). Tooling half solved by the same Mac environment — **purely a recruitment problem** | Users recruited **and** prototype built | Run T0-B, then T0-D with the same participants on separate instruments |
-| **HG-2b** (blocking T0-C2) | Needs domain, payment path and real spend | Owner approves the landing page and funds it | Launch page, collect reach-checkout / deposit data |
+| **HG-2b** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
 
 ### CAPABILITY
 - Web search/fetch: available. If it drops, fall back to the search-free queue (T0-A-PREP, T0-B-PREP) — do not idle (S-03, F-05).
@@ -73,8 +76,16 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 | PF-01 simulated device numbers | Guarded by P-02. Watch for it. |
 | Cleaner-rung commoditisation | The likely C1 finding is that the Cleaner rung is already free. That is expected, and is why the Constitution anchors paid value at Continuous Management and above. |
 
+## Idle justification (S-04) — checked 2026-08-22
+Every Tier-0 workstream is prepared to the boundary of an Owner gate:
+- **T0-A** — spec + environment plan + 1,400-line harness written. Needs HG-2a (EUR 2.64) then HG-1 ($99 post-compile).
+- **T0-B** — protocol + test-library generator + facilitator script + scoring sheet. Needs HG-4 (participants) and a built prototype.
+- **T0-C1** — COMPLETE. **T0-C2** — plan + copy + measurement. Needs HG-2b (~$520-720).
+- **T0-D** — protocol + 4 ledger variants + scoring sheet. Needs HG-4.
+Build-ahead work remains and requires no approval, so the mission is **not** blocked (S-03). Do not enter WAITING.
+
 ## Next action for a recovering session
-Write `20_TIER0/T0C2_LANDING_PAGE_PLAN.md` (value-ladder copy at the Continuous Management rung, price test design, measurement plan). Then the queue is exhausted of unblocked work — do NOT idle without first re-checking S-04.
+Pick up the build-ahead list under "Doing now". Highest value first: the three T0-C2 landing pages (local files; publishing stays gated), because they are the only remaining item that shortens an Owner-gated critical path.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.
@@ -93,6 +104,14 @@ Write `20_TIER0/T0C2_LANDING_PAGE_PLAN.md` (value-ladder copy at the Continuous 
 - Sharpest single measurement: *"without tapping, where would you expect your passport to be?"* — tests predictability, which is what separates a destination from a tool.
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
 - Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
+
+### T0-C2 design (do not re-derive)
+- **Positioning is the manipulation, price is held constant** — the Tier 0 question is *which rung is paid for*, not *what is the optimal price*. 3 arms at $39 one-off: L1 Organised Library, L2 Continuous Manager, L3 Cleaner **control**.
+- L3 exists to make L1/L2 interpretable, not as a candidate positioning (§24 Gate 4 forbids shipping as a Cleaner).
+- $39 from C1: every credible non-predatory competitor sits at $29.99-49.99 one-off. Weekly subscription excluded on trust grounds.
+- **No money is ever taken.** Fake-door with a mandatory full-screen disclosure the instant someone commits. No dark patterns. Deposit variant held in reserve for an ambiguous result only.
+- **No third-party ad pixel on the landing page** — running a privacy-first product test on surveillance infrastructure would be the first broken promise (§26).
+- **Run T0-D first where possible**: it tells us whether the rung is wanted before ~$600 is spent advertising it, and its verbatims should rewrite the copy.
 
 ### T0-B/D study materials (built 2026-08-22, do not rebuild)
 - `20_TIER0/study_assets/` — generator, ledger variants, facilitator script, two scoring sheets.
