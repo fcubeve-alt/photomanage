@@ -181,3 +181,37 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 **Consequence for the plan.** Phase 2 of `T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` splits: **2.1–2.3 build and verify → STOP → report success to Owner → Owner enrolls and pays $99 → 2.4–2.5 archive, sign, upload to TestFlight.** Enrollment is HG-1 and must be done by the Owner personally (legal name, own credit card, 2FA, possibly photo ID).
 **Note.** A signing identity is not needed to compile and run in the Simulator, so the pre-payment build check is genuinely possible. Whether the 24-hour block can be paused or must be re-leased after the approval round-trip is a practical detail to confirm at provisioning; if it cannot, budget a second €2.64 block.
 **Status.** ACTIVE.
+
+---
+
+### DEC-016 · 2026-08-22 · GitHub Actions macOS runners become the primary build environment; Scaleway demoted to fallback
+**Decision (Owner-initiated, evidence confirms).** Tier 0-A builds, archives, signs and uploads to TestFlight via **GitHub Actions standard macOS runners**. Scaleway is kept as a documented fallback for interactive bring-up only. **The EUR 2.64 Scaleway ask is withdrawn.** Repository is to be **PRIVATE**.
+
+**Verified facts (2026-08-22).**
+- "GitHub Actions usage is free for standard GitHub-hosted runners in public repositories" (docs.github.com, verbatim).
+- `macos-latest` = macOS 26 **arm64 Apple Silicon**, GA; `macos-15` also arm64 GA; `macos-14` deprecated.
+- Standard macOS SKU = "macOS 3-core or 4-core (M1 or Intel)" at **$0.062/min**. The `-xlarge`/`-large` variants are *larger* runners and are billed even on public repos.
+- `macos-15-arm64` ships Xcode **16.0-16.4 (16.4 default)** and 26.x; iOS SDKs 18.0-26.2.
+- Job limit 6 h; Free plan 2,000 included minutes/month, 5 concurrent macOS jobs, 500 MB artifacts.
+- **UNKNOWN-6**: whether macOS still consumes included private-repo minutes at 10x or 1x after the Jan 2026 repricing. Costed both ways; does not change the decision.
+
+**Rationale.**
+1. **It does the whole chain.** Build, test, archive, sign, TestFlight upload — an ordinary iOS CI pipeline, not an experiment.
+2. **Cost.** Our bring-up is ~150 macOS minutes. That fits inside the 2,000-minute Free allowance under **either** multiplier reading, so a **private** repo is free for our volume. Worst case (allowance exhausted) is ~$9.30. Scaleway is ~EUR 5.28 and carries a standing billing liability.
+3. **No card required to start**, and **no persistent resource to forget**. Scaleway bills while the Mac is *assigned*, stopping does not help, and deletion is impossible for the first 24 h.
+4. **It improves DEC-015 rather than replacing its intent.** Build-and-test needs no signing at all, so the project can be proven to compile **for $0 before any $99 is committed** — better than the original plan, which still needed a EUR 2.64 block for that check.
+
+**PRIVATE, not public — and the cost argument is why.** Publishing would expose the Product Constitution, the competitor and pricing analysis, the $39 price and the three positioning arms, the landing-page copy before it launches, and every decision and open unknown. The free-minutes argument for going public **evaporates** once you notice 150 minutes fits inside the free private allowance anyway. If minutes ever run out, pay the few dollars — do not pay in strategy for a discount we already have. (If the harness itself should later be open-sourced for credibility, split it into its own repo; it contains no strategy.)
+
+**What this does NOT change.**
+- **The $99 Apple Developer Program is still required** for signing and TestFlight. No CI avoids it.
+- **A CI runner cannot have an iPhone attached** either. Delivery to the 5-device fleet is still TestFlight.
+- iPhone 7 remains excluded (DEC-008).
+
+**Where Scaleway is genuinely better, stated fairly.** Interactive debugging of never-compiled code: a VNC desktop shows every error at once and rebuilds in seconds, where CI costs a ~5-minute round trip per iteration. Estimated cost of that difference for our ~1,400-line harness: **6-10 iterations, 45-80 minutes of mostly waiting**, mitigated by batching fixes from a full diagnostic log. That is a smaller cost than a paid account, a card, a 24-hour minimum lease and a standing "did I delete it?" liability — and every build after the first is where CI wins permanently.
+
+**Delivered with this decision.** `.github/workflows/ios-build.yml` (unsigned build+test, **no secrets, no Apple account**), `.github/workflows/ios-testflight.yml` (manual dispatch, archive/sign/upload), and `20_TIER0/harness/project.yml` (XcodeGen spec, replacing the hand-built-in-Xcode step).
+
+**New Owner action required.** Create a **private** GitHub repository and push. This also closes the standing MAINTENANCE item — the repo is currently local-only, which is a real single-point-of-failure for E-06 cross-machine recovery.
+
+**Status.** ACTIVE. Evidence: `20_TIER0/T0A_CI_ENVIRONMENT_EVALUATION.md`.

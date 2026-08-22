@@ -41,26 +41,26 @@ may ever be written into `DEVICE_BENCHMARK_TIER0.csv`.
 - **Thermal measured as dwell time**, not spot readings.
 - **Footprint, not resident size** — Jetsam kills are footprint-driven.
 
-## Setting up on the cloud Mac (~10 minutes)
+## Building it
 
-There is no `.xcodeproj` here — a hand-written `pbxproj` is fragile and would waste
-more time than it saves.
+**Primary path: GitHub Actions** (DEC-016). No Mac needed, no Apple account needed for the build check.
 
-1. Xcode → **File ▸ New ▸ Project ▸ iOS ▸ App**. Product name `PVMBench`, interface
-   **SwiftUI**, language **Swift**.
-2. Delete the generated `ContentView.swift` and `PVMBenchApp.swift`.
-3. Drag every `.swift` file from `PVMBench/` into the target ("Copy items if needed" on).
-4. **Signing & Capabilities** → add **Background Modes** → tick **Background processing**.
-5. **Info.plist** keys:
-   - `NSPhotoLibraryUsageDescription` = `Tier 0-A benchmark: reads the photo library to measure indexing performance.`
-   - `NSPhotoLibraryAddUsageDescription` = `Adds temporary synthetic test assets, which the app deletes again.`
-   - `BGTaskSchedulerPermittedIdentifiers` = array containing `com.pvm.bench.index`
-6. Deployment target **iOS 16.0** (matches the TestFlight floor; iPhone 7 is out of
-   scope on verified evidence — see the environment plan Part 2).
-7. **Build and run in the Simulator.** No signing identity is needed for this, which
-   is exactly what makes the pre-payment check in DEC-015 possible.
-8. **STOP and report build success.** Only then does the Owner enrol and pay the $99;
-   archive + TestFlight upload happen afterwards.
+`project.yml` is an **XcodeGen** spec — the `.xcodeproj` is generated, never hand-written, so CI is reproducible and no binary project file has to be kept in sync.
+
+| Workflow | What it does | Secrets? |
+|---|---|---|
+| `.github/workflows/ios-build.yml` | build + test **unsigned** on `macos-15` (arm64) with Xcode 16.4 | **None** — this is what proves the project compiles for $0, before the $99 |
+| `.github/workflows/ios-testflight.yml` | manual dispatch: archive, sign, upload to TestFlight | Yes — added after Apple Developer enrolment |
+
+On a Mac (fallback path, or local iteration):
+```bash
+brew install xcodegen
+cd 20_TIER0/harness && xcodegen generate
+open PVMBench.xcodeproj
+```
+
+Everything the old manual setup required — Background Modes capability, the three
+Info.plist keys, iOS 16 deployment target — is declared in `project.yml`.
 
 ## Run order on device (spec §5.4)
 

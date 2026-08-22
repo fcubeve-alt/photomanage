@@ -1,6 +1,12 @@
 # T0-A · MAC ENVIRONMENT & DEVICE GRADIENT PLAN
-**Owner approved HG-3 in principle on 2026-08-22: cloud Mac only, no Mac purchase, existing iPhones, approval required before any actual payment.**
-This document is the pre-payment report. **Nothing here has been purchased. No account has been created. No payment has been made.**
+> ## ⚠️ SUPERSEDED IN PART BY DEC-016 — Scaleway is now a FALLBACK, not the plan
+> **Owner paused Scaleway procurement on 2026-08-22.** GitHub Actions standard macOS runners (arm64 Apple Silicon) are the primary build environment and cover the whole chain: build, test, archive, sign, TestFlight upload. **The EUR 2.64 ask is withdrawn.**
+> See **`T0A_CI_ENVIRONMENT_EVALUATION.md`**.
+>
+> **Still authoritative in this document:** Part 2 (the iPhone 7 exclusion evidence), Part 5 (device gradient design, minimum-supported-model rule, synthetic corpus strategy), Part 7 (what is and is not unblocked), Part 8 (open questions).
+> **Superseded:** Parts 3, 4, 6 — the delivery-path comparison, the cost table and the step-by-step, which now live in the CI evaluation. Scaleway remains documented here as the fallback for interactive bring-up if CI stalls.
+
+**Original pre-payment report follows. Nothing was purchased. No account was created. No payment was made.**
 Created 2026-08-22 · Session 001
 
 ---

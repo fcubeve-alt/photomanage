@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (10 deliverables; **all unblocked Tier-0 work is now complete**)
+Last updated: 2026-08-22 · Session 001 (11 deliverables; build env switched to GitHub Actions — DEC-016)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -20,11 +20,11 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**No blocked-free Tier-0 workstream remains.** All four are prepared to the limit of what Windows alone can reach. See "Idle justification" below — S-04 requires proving this, not asserting it.
+**Waiting on one small Owner action that now unblocks the whole T0-A path: create a PRIVATE GitHub repo and push.** After that, `ios-build.yml` runs at **$0** and I iterate compile errors until green — no Mac, no Apple account, no card.
 
-Build-ahead work that needs no approval (pick up if the gates stay closed):
-- Build the three T0-C2 landing pages + event logging + disclosure interstitial from the plan (local files only; publishing is HG-2b)
-- Finish `PHPhotoLibraryChangeObserver` change-set handling in the harness (edits to old assets — currently unfinished, flagged in the harness README)
+Build-ahead work that needs no approval meanwhile:
+- Build the three T0-C2 landing pages + event logging + disclosure interstitial (local files only; publishing is HG-2b)
+- Finish `PHPhotoLibraryChangeObserver` change-set handling in the harness (edits to old assets — flagged in the harness README)
 - Source/curate the 136 foreground test-library images per `TEST_LIBRARY_SPEC.md` §3
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
@@ -55,8 +55,9 @@ Build-ahead work that needs no approval (pick up if the gates stay closed):
 | Gate | Blocker | Wake condition | First action on wake |
 |---|---|---|---|
 | **HG-3** (T0-A) | ✅ **APPROVED IN PRINCIPLE 2026-08-22** — cloud Mac only, existing 6-iPhone fleet. Reduced to the spend gate below | — | — |
-| **HG-2a** (blocking T0-A) | **Spend approval: EUR 2.64 Scaleway only.** Nothing purchased | Owner approves EUR 2.64 | Provision Scaleway M1, install Xcode, compile, run in Simulator, then STOP and report |
-| **HG-1** (blocking T0-A delivery) | Apple Developer enrollment + $99. **Deferred until after a successful compile** (DEC-015). Owner must enroll personally — legal name, own credit card, 2FA, possibly photo ID | Build compiles → Owner enrolls and pays | Archive, sign, upload to App Store Connect, release to TestFlight |
+| ~~**HG-2a**~~ | ~~EUR 2.64 Scaleway~~ — **WITHDRAWN (DEC-016).** GitHub Actions replaces it at $0 | — | — |
+| **HG-5** (blocking T0-A) | **No GitHub remote exists.** Owner must create a **PRIVATE** repo and push | Owner creates repo, gives remote URL | Run `ios-build.yml` at $0; iterate compile errors to green; report |
+| **HG-1** (blocking T0-A delivery) | Apple Developer enrolment + $99. **Deferred until `ios-build.yml` is green** (DEC-015 intent, DEC-016 mechanics). Owner must enrol personally — legal name, own credit card, 2FA, possibly photo ID. Then add 8 repo secrets | Green build → Owner enrols, pays, adds secrets | Dispatch `ios-testflight.yml`: archive, sign, upload, release to TestFlight |
 | **HG-4** (blocking T0-B **and T0-D**) | No recruited external test users (n>=10). Tooling half solved by the same Mac environment — **purely a recruitment problem** | Users recruited **and** prototype built | Run T0-B, then T0-D with the same participants on separate instruments |
 | **HG-2b** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
 
@@ -64,7 +65,7 @@ Build-ahead work that needs no approval (pick up if the gates stay closed):
 - Web search/fetch: available. If it drops, fall back to the search-free queue (T0-A-PREP, T0-B-PREP) — do not idle (S-03, F-05).
 
 ### MAINTENANCE
-- Create a git remote so E-06 (local absence ≠ remote absence) is actually enforceable. Currently local-only, which is a real single-point-of-failure for cross-machine recovery.
+- ~~Create a git remote~~ — now **HG-5** and on the critical path: the same action that enables CI also closes this E-06 gap. Repo is still local-only.
 
 ## Blockers
 Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining gates are: **spend approval + Apple Developer enrollment** (T0-A, and by extension the T0-B tooling), **external user recruitment** (T0-B), and **landing page + payment path** (T0-C2). This blocks the *gate*, not the *mission* — all PREP and harness-authoring work proceeds.
@@ -78,7 +79,7 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 
 ## Idle justification (S-04) — checked 2026-08-22
 Every Tier-0 workstream is prepared to the boundary of an Owner gate:
-- **T0-A** — spec + environment plan + 1,400-line harness written. Needs HG-2a (EUR 2.64) then HG-1 ($99 post-compile).
+- **T0-A** — spec + harness + XcodeGen spec + both CI workflows written. Needs **HG-5** (private GitHub repo, $0) then HG-1 ($99, only after a green build).
 - **T0-B** — protocol + test-library generator + facilitator script + scoring sheet. Needs HG-4 (participants) and a built prototype.
 - **T0-C1** — COMPLETE. **T0-C2** — plan + copy + measurement. Needs HG-2b (~$520-720).
 - **T0-D** — protocol + 4 ledger variants + scoring sheet. Needs HG-4.
@@ -105,6 +106,12 @@ Pick up the build-ahead list under "Doing now". Highest value first: the three T
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
 - Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
 
+### Build/CI facts (DEC-016, do not re-research)
+- `macos-latest` = macOS 26 arm64; `macos-15` arm64 GA; `macos-14` deprecated. Xcode 16.0-16.4 (16.4 default) + 26.x preinstalled.
+- Standard macOS runner = $0.062/min, free and unmetered on public repos; Free plan gives 2,000 included min/mo, 5 concurrent macOS jobs, 500 MB artifacts, 6 h job cap.
+- **UNKNOWN-6**: 10x vs 1x multiplier on private-repo included minutes post-Jan-2026 repricing. Costed both ways; irrelevant to the decision. Resolve from the account billing page once the repo exists.
+- `.xcodeproj` is **generated by XcodeGen** from `20_TIER0/harness/project.yml` — never hand-written, never committed.
+
 ### T0-C2 design (do not re-derive)
 - **Positioning is the manipulation, price is held constant** — the Tier 0 question is *which rung is paid for*, not *what is the optimal price*. 3 arms at $39 one-off: L1 Organised Library, L2 Continuous Manager, L3 Cleaner **control**.
 - L3 exists to make L1/L2 interpretable, not as a candidate positioning (§24 Gate 4 forbids shipping as a Cleaner).
@@ -127,8 +134,11 @@ Pick up the build-ahead list under "Doing now". Highest value first: the three T
 - Most likely to need fixing first: the mach/`task_info` bridging in `Telemetry.swift`.
 - Known unfinished: `PHPhotoLibraryChangeObserver` change-set handling for **edits to old assets** — the incremental path currently stops at the first known asset, which is correct for new captures but not for modifications. Finish before treating the A4 verdict as final.
 
-### T0-A environment (DEC-008, do not re-derive)
-- **A cloud Mac cannot have an iPhone plugged into it.** Delivery must go via TestFlight, which is why the 99 USD Apple Developer Program is on the critical path.
+### T0-A environment (DEC-008 + **DEC-016**, do not re-derive)
+- **Build environment is GitHub Actions**, `macos-15` (arm64 Apple Silicon, standard runner, Xcode 16.4). Scaleway is a **fallback only**, for interactive bring-up if CI stalls. The EUR 2.64 ask is withdrawn.
+- **Do NOT switch to `macos-15-xlarge` / `-large`** — those are *larger* runners and are billed even on public repos.
+- **Repo must be PRIVATE.** Free minutes are not a reason to go public: ~150 bring-up minutes fit inside the 2,000/mo Free allowance either way, so private is free for our volume. Publishing would expose the Constitution, pricing strategy, the $39 test and the unlaunched landing copy.
+- **Neither a cloud Mac nor a CI runner can have an iPhone plugged into it.** Delivery is TestFlight, which is why the 99 USD Apple Developer Program stays on the critical path.
 - **TestFlight requires iOS 16+; iPhone 7 maxes at iOS 15.8.x; A10 has no Neural Engine.** iPhone 7 is therefore excluded from the campaign — verified fact, not preference.
-- Scaleway Mac mini M1 EUR 0.11/hr, 24h minimum lease → ~EUR 2.64 per block. M2 EUR 0.17/hr if 8GB proves cramped.
+- *(Fallback only)* Scaleway Mac mini M1 EUR 0.11/hr, 24h minimum lease → ~EUR 2.64/block; **stopping does not stop billing, deletion is impossible for 24h** — enable auto-delete if ever used.
 - 30k/100k libraries are reached by **on-device synthetic asset insertion**, not by transferring images. Real vs synthetic counts reported separately (DEC-009).

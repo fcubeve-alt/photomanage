@@ -44,12 +44,13 @@ Do **not** build, even "while we're here":
 |---|---|---|
 | HG-1 | Apple Developer account / KYC / CAPTCHA | **UPCOMING** - activated by DEC-008. Owner must enroll personally (legal name, own credit card, 2FA, possibly photo ID) |
 | HG-2 | Real payment or spend (domain, ads, deposit collection, Mac/cloud-Mac rental) | **UPCOMING** — needed for Tier 0-C |
-| HG-3 | Access to a Mac / Xcode / real iPhones for Tier 0-A | **APPROVED IN PRINCIPLE 2026-08-22** (DEC-008): cloud Mac only, no purchase, existing ~6-iPhone fleet. Now reduced to the spend approval in HG-2 |
+| HG-3 | Access to a Mac / Xcode / real iPhones for Tier 0-A | **RESOLVED at $0 (DEC-016)** — GitHub Actions standard arm64 macOS runners. Now reduced to **HG-5** (create a private repo) |
 | HG-4 | Recruiting real external test users for Tier 0-B | **UPCOMING** — needed for Tier 0-B |
 | HG-5 | Irreversible / high-risk operations | DORMANT |
 | HG-6 | Material product scope change | DORMANT |
 | HG-7 | Two reasonable technical routes with major long-term architectural divergence | DORMANT |
 | HG-8 | A P0 result that genuinely could kill the project | DORMANT |
+| HG-5 | **Create a PRIVATE GitHub repository and push** — no cost, no card | **BLOCKING T0-A** (DEC-016). Also closes the E-06 local-only single-point-of-failure |
 | HG-9 | All valuable work externally blocked | DORMANT |
 
 A gate blocks **its own branch only**, never the whole mission (Playbook S-03).

@@ -1,0 +1,68 @@
+# XcodeGen spec — generates PVMBench.xcodeproj from the loose sources.
+#
+# Why this exists: a hand-written .pbxproj is fragile and drifts. Generating the
+# project makes CI reproducible and means nobody keeps a binary project file in
+# sync by hand. Regenerate locally (on a Mac) with:  xcodegen generate
+#
+# Deployment target is iOS 16.0 — matches the TestFlight floor. iPhone 7 is out of
+# scope on verified evidence (max iOS 15.8.x, no Neural Engine); see
+# T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md Part 2.
+
+name: PVMBench
+options:
+  bundleIdPrefix: com.pvm
+  deploymentTarget:
+    iOS: '16.0'
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  PVMBench:
+    type: application
+    platform: iOS
+    sources:
+      - path: PVMBench
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.bench
+        MARKETING_VERSION: '0.1'
+        CURRENT_PROJECT_VERSION: '1'
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        # Portrait only — a rotating benchmark UI is noise we do not need.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: '1,2'
+        SWIFT_EMIT_LOC_STRINGS: YES
+    info:
+      path: PVMBench/Info.plist
+      properties:
+        CFBundleDisplayName: PVM Bench
+        # Read access — the whole point of the harness.
+        NSPhotoLibraryUsageDescription: >-
+          Tier 0-A benchmark: reads the photo library to measure indexing
+          performance. Nothing is uploaded and no photo leaves this device.
+        # Write access — synthetic corpus insertion (DEC-009). The harness deletes
+        # only the assets it created, tracked by local identifier.
+        NSPhotoLibraryAddUsageDescription: >-
+          Adds temporary synthetic test assets so large-library performance can be
+          measured. The app deletes only the assets it created.
+        UIBackgroundModes:
+          - processing
+        # C-4: BGProcessingTask must be declared here or scheduling silently fails.
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.pvm.bench.index
+        UIFileSharingEnabled: true          # lets the operator pull the CSV off the device
+        LSSupportsOpeningDocumentsInPlace: true
+    dependencies:
+      - sdk: Photos.framework
+      - sdk: PhotosUI.framework
+      - sdk: Vision.framework
+      - sdk: BackgroundTasks.framework
+      - sdk: libsqlite3.tbd

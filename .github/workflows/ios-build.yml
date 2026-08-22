@@ -1,0 +1,90 @@
+name: iOS build + test (unsigned)
+
+# Deliberately requires NO Apple Developer account and NO secrets.
+# This is what lets us prove the project compiles for $0, BEFORE the $99 is spent
+# (DEC-015 intent, DEC-016 mechanics).
+
+on:
+  push:
+    paths:
+      - '20_TIER0/harness/**'
+      - '.github/workflows/ios-build.yml'
+  pull_request:
+    paths:
+      - '20_TIER0/harness/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # macos-15 = arm64 Apple Silicon, STANDARD runner.
+    # Do NOT change to macos-15-xlarge / -large: those are *larger* runners and are
+    # billed even on public repositories.
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    env:
+      XCODE_VERSION: '16.4'
+      SCHEME: PVMBench
+      PROJECT_DIR: 20_TIER0/harness
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
+      - name: Show available simulators
+        run: xcrun simctl list devices available | head -40
+
+      # The harness ships as loose sources with no .xcodeproj — a hand-written
+      # pbxproj is fragile and would waste more time than it saves. Generate a
+      # project here instead, so CI is reproducible and nobody has to keep a
+      # binary project file in sync by hand.
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          xcodegen generate --spec project.yml
+          ls -la
+
+      - name: Build (unsigned, simulator)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project PVMBench.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            | tee build.log
+
+      # Full diagnostics in one pass: xcodebuild reports every error per run, so a
+      # single log lets us fix them all in one batch instead of one CI round each.
+      - name: Summarise errors
+        if: failure()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "===== ERRORS ====="
+          grep -E "error:" build.log | sort -u || true
+          echo "===== WARNINGS (first 40) ====="
+          grep -E "warning:" build.log | sort -u | head -40 || true
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: ${{ env.PROJECT_DIR }}/build.log
+          retention-days: 7
+          if-no-files-found: ignore
