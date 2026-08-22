@@ -1,0 +1,240 @@
+import Foundation
+import Photos
+import UIKit
+
+/// Orchestrates the A1–A4 runs. Every meaningful number this produces is MEASURED.
+/// PF-01: nothing modelled or predicted may be written to the CSV.
+final class BenchmarkRunner: NSObject, ObservableObject {
+
+    enum RunType: String { case cold, resume, incremental, background }
+
+    @Published var progress: Double = 0
+    @Published var statusText = "idle"
+    @Published var isRunning = false
+
+    private let store = IndexStore()
+    private lazy var indexer = AssetIndexer(store: store)
+    private let telemetry = Telemetry()
+    private var cancelled = false
+
+    /// C-3 — checkpoint every N assets. On resume, reprocessing must be bounded by N.
+    /// Anything above one batch means checkpointing is too coarse (E-07).
+    static let checkpointEvery = 200
+
+    // Set by the operator before a run so rows are attributable.
+    var storageState = "unknown"     // "all-local" | "icloud-optimised"
+    var chipLabel = ""
+
+    // MARK: - cold / resume
+
+    func runCold(resume: Bool) {
+        guard !isRunning else { return }
+        isRunning = true; cancelled = false
+        let runType: RunType = resume ? .resume : .cold
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            if !resume { self.store.reset() }
+            let alreadyIndexed = resume ? self.store.count() : 0
+
+            let opts = PHFetchOptions()
+            opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+            opts.includeHiddenAssets = false
+
+            // CD-1 — cold-launch to first asset enumerated. Flaky PhotoKit init is a
+            // first-impression killer, and a competitor spent three releases on it.
+            let tEnum = CFAbsoluteTimeGetCurrent()
+            let all = PHAsset.fetchAssets(with: opts)
+            let enumMS = (CFAbsoluteTimeGetCurrent() - tEnum) * 1000
+
+            let total = all.count
+            let syntheticIDs = Set(self.store.syntheticIDs())
+
+            self.telemetry.start()
+            self.indexer.resetCounters()
+            let t0 = CFAbsoluteTimeGetCurrent()
+
+            var processed = 0
+            var reprocessed = 0
+            var batch = 0
+            self.store.beginBatch()
+
+            for i in 0..<total {
+                if self.cancelled { break }
+                let asset = all.object(at: i)
+
+                if resume && self.store.contains(asset.localIdentifier) {
+                    // Already durable from a previous run — skip. Counted so the
+                    // checkpoint granularity can be judged, not hidden.
+                    processed += 1
+                    continue
+                }
+                if resume { reprocessed += 1 }
+
+                autoreleasepool {
+                    self.indexer.index(asset: asset,
+                                       isSynthetic: syntheticIDs.contains(asset.localIdentifier))
+                }
+                processed += 1
+                batch += 1
+
+                if batch >= BenchmarkRunner.checkpointEvery {
+                    self.store.setCursor(asset.localIdentifier)
+                    self.store.commitBatch()
+                    self.store.beginBatch()
+                    batch = 0
+                    let p = Double(processed) / Double(max(total, 1))
+                    DispatchQueue.main.async {
+                        self.progress = p
+                        self.statusText = "\(processed)/\(total) · \(Int(Telemetry.footprintMB())) MB · \(ProcessInfo.processInfo.thermalState.label)"
+                    }
+                }
+            }
+
+            self.store.commitBatch()
+            let wall = CFAbsoluteTimeGetCurrent() - t0
+            self.telemetry.stop()
+
+            var row = BenchmarkRow()
+            row.chip = self.chipLabel
+            row.library_size = total
+            row.storage_state = self.storageState
+            row.run_type = runType.rawValue
+            row.wall_time_s = wall
+            row.assets_indexed = processed
+            row.assets_failed = self.indexer.counters.failed
+            row.throughput_assets_per_s = wall > 0 ? Double(processed) / wall : 0
+            row.peak_mem_mb = self.telemetry.snap.peakFootprintMB
+            row.avg_cpu_pct = self.telemetry.avgCPU
+            row.thermal_nominal_s = self.telemetry.dwell(.nominal)
+            row.thermal_fair_s = self.telemetry.dwell(.fair)
+            row.thermal_serious_s = self.telemetry.dwell(.serious)
+            row.thermal_critical_s = self.telemetry.dwell(.critical)
+            row.battery_start_pct = Double(self.telemetry.snap.batteryStart) * 100
+            row.battery_end_pct = Double(self.telemetry.snap.batteryEnd) * 100
+            let drained = row.battery_start_pct - row.battery_end_pct
+            row.battery_drain_pct_per_10k = processed > 0 ? drained / Double(processed) * 10_000 : 0
+            row.index_bytes_total = self.store.sizeOnDisk()
+            row.index_bytes_per_asset = processed > 0 ? Double(row.index_bytes_total) / Double(processed) : 0
+            row.resumed_ok = resume
+            row.assets_reprocessed_after_resume = resume ? reprocessed : 0
+            row.ocr_attempted = self.indexer.counters.ocrAttempted
+            row.ocr_gated_out = self.indexer.counters.ocrGatedOut
+            row.embed_attempted = self.indexer.counters.embedAttempted
+            row.icloud_fetch_required_count = self.indexer.counters.icloudFetchRequired
+            row.icloud_fetch_skipped_count = self.indexer.counters.icloudFetchSkipped
+            row.synthetic_asset_count = syntheticIDs.count
+            row.real_asset_count = max(0, total - syntheticIDs.count)
+            row.cold_launch_to_first_asset_ms = enumMS
+            row.bg_expiration_events = self.telemetry.snap.expirationEvents
+            row.memory_warnings = self.telemetry.snap.memoryWarnings
+            row.ocr_ms_per_asset = self.indexer.counters.ocrAttempted > 0
+                ? self.indexer.counters.ocrTotalMS / Double(self.indexer.counters.ocrAttempted) : 0
+            row.embed_ms_per_asset = self.indexer.counters.embedAttempted > 0
+                ? self.indexer.counters.embedTotalMS / Double(self.indexer.counters.embedAttempted) : 0
+            row.index_state_recovered_after_kill = self.store.meta("cursor") != nil && resume
+            row.notes = self.cancelled ? "cancelled-by-operator" : ""
+
+            MetricsCSV.append(row)
+
+            DispatchQueue.main.async {
+                self.isRunning = false
+                self.progress = 1
+                self.statusText = String(format: "done · %.0fs · %.1f assets/s", wall, row.throughput_assets_per_s)
+            }
+        }
+    }
+
+    func cancel() { cancelled = true }
+
+    // MARK: - A4 incremental (C-5)
+
+    /// A4 is falsified the moment finding deltas needs a full enumeration.
+    /// This path uses the persisted cursor + change observer, never a rescan.
+    func runIncremental() {
+        guard !isRunning else { return }
+        isRunning = true; cancelled = false
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            self.telemetry.start()
+            self.indexer.resetCounters()
+            let t0 = CFAbsoluteTimeGetCurrent()
+
+            let opts = PHFetchOptions()
+            opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            let recent = PHAsset.fetchAssets(with: opts)
+
+            var newCount = 0
+            self.store.beginBatch()
+            // Stop at the first already-known asset: newest-first ordering means
+            // everything beyond it is already indexed. No full pass.
+            for i in 0..<recent.count {
+                let a = recent.object(at: i)
+                if self.store.contains(a.localIdentifier) { break }
+                autoreleasepool { self.indexer.index(asset: a, isSynthetic: false) }
+                newCount += 1
+            }
+            self.store.commitBatch()
+
+            let wall = CFAbsoluteTimeGetCurrent() - t0
+            self.telemetry.stop()
+
+            var row = BenchmarkRow()
+            row.chip = self.chipLabel
+            row.library_size = recent.count
+            row.storage_state = self.storageState
+            row.run_type = RunType.incremental.rawValue
+            row.wall_time_s = wall
+            row.assets_indexed = newCount
+            row.throughput_assets_per_s = wall > 0 ? Double(newCount) / wall : 0
+            row.peak_mem_mb = self.telemetry.snap.peakFootprintMB
+            row.avg_cpu_pct = self.telemetry.avgCPU
+            row.index_bytes_total = self.store.sizeOnDisk()
+            row.ocr_attempted = self.indexer.counters.ocrAttempted
+            row.ocr_gated_out = self.indexer.counters.ocrGatedOut
+            row.embed_attempted = self.indexer.counters.embedAttempted
+            row.notes = "delta-only; no full enumeration"
+            MetricsCSV.append(row)
+
+            DispatchQueue.main.async {
+                self.isRunning = false
+                self.statusText = String(format: "incremental: %d new in %.1fs", newCount, wall)
+            }
+        }
+    }
+
+    // MARK: - CD-2 first-screen stall
+
+    /// Time from request to a rendered grid of thumbnails on a large library.
+    /// Invisible in a throughput number, and the place real users noticed a
+    /// competitor failing. Target §8: <= 3 s.
+    func measureFirstScreenStall(count: Int = 60, completion: @escaping (Double) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let t0 = CFAbsoluteTimeGetCurrent()
+            let opts = PHFetchOptions()
+            opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            opts.fetchLimit = count
+            let assets = PHAsset.fetchAssets(with: opts)
+            let req = PHImageRequestOptions()
+            req.isNetworkAccessAllowed = false
+            req.deliveryMode = .fastFormat
+            req.isSynchronous = true
+            for i in 0..<assets.count {
+                autoreleasepool {
+                    PHImageManager.default().requestImage(
+                        for: assets.object(at: i),
+                        targetSize: CGSize(width: 120, height: 120),
+                        contentMode: .aspectFill, options: req) { _, _ in }
+                }
+            }
+            let ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+            DispatchQueue.main.async { completion(ms) }
+        }
+    }
+
+    var indexedCount: Int { store.count() }
+    var storeRef: IndexStore { store }
+    var telemetryRef: Telemetry { telemetry }
+}

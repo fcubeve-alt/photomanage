@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (7 deliverables; T0-D added; Lucent not purchased; $99 deferred to post-compile)
+Last updated: 2026-08-22 · Session 001 (8 deliverables; Swift harness authored, uncompiled)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -20,8 +20,7 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**T0-A-HARNESS · Swift benchmark harness source** (`WINDOWS_OK` — can be authored here, compiled only on the cloud Mac).
-Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not writing code.
+**T0-B/D-ASSETS** — test-library asset manifest + generator, facilitator script, Work-Done Ledger screen (4 variants), fillable scoring sheets for both studies. (`WINDOWS_OK`)
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
 - **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015).
@@ -37,8 +36,8 @@ Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not wri
 4b. ~~**T0-D-PREP** Autonomous Management Value Prop protocol~~ — ✅ **DONE** → `20_TIER0/T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`
 4c. ~~**CONSTITUTION digest**~~ — ✅ **DONE** → `CONSTITUTION_UNDERSTANDING.md`
 5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
-6. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring. — **NEXT**
-7. **T0-B/D-ASSETS** Turn the §5 test-library spec into an asset manifest + generator; write the facilitator script, the Work-Done Ledger screen (4 variants) and fillable scoring sheets for both studies.
+6. ~~**T0-A-HARNESS** Swift benchmark harness~~ — ✅ **DONE** → `20_TIER0/harness/` (13 files, ~1,400 lines, **NEVER COMPILED** — see README known gaps)
+7. **T0-B/D-ASSETS** Turn the §5 test-library spec into an asset manifest + generator; write the facilitator script, the Work-Done Ledger screen (4 variants) and fillable scoring sheets for both studies. — **NEXT**
 8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
 
 ### RESEARCH
@@ -73,7 +72,7 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 | Cleaner-rung commoditisation | The likely C1 finding is that the Cleaner rung is already free. That is expected, and is why the Constitution anchors paid value at Continuous Management and above. |
 
 ## Next action for a recovering session
-Author the Swift benchmark harness under `20_TIER0/harness/` per `T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md` (§4 CSV schema, §5 C-1..C-5, §7A CD-1..CD-5). Then T0-B-ASSETS, then `T0C2_LANDING_PAGE_PLAN.md`.
+T0-B/D-ASSETS (test-library manifest + generator, facilitator script, Work-Done Ledger variants, scoring sheets). Then `T0C2_LANDING_PAGE_PLAN.md`.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.
@@ -92,6 +91,13 @@ Author the Swift benchmark harness under `20_TIER0/harness/` per `T0A_DEVICE_BEN
 - Sharpest single measurement: *"without tapping, where would you expect your passport to be?"* — tests predictability, which is what separates a destination from a tool.
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
 - Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
+
+### T0-A harness (authored 2026-08-22, do not rewrite)
+- `20_TIER0/harness/` — 13 Swift files. **Written on Windows, never compiled.** Expect first-build errors; fixing them on the Mac is minutes, authoring there would have been hours.
+- No `.xcodeproj` — hand-written pbxproj is fragile. README has the ~10-minute Xcode setup: new SwiftUI App, drag sources, Background Modes capability, 3 Info.plist keys, deployment target iOS 16.
+- Key choices not to undo: `isNetworkAccessAllowed=false` everywhere (C-2); Apple-native `VNGenerateImageFeaturePrintRequest` for L2 (zero bundled model, P-04); raw SQLite3 with no SPM dependency; synthetic assets at realistic 4032×3024 pixels with heavy compression; thermal as **dwell time**; memory as **footprint** not resident size.
+- Most likely to need fixing first: the mach/`task_info` bridging in `Telemetry.swift`.
+- Known unfinished: `PHPhotoLibraryChangeObserver` change-set handling for **edits to old assets** — the incremental path currently stops at the first known asset, which is correct for new captures but not for modifications. Finish before treating the A4 verdict as final.
 
 ### T0-A environment (DEC-008, do not re-derive)
 - **A cloud Mac cannot have an iPhone plugged into it.** Delivery must go via TestFlight, which is why the 99 USD Apple Developer Program is on the critical path.
