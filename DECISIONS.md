@@ -305,3 +305,39 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 **Caught while implementing:** `Documents > Warranty` displayed 0 while carrying an "also in Purchases > Warranty" tag — a cross-listed node whose twin is empty reads as broken. The warranty asset was only indexed on the Purchases side. Fixed; both cross-listed pairs now verified to resolve to the **same asset ids**, not copies.
 
 **Status.** ACTIVE. OPEN-1 CLOSED.
+
+---
+
+### DEC-021 · 2026-08-23 · Sample size raised to n=15 — the thresholds and n=10 were mutually inconsistent
+**Found while self-testing the study analyzer, before a single participant was recruited.**
+
+Wilson 95% confidence intervals at **n = 10**, against the pre-registered 70% threshold:
+
+| Observed | Rate | 95% CI | Clears 70%? |
+|---|---|---|---|
+| 8/10 | 80% | 49–94% | **no** |
+| 9/10 | 90% | 60–98% | **no** |
+| 10/10 | 100% | 72–100% | yes |
+
+**At n = 10 the only result that can statistically clear a 70% threshold is a unanimous one.** We had pre-registered a threshold the pre-registered sample size could not reach except by a perfect score. Both numbers were set in good faith and neither was checked against the other.
+
+Smallest n that resolves P-1, by the effect size that actually appears:
+
+| Observed rate | n required |
+|---|---|
+| 100% | 10 |
+| 90% | **15** |
+| 80% | **77** |
+
+**Decision: n ≥ 15**, with the reporting rule fixed in advance so it cannot be negotiated afterwards:
+- **≥ 90%** → resolved at n=15. Report PASS.
+- **70–89%** → **directionally positive but NOT statistically resolved.** Report the estimate with its CI and say so. **Do not report PASS.** Resolving it needs ~75 participants, which is a separate decision about whether that certainty is worth the recruiting cost.
+- **< 70%** → FAIL. A clearly low result is informative even at n=15.
+
+**Why this is worth five extra participants.** Discovering *after* fifteen sessions that no attainable result could have supported the claim would have wasted the entire study and the recruiting effort behind it. Five more people is cheap by comparison.
+
+**This does not weaken the study — it states what it is.** A small-sample usability test detects **large** effects reliably and cannot adjudicate **small** ones. Tier 0 is looking for a large effect: if the organised-library entry point only wins by a few points, that is not the differentiation the Constitution claims anyway.
+
+**Propagated to:** both protocols (§8.1 with the power table), both scoring sheets, the facilitator rota (extended to P15, balance checked: 8/7 arm order, V1×4 V2×4 V3×4 V4×3), and `analyze_studies.py` (`MIN_N = 15`, which now stamps any smaller sample UNDERPOWERED and forbids a PASS).
+
+**Status.** ACTIVE.

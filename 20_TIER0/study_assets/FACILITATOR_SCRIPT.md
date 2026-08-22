@@ -19,7 +19,12 @@ Everything in `[brackets]` is an instruction to you, never spoken.
 | 7 | Timer, both scoring sheets printed, recorder ready | ☐ |
 | 8 | Both apps **closed** (not backgrounded) so first-open is genuinely first-open | ☐ |
 
-### Rota (n = 10)
+### Rota (n = 15 — raised from 10, DEC-021)
+
+> Raised from 10. At n=10 the **only** result that clears a 70% threshold is a
+> unanimous 10/10 — even 9/10 leaves the threshold inside the confidence interval.
+> Five extra participants is what makes a 90% result statistically resolvable
+> instead of merely suggestive. See protocol §8.1.
 
 | P | Arm order | Ledger variant |
 |---|---|---|
@@ -33,6 +38,13 @@ Everything in `[brackets]` is an instruction to you, never spoken.
 | P08 | B → A | V4 |
 | P09 | A → B | V1 |
 | P10 | B → A | V2 |
+| P11 | A → B | V3 |
+| P12 | B → A | V4 |
+| P13 | A → B | V1 |
+| P14 | B → A | V2 |
+| P15 | A → B | V3 |
+
+Balance check: arm order 8×(A→B) / 7×(B→A); variants V1×4, V2×4, V3×4, V4×3.
 
 **A = Apple Photos · B = our prototype.** Introduce them only as **"app 1" and "app 2"** in the order the participant will meet them (AB-3). Never say "ours", never show branding.
 

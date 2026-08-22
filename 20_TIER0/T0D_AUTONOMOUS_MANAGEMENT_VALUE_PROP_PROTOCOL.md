@@ -159,6 +159,49 @@ This is the R0–R6 ladder validated **as a user preference**, with no engine bu
 **GO WITH CONSTRAINTS** = D-P1 passes, D-P2 fails → users want assistance but not full autonomy; default to M2 and treat M3 as opt-in. Constitution §5/§17 unaffected; the *default* changes.
 **FAIL** = D-P1 fails → **escalate to Owner immediately as a potential Kill result.** Do not quietly redesign. This would contradict Constitution §5–§7 and §17, and per PF-08 a contradiction with Level 1 is escalated, never applied.
 
+### 8.1 Sample size — the thresholds and n=10 were inconsistent (DEC-021)
+
+Found while self-testing the analyzer, before any participant was recruited.
+
+Wilson 95% confidence intervals at **n = 10**, against the 70% threshold:
+
+| Observed | Rate | 95% CI | Clears 70%? |
+|---|---|---|---|
+| 8/10 | 80% | 49–94% | **no** |
+| 9/10 | 90% | 60–98% | **no** |
+| 10/10 | 100% | 72–100% | yes |
+
+**At n = 10 the only result that statistically clears a 70% threshold is a unanimous
+one.** Anything short of 10/10 leaves the threshold inside the interval, which means
+the study cannot resolve the criterion in either direction.
+
+Smallest n that can resolve P-1, by the effect size that actually turns up:
+
+| If the observed rate is | n required |
+|---|---|
+| 100% | 10 |
+| 90% | **15** |
+| 80% | **77** |
+
+**Decision: minimum raised to n = 15**, and the reporting rule is fixed in advance:
+
+- **Observed ≥ 90%** → n = 15 resolves it. Report PASS.
+- **Observed 70–89%** → **directionally positive but NOT statistically resolved.**
+  Report the point estimate with its CI and say so plainly. Do **not** report PASS.
+  Resolving it needs roughly 75 participants, which is a separate decision about
+  whether that certainty is worth the recruiting cost.
+- **Observed < 70%** → FAIL, and at n=15 a clearly low result is informative even
+  though the CI is wide.
+
+Five extra participants is cheap. Discovering after the sessions that no attainable
+result could have supported the claim would not have been.
+
+This does not weaken the study. It makes explicit what a small-sample usability test
+can and cannot deliver: it detects **large** effects reliably and cannot adjudicate
+**small** ones. Tier 0 is looking for a large effect — if the organised-library entry
+point only wins by a few points, that is not the differentiation the Constitution
+claims anyway.
+
 ## 8. Anti-bias
 
 Inherits **AB-1…AB-8** from the T0-B protocol, plus:
