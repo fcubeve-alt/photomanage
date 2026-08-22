@@ -41,7 +41,7 @@ Everything else serves these. If a proposal weakens any of them, it is wrong reg
 | **13** | **Continuous Photo Hygiene** — every new asset repeats the whole pipeline. 只有必要时才打扰用户 | **T0-D (concept)**, T2-C | |
 | **14** | Global Default Policy → **Personal Policy** learned from Keep/Delete/Protect/Restore/Correction | **T2-G** | Goal is not one shared right answer, it is learning this user |
 | **15** | Derived services (Wardrobe, Travel, People, Purchase & Warranty, Home/Object, Document Memory, Reminders) **must derive from existing data** | Post-P0 | Never ask the user to re-enter anything |
-| **16** | **Boundary.** No unrequested inference about personality, health, politics, religion or intimate relationships | Always | Hard ethical line |
+| **16** | **Boundary.** No unrequested inference about personality, health, politics, religion or intimate relationships | Always | Hard ethical line. **DEC-020 draws the line precisely for the one case that came up:** classifying an explicit medical *document* is allowed; inferring a health *state* from it is not. Documents, never diagnoses — see `OPERATING_RULES.md` P-08 |
 | **17** | Phase 1 is **Autonomous Photo Organizer / Visual Library Manager**, NOT an AI Photo Cleaner. Classification = skeleton · Risk-Aware Decision Engine = basis of autonomy · Cleaner = internal capability · Search = retrieval · Continuous Hygiene = retention | Everything | Cleaner is a *capability*, never the positioning |
 | **18** | KPIs: **Automation Ratio · Human Review Burden · Weighted Error Cost · Catastrophic Error Rate · Classification Coverage · Retrieval Success · Continuous Hygiene Rate · Personalization Gain** | Every gate | Report together, never FP alone |
 | **19** | Names 9 additional P0 validation items | Allocated across T1/T2 by the Execution Index — **DEC-003** | Not a licence to build in Tier 0 |
@@ -62,7 +62,7 @@ Everything else serves these. If a proposal weakens any of them, it is wrong reg
 - **No asset duplication for UI convenience** (§3, §23).
 - **No universal Same-Entity model** (§24 G2) — category-specific resolvers only.
 - **No FP=0 as the objective** (§7, §18, §20) — that is the Cleaner failure mode this product rejects.
-- **No unrequested sensitive inference** (§16).
+- **No unrequested sensitive inference** (§16). Specifically: `Documents > Medical` classifies **documents**, never health states, conditions or medications (P-08, DEC-020).
 - **No cloud upload or ad profiling of private visual data** (§26).
 - **No degradation into a Cleaner** (§24 G4) — Cleaner is an internal capability, never the product.
 

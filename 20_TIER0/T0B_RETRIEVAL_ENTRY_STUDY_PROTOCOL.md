@@ -176,7 +176,7 @@ Run **before** any task, once per arm, in the arm's assigned order.
 ### Known limitations, to be stated in the report
 - **L-1 · Prepared catalogue and hand-authored taxonomy.** Arm B's organisation *and* its category tree are hand-made for the test library. It demonstrates the *concept*, not the *engine*, and not that a classifier could produce this tree. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
 - **L-6 · Web prototype, not a native app.** Arm B is HTML added to the Home Screen; arm A is a native app. Add-to-Home-Screen removes browser chrome, but scroll physics and transitions still differ. This works **against** arm B, so a PASS is conservative — but record any participant comment about it feeling "like a website".
-- **L-5 · `Documents › Medical` is unresolved (OPEN-1).** Rendered as "pending decision" and excluded from every task, pending an Owner ruling against Constitution §16.
+- ~~**L-5 · `Documents › Medical` is unresolved.**~~ **RESOLVED 2026-08-23 (DEC-020):** approved for explicit medical documents only, never health-state inference. The category is now populated and browsable like any other. It is deliberately **not** made a task target — there is no question the other seven tasks do not already answer, and asking a stranger to hunt for medical paperwork buys nothing.
 - **L-2 · Persona library.** In Part 1 the participant is navigating someone else's life. Mitigated by the 3-minute browse and by Part 2, but time-to-find is inflated across all three arms equally.
 - **L-3 · Novelty.** Arm B is unfamiliar; both novelty inflation and unfamiliarity penalty are possible. P-2 (reasoned preference) exists to detect the former.
 

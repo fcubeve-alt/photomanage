@@ -34,9 +34,14 @@ TREE = {
         # many entries, no duplicated original (Constitution §3).
         "Receipts": {"_also_in": "Purchases > Receipts"},
         "Warranty": {"_also_in": "Purchases > Warranty"},
-        # OPEN-1: awaiting an Owner ruling against §16 (no unrequested health
-        # inference). Rendered as "pending decision" and excluded from every task.
-        "Medical": {"_pending": True},
+        # APPROVED 2026-08-23 (DEC-020) with a hard boundary:
+        #   ALLOWED  — classifying an explicit medical DOCUMENT the user photographed
+        #              (a prescription, a test result, an appointment letter).
+        #   FORBIDDEN — inferring health STATE from it: conditions, diagnoses,
+        #              medications, treatment, or anything about the person.
+        # The category holds documents. It never characterises the human (§16).
+        # Contents default to Protect: medical documents are R5-class (§6).
+        "Medical": {},
         "Other Documents": {},
     }},
 

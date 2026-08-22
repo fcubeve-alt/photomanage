@@ -283,3 +283,25 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 **Also noted:** Constitution §23 has **no generic "Photography" bucket**. Ordinary photos are not a category — they are reached through Places and Timeline. That is the taxonomy being faithful, not an omission, and the generator now reflects it.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-020 · 2026-08-23 · `Documents > Medical` approved — explicit medical DOCUMENTS only, never health-state inference
+**Decision (Owner ruling on OPEN-1).** The category is approved, bounded:
+
+| | |
+|---|---|
+| **ALLOWED** | Classifying an explicit medical **document** the user photographed — a prescription, a test result, an appointment letter |
+| **FORBIDDEN** | Inferring health **state** from it: conditions, diagnoses, medications, treatment, severity, or any derived signal about the person |
+
+**The category describes the piece of paper. It never characterises the human.**
+
+**Why this needed teeth rather than a note.** Those two things are one careless model call apart. A classifier that can read "prescription" off a photo is already most of the way to storing what the prescription is for, and nothing about the architecture would stop that from happening quietly. So the boundary is written as a rule with an enforcement hook, not as a comment: **`OPERATING_RULES.md` P-08** requires any future classifier touching this category to be explicitly reviewed against it. Also recorded at the definition site in `taxonomy.py` and in the §16 row of `CONSTITUTION_UNDERSTANDING.md`.
+
+**Risk default.** Medical documents are R5-class (§6) and default to **Protect** — no auto-delete, ever.
+
+**Study impact.** T0-B limitation **L-5 retired**. The category is populated (130 assets) and browsable like any other. It is deliberately **not** made a task target: there is no question the existing seven tasks do not already answer, and asking a stranger to hunt for medical paperwork buys nothing.
+
+**Caught while implementing:** `Documents > Warranty` displayed 0 while carrying an "also in Purchases > Warranty" tag — a cross-listed node whose twin is empty reads as broken. The warranty asset was only indexed on the Purchases side. Fixed; both cross-listed pairs now verified to resolve to the **same asset ids**, not copies.
+
+**Status.** ACTIVE. OPEN-1 CLOSED.

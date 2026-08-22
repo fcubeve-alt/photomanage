@@ -51,7 +51,10 @@ COMPOSITION = [
     ("document_id",          0.06, ["Documents > Other Documents",
                                     "Documents > Financial > Bank",
                                     "Documents > Financial > Statements",
-                                    "Documents > Contracts > Insurance"]),
+                                    "Documents > Contracts > Insurance",
+                                    # DEC-020: explicit medical DOCUMENTS only.
+                                    # Never a health inference about the person.
+                                    "Documents > Medical"]),
     ("purchase",             0.05, ["Purchases > Orders", "Purchases > Delivery"]),
     ("downloaded_meme",      0.04, ["Downloads > Memes", "Downloads > Wallpapers",
                                     "Downloads > Social"]),
@@ -178,7 +181,7 @@ class Builder:
                      requires_real_imagery=True, source_query=q,
                      placeholder_text=f"RECEIPT — {q.split()[0].upper()}",
                      note="Distractor receipt; T3 must not be findable by 'only one receipt exists'.")
-        self.add(category="purchase", category_path="Purchases > Warranty",
+        self.add(category="purchase", paths=["Purchases > Warranty", "Documents > Warranty"],
                  captured_at=d(159, 13, 9), place="home", requires_real_imagery=True,
                  source_query="product warranty card", placeholder_text="WARRANTY CARD — HEADPHONES",
                  same_entity_group="ENTITY_HEADPHONES")
