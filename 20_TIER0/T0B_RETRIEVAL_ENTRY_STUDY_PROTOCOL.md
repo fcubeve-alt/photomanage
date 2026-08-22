@@ -15,7 +15,12 @@ The north star behind it (Constitution §22): **when the user wants to find some
 
 ### What we are actually showing them
 
-Not a search box. Per Constitution §12 and §23, the participant opens the app and **the library is already catalogued** — a predictable hierarchy, expired temporary content cleared, duplicates cleared, only a small Review Queue left. *Structure First, Photos Second.*
+Not a search box, and **not a dashboard** (DEC-017). Per Constitution §12 and §23, the participant opens the app and gets **two immediate values at once**:
+
+1. **A catalogued library they can browse right now** — a stable, predictable hierarchy that drills down through second and third levels. This takes the prime real estate.
+2. **Evidence the system already did the work** — compressed into a three-line header (*N analysed · N organised or handled · only 23 need your attention*), with the detail below the library.
+
+*Structure First, Photos Second.* Photos appear only once the participant has arrived somewhere specific.
 
 Two things are therefore under test, both visible on first open:
 - **B-1 · The first-open moment.** Does "my library is already organised and I did nothing" land?
@@ -42,7 +47,7 @@ The Tier 0 document requires only a *Structure First skeleton*. **The prototype'
 | Arm | What it is | Configuration |
 |---|---|---|
 | **A · Apple Photos** | The incumbent and the default entry today — the baseline §22 names | Native, full library access, People identified, indexing settled |
-| **B · Our prototype** | Structure First catalogued library | Six top-level entries minimum: Documents / People / Screenshots / Places / Timeline / Objects |
+| **B · Our prototype** | Structure First catalogued library **with real drill-down** | **11 top-level entries** per Constitution §23 (Documents / People / Screenshots / Places / Travel / Objects / Purchases / Clothing / Work / Downloads / Timeline), each opening into second and third levels — e.g. `Documents › Identity › Passports`. **Not a set of flat count tiles** (DEC-017). Built: `study_assets/prototype/`, 82 pages |
 
 Lucent remains a **documentary reference** (`evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`) for what the AI-search position looks like. It is not an arm, and its absence removes the $29.99 spend and the pre-session analysis wall-time.
 
@@ -145,7 +150,7 @@ Run **before** any task, once per arm, in the arm's assigned order.
 | **P-2 Reasoned preference** | Of those choosing our prototype, **≥ 70%** cite a **structural** reason (predictable categories, already organised, know where things are) rather than novelty or aesthetics. Coded blind by two coders |
 | **P-3 Task performance** | Arm B beats arm A on **median time** and **median steps** on **≥ 4 of 6** retrieval tasks |
 | **P-4** *(retired — DEC-013 removed the Lucent arm)* | — |
-| **P-5 Predictability** | **≥ 60%** correctly predict the passport location before tapping (§7 step 4) |
+| **P-5 Predictability** | **≥ 60%** correct at level 1 **and ≥ 40%** correct at every level (full path) before tapping |
 | **P-6 First-open moment** | **≥ 50%** spontaneously remark on the library being organised, without prompting |
 
 **Overall:** PASS requires **P-1 and P-3**. GO WITH CONSTRAINTS if P-1 passes but P-3 fails. **FAIL** if P-1 fails — and per Tier 0 §3, a B FAIL is a **NO-GO / PIVOT**, not a prompt to add features.
@@ -168,7 +173,8 @@ Run **before** any task, once per arm, in the arm's assigned order.
 | **AB-8** | Report the prepared-catalogue limitation (**L-1**) in the summary, not a footnote. | See below. |
 
 ### Known limitations, to be stated in the report
-- **L-1 · Prepared catalogue.** Arm B's organisation is hand-made for the test library. It demonstrates the *concept*, not the *engine*. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
+- **L-1 · Prepared catalogue and hand-authored taxonomy.** Arm B's organisation *and* its category tree are hand-made for the test library. It demonstrates the *concept*, not the *engine*, and not that a classifier could produce this tree. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
+- **L-5 · `Documents › Medical` is unresolved (OPEN-1).** Rendered as "pending decision" and excluded from every task, pending an Owner ruling against Constitution §16.
 - **L-2 · Persona library.** In Part 1 the participant is navigating someone else's life. Mitigated by the 3-minute browse and by Part 2, but time-to-find is inflated across all three arms equally.
 - **L-3 · Novelty.** Arm B is unfamiliar; both novelty inflation and unfamiliarity penalty are possible. P-2 (reasoned preference) exists to detect the former.
 
@@ -185,6 +191,12 @@ Run **before** any task, once per arm, in the arm's assigned order.
 6. **Structured failure-case inventory for Apple Photos** — from Part 2, the deliverable Tier 0 §3 explicitly asks for
 7. Verbatim quotes, including every negative one about arm B
 8. PASS / GO WITH CONSTRAINTS / FAIL against §8, with L-1…L-3 stated in the summary
+
+## 10A. Prototype build
+
+`20_TIER0/study_assets/prototype/` — 82 pages, generated by `build_prototype.py`. Home, every taxonomy node to leaf level, and the four T0-D header variants of the same home.
+
+Regenerate rather than hand-edit; counts and structure are defined in one place in the script. The four T0-D variants differ **only** in the header and work-report treatment — the library below is byte-identical across them, which is what keeps the between-subjects manipulation clean.
 
 ## 11. Companion study
 **T0-D Autonomous Management Value Proposition** runs with the same participants, **after** this study, on separate instruments. Its results are recorded in a separate deliverable and **neither study may substitute for the other** (Owner instruction, DEC-014). See `T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`.

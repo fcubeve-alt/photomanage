@@ -215,3 +215,26 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 **New Owner action required.** Create a **private** GitHub repository and push. This also closes the standing MAINTENANCE item — the repo is currently local-only, which is a real single-point-of-failure for E-06 cross-machine recovery.
 
 **Status.** ACTIVE. Evidence: `20_TIER0/T0A_CI_ENVIRONMENT_EVALUATION.md`.
+
+---
+
+### DEC-017 · 2026-08-22 · The home is the Visual Library entry point, not an AI work-report dashboard
+**Decision (Owner directive).**
+> 这版方向基本正确，但请不要把首页理解成"AI 工作报告 Dashboard"。它首先必须是用户以后替代 Apple Photos 的 Visual Library 主入口，其次才显示 AI 替用户完成了多少工作。ORGANIZED 区域不是几个 Smart Collections，而是稳定、可预测、可以继续下钻到二级/三级目录的 Library Taxonomy。首次全库整理完成后，用户应当同时获得两个即时价值：① 一个已经整理好的、可以直接浏览的视觉图书馆；② 一份系统已经替他完成大量管理工作的结果。
+
+**What was wrong with the previous mock.** The Work-Done Ledger gave the AI work report the whole screen and reduced ORGANIZED to six flat count tiles — which is structurally the same thing as Lucent's smart collections, the exact failure PF-06 exists to prevent. Flat counts do not let a user form a spatial memory, and a user who cannot predict where a thing lives has a tool, not a destination.
+
+**What changed.**
+1. **The first-run result compresses into a three-line header** — *N analysed · N organised or handled · Only 23 need your attention* — and the **library takes the prime real estate** below it. Work report moves below the library.
+2. **ORGANIZED becomes a real taxonomy with drill-down**, 11 top-level entries per Constitution §23, three levels deep where it matters: `Documents › Identity › Passports`, `Screenshots › Temporary › Pickup Codes`, `Places › Japan › Tokyo`.
+3. **Cross-listing is shown, not hidden.** Receipts carries an "also in Purchases › Receipts" tag. This makes Constitution §3 visible — one asset, many entries, no duplicated originals — and it is a differentiator, not an inconsistency to paper over.
+4. The T0-D ledger variants are now variants of **this same home**, not of a standalone dashboard. V4 (review-first) becomes sharper: it puts "23 need you" *above the library* rather than below, which is precisely the service-versus-homework manipulation.
+
+**Scope boundary, stated so this does not drift into Tier 1.** What is built is a **navigational skeleton**, hand-authored for the test library. It is **not** the Tier 1-A Visual Asset Taxonomy — no classification rules, no confusion matrix, no risk/lifecycle defaults. Same principle as limitation L-1: T0-B tests whether the STRUCTURE works for users, not whether a classifier can produce it. Building the classifier now would violate the Execution Index (DEC-003, P-01).
+
+**Open question raised by the tree — OPEN-1: a `Documents › Medical` category.** Constitution §16 forbids unrequested inference about health. Filing a photo the user deliberately took of a medical document is arguably categorisation of explicit content rather than inference — but it is sensitive enough to need an explicit ruling rather than a silent default. **Rendered in the prototype as "pending decision" and excluded from any task.** Owner decision required before the study runs.
+
+**Superseded.** `build_ledger_variants.py` and its `ledger/` output are removed — `build_prototype.py` generates the ledger variants as part of the home. Two competing generators sitting side by side is exactly the duplicate-canonical-artifact hazard the documentation audit exists to prevent.
+
+**Impact.** 82-page clickable prototype at `20_TIER0/study_assets/prototype/`. T0-B protocol §3/§7 updated: the predictability question now tests **path depth**, not just top-level placement.
+**Status.** ACTIVE.

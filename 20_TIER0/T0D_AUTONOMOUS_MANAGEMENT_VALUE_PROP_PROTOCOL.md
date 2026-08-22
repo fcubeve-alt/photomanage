@@ -58,35 +58,56 @@ Practical consequence: **run D after B in the same session, never interleaved**,
 
 ## 5. The Work-Done Ledger (the artifact under test)
 
-The first screen after first-run cataloguing. It is the visible form of §12 — the system has already worked — and of §18's **Human Review Burden** as a headline rather than an internal metric.
+> **REVISED per DEC-017.** The ledger is **not a standalone dashboard**. It is the header and lower section of the **Visual Library home** — the first-run result compressed into three lines at the top, the library taking the prime real estate, and the detail below it. Built at `study_assets/prototype/ledger_v1..v4.html`; the library portion is byte-identical across all four variants, so only the manipulated dimension differs.
 
-Content (numbers prepared for the test library, all reversible, all explainable per §3 safety line):
+Header shown on first open:
 
 ```
-Your library is organised.                      12,431 photos · finished 2 min ago
+Your library is organised.
+10,000 photos and videos analysed
+2,128 items organised or handled
+Only 23 need your attention.
+```
 
-  ORGANISED
-  Documents  47      Purchases  212     Screenshots 3,904
-  People  1,208      Places  2,663      Objects  389
-  Travel  4 trips    Timeline 2019–2026
+It is the visible form of §12 — the system has already worked — and of §18's **Human Review Burden** as a headline rather than an internal metric.
 
-  HANDLED FOR YOU                                        all recoverable for 30 days
-  340   expired verification & pickup codes     cleared      why?
-  1,867 duplicate downloads                     cleared      why?
-  612   near-identical burst frames             best kept    why?
+Full screen structure (numbers prepared for the test library; every action reversible and explainable per the §3 safety line):
+
+```
+  Your library is organised.                          <- first-run result, 3 lines
+  10,000 photos and videos analysed
+  2,128 items organised or handled
+  [ Only 23 need your attention > ]
+
+  YOUR LIBRARY                                        <- PRIME REAL ESTATE
+  Documents 604      People 1,532
+  Screenshots 2,491  Places 3,118
+  Travel 716         Objects 208
+  Purchases 498      Clothing 341
+  Work 452           Downloads 397
+  Timeline 10,000
+      each opens 2nd and 3rd level:
+      Documents > Identity > Passports
+      Screenshots > Temporary > Pickup Codes
+      Places > Japan > Tokyo
+  ─────────────────────────────────────
+  HANDLED FOR YOU                 all recoverable for 30 days
+  284   expired verification & pickup codes    cleared    why?
+  1,203 duplicate downloads                    cleared    why?
+  641   near-identical burst frames            best kept  why?
 
   PROTECTED
-  12 documents · 3 IDs · 1 contract              never auto-touched
+  12 documents · 3 IDs · 1 contract    Never touched automatically
 
-  NEEDS YOU
-  23 items                                                            Review →
+  [ 23 items need you                                Review > ]
 ```
 
 Design rules under test, each traceable:
-- **Order:** organised → handled → protected → needs-you. Work first, homework last.
-- **"Needs you: 23"** is the §18 Human Review Burden made the headline number.
-- **"all recoverable for 30 days"** is the §7 recoverability claim, visible.
-- **"why?"** on every action — the §3 safety red line (每一条建议都要能解释原因) present even in a throwaway prototype.
+- **The library comes first, the work report second** (DEC-017). The first-run result is compressed into three header lines; it does not occupy the screen. This is the difference between a Visual Library entry point and an AI work-report dashboard.
+- **ORGANIZED is a taxonomy, not a set of smart collections.** It drills down two and three levels. A user who can predict a full path has formed a spatial memory; flat count tiles cannot produce that.
+- **"Only 23 need your attention"** is the §18 Human Review Burden promoted from an internal metric to a headline.
+- **"all recoverable for 30 days"** makes the §7 recoverability claim visible.
+- **"why?"** on every action — the §3 safety red line (每一条建议都要能解释原因), present even in a throwaway prototype.
 - **"Protected"** shown as a *positive*: this is what it refused to touch (§6 R5/R6).
 
 ### 5.1 Ledger variants (between-subjects, 1 per participant)
@@ -97,7 +118,7 @@ To isolate what actually carries the value:
 | **V1 Full** | as above | baseline |
 | **V2 No numbers** | qualitative only ("expired codes cleared") | whether *quantification* is what lands |
 | **V3 No Protected block** | protection hidden | whether visible restraint drives trust |
-| **V4 Review-first** | "23 items need you" at top, work below | whether ordering changes it from service to homework |
+| **V4 Review-first** | "23 items need you" placed **above the library**, not below | whether ordering changes it from service to homework |
 
 **V4 is the sharpest.** Same facts, opposite framing. If V4 reads as homework and V1 reads as a service, presentation — not capability — is carrying the value proposition, and that is a finding worth having before any engine exists.
 
