@@ -1,5 +1,6 @@
 # T0-B · RETRIEVAL ENTRY STUDY PROTOCOL
-**Windows-side preparation for Tier 0-B.** Status of Tier 0-B itself: `REQUIRES_USERS` `REQUIRES_MAC` — **NOT RUN.**
+**Windows-side preparation for Tier 0-B.** Status of Tier 0-B itself: `REQUIRES_USERS` — **NOT RUN.**
+**Corrected 2026-08-22: this study does NOT require a Mac, Xcode, TestFlight or the $99.** The prototype is HTML; it runs in Safari on the loaner device, added to the Home Screen so it opens full-screen with no browser chrome. Only T0-A needs the native toolchain.
 Purpose: make the study runnable the day a prototype and participants exist, with every criterion fixed in advance so the result cannot be argued afterwards.
 Created 2026-08-22 · Session 001 · Design authority: Constitution §12, §22, §23 · Tier 0 v1.1 §3 · DEC-011, DEC-012, **DEC-013**
 
@@ -174,6 +175,7 @@ Run **before** any task, once per arm, in the arm's assigned order.
 
 ### Known limitations, to be stated in the report
 - **L-1 · Prepared catalogue and hand-authored taxonomy.** Arm B's organisation *and* its category tree are hand-made for the test library. It demonstrates the *concept*, not the *engine*, and not that a classifier could produce this tree. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
+- **L-6 · Web prototype, not a native app.** Arm B is HTML added to the Home Screen; arm A is a native app. Add-to-Home-Screen removes browser chrome, but scroll physics and transitions still differ. This works **against** arm B, so a PASS is conservative — but record any participant comment about it feeling "like a website".
 - **L-5 · `Documents › Medical` is unresolved (OPEN-1).** Rendered as "pending decision" and excluded from every task, pending an Owner ruling against Constitution §16.
 - **L-2 · Persona library.** In Part 1 the participant is navigating someone else's life. Mitigated by the 3-minute browse and by Part 2, but time-to-find is inflated across all three arms equally.
 - **L-3 · Novelty.** Arm B is unfamiliar; both novelty inflation and unfamiliarity penalty are possible. P-2 (reasoned preference) exists to detect the former.
@@ -204,7 +206,7 @@ Regenerate rather than hand-edit; counts and structure are defined in one place 
 ## 12. Dependencies
 | Need | Gate |
 |---|---|
-| Prototype built and delivered to a device | **HG-1 + HG-2a** (same Mac/TestFlight environment as T0-A) |
+| Prototype on the device | **None.** HTML, served locally or copied to the device, Add to Home Screen for full-screen. Built and working |
 | ≥10 external participants recruited | **HG-4** |
 | Loaner iPhone + prepared 8–12k test library | Owner fleet — one device set aside, library prepared per §5 |
 

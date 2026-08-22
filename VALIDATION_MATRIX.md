@@ -17,13 +17,13 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Status** | **NOT TESTED.** HG-3 approved in principle: cloud Mac + existing ~6-iPhone fleet (DEC-008). Redesigned as a **cross-device performance gradient**; minimum supported model derived from the measured curve, never assumed. iPhone 7 excluded on verified evidence. No simulated result may be reported as a PASS. |
 | **Next action** | Harness **compiles green** on GitHub Actions (run 32579093228, 48s, 0 billable min) — DEC-018. Build environment resolved at $0 (DEC-016). **Remaining: HG-1** — Owner enrols in Apple Developer ($99) and adds signing secrets, then `ios-testflight.yml` delivers to the device fleet. |
 
-### T0-B · Retrieval Entry hypothesis  `REQUIRES_USERS` `REQUIRES_MAC`
+### T0-B · Retrieval Entry hypothesis  `REQUIRES_USERS`
 | | |
 |---|---|
 | **Test** | Minimal Structure-First home skeleton (6 entries: Documents / People / Screenshots / Places / Timeline / Objects), presenting the **already-catalogued library** — not a search box (§12/§23). Real **external** users (not the team) perform the same tasks — find ID card, find one person from one trip, find a receipt, find a screenshot — in **native Apple Photos** vs **this prototype**. Two arms only; Lucent is not installed (DEC-013). |
 | **Success criteria** | Under blind/semi-blind conditions, a **majority** of test users explicitly state the prototype is better and that they would rather use it as their first stop for finding photos. |
 | **Measurement** | Per task: success rate, step count, time-to-find. Plus subjective forced choice, plus a structured list of concrete complaints about native Photos (turning "feeling" into failure cases). Output: `RETRIEVAL_ENTRY_USABILITY_TIER0.md`. |
-| **Status** | **NOT RUN.** Protocol complete. Blocked on prototype (HG-1/HG-2a) and participants (HG-4). |
+| **Status** | **NOT RUN.** Protocol and prototype complete. **Blocked ONLY on participants (HG-4)** — corrected 2026-08-22: the HTML prototype needs no Mac, no TestFlight, no $99. |
 | **Next action** | Protocol complete: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`. Remaining Windows-side work: build the §5 test library as an asset manifest, write the facilitator script and scoring sheet. Blocked on **HG-4** (participants) and HG-1/HG-2a (prototype). |
 
 ### T0-C1 · Competitor pricing matrix  `WINDOWS_OK`
@@ -44,7 +44,7 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Status** | **NOT RUN.** Plan complete; nothing published, no domain, no ads, no money taken. Blocked on **HG-2b**. |
 | **Next action** | Plan complete: `20_TIER0/T0C2_LANDING_PAGE_PLAN.md` — 3-arm rung test (Organised Library / Continuous Manager / Cleaner control) at a constant $39 one-off, full copy, funnel E1–E8, pre-registered C-P1…C-P4, no-charge fake-door with mandatory disclosure. Blocked on **HG-2b** (domain + ~$500-700 ad spend) and Owner approval of positioning/price/disclosure wording. **Run T0-D first** where possible — it tells us whether the rung is wanted before we pay to advertise it. |
 
-### T0-D · Autonomous Management Value Proposition  `REQUIRES_USERS` `REQUIRES_MAC`
+### T0-D · Autonomous Management Value Proposition  `REQUIRES_USERS`
 *Added 2026-08-22 by Owner instruction (DEC-014). Mandated by Constitution §7, absent from the Tier 0 document.*
 | | |
 |---|---|
@@ -52,7 +52,7 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Success criteria** | Pre-registered D-P1…D-P6. PASS requires **D-P1** (>=70% choose assisted/autonomous over full manual control) **and D-P5** (tolerance is risk-graded: >=80% protect IDs/contracts, >=60% auto-handle expired codes and duplicate memes). |
 | **Measurement** | `20_TIER0/evidence/AUTONOMOUS_MGMT_VALUE_PROP_TIER0.md` — **a separate deliverable. May never be merged with, or substituted for, the Retrieval Entry report** (Owner instruction). |
 | **Status** | **NOT RUN.** Protocol complete: `20_TIER0/T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`. |
-| **Next action** | Build the ledger screen and interview instrument on Windows. Blocked on HG-1/HG-2a (prototype) and HG-4 (participants). |
+| **Next action** | Ledger variants built (`study_assets/prototype/ledger_v1..v4.html`). **Blocked ONLY on HG-4** (participants). No Apple Developer dependency. |
 | **Failure handling** | D-P1 FAIL contradicts Constitution §5–§7 and §17 — **escalate to Owner as a potential Kill result**, do not redesign around it (PF-08). |
 
 ### T0-GATE · Tier 0 decision

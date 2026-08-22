@@ -64,7 +64,7 @@ Build-ahead work that needs no approval meanwhile:
 | ~~**HG-2a**~~ | ~~EUR 2.64 Scaleway~~ — **WITHDRAWN (DEC-016).** GitHub Actions replaces it at $0 | — | — |
 | ~~**HG-5**~~ | ~~No GitHub remote~~ — ✅ **DONE 2026-08-22.** `fcubeve-alt/photomanage`, private, 170 files, CI green | — | — |
 | **HG-1** ← **NOW THE CRITICAL PATH** | Apple Developer enrolment + **$99**. Precondition (green build) is **satisfied** — DEC-018. Owner must enrol personally: legal name, own credit card, 2FA, possibly photo ID. Then add 8 repo secrets | Owner enrols, pays, adds secrets | Dispatch `ios-testflight.yml`: archive, sign, upload, release to TestFlight, then run A1–A4 on the fleet |
-| **HG-4** (blocking T0-B **and T0-D**) | No recruited external test users (n>=10). Tooling half solved by the same Mac environment — **purely a recruitment problem** | Users recruited **and** prototype built | Run T0-B, then T0-D with the same participants on separate instruments |
+| **HG-4** (blocking T0-B **and T0-D**) | **No recruited external test users (n>=10).** Corrected 2026-08-22: these two studies need **no Mac, no TestFlight and no $99** — the prototype is HTML. Prototype is built. This is now **purely a recruitment + test-library-prep problem** | ≥10 external users recruited, test library loaded on a loaner iPhone | Run T0-B, then T0-D with the same participants on separate instruments |
 | **HG-2b** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
 
 ### CAPABILITY

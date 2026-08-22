@@ -1,5 +1,6 @@
 # T0-D · AUTONOMOUS MANAGEMENT VALUE PROPOSITION — CONCEPT VALIDATION
-**Windows-side preparation.** Status: `REQUIRES_USERS` `REQUIRES_MAC` — **NOT RUN.**
+**Windows-side preparation.** Status: `REQUIRES_USERS` — **NOT RUN.**
+**Corrected 2026-08-22: no Mac, no TestFlight and no $99 required.** The ledger variants are HTML.
 Added to Tier 0 by Owner instruction, 2026-08-22. Recorded as **DEC-014**.
 Design authority: Constitution **§7, §12, §13, §18** · Tier 0 v1.1 · Execution Index v1.0
 
@@ -190,4 +191,5 @@ Inherits **AB-1…AB-8** from the T0-B protocol, plus:
 - **§18 KPI** — first real Human Review Burden target
 
 ## 11. Dependencies
-Prototype + device (**HG-1/HG-2a**) · participants (**HG-4**, same cohort as T0-B) · ledger screen and interview instrument (**Windows-executable now**).
+Ledger variants (**built** — HTML) · a device to show them on (**any**) · participants (**HG-4**, same cohort as T0-B).
+**Nothing here is gated on the Apple Developer Program.**
