@@ -38,7 +38,8 @@ enum BackgroundIndexing {
             task.setTaskCompleted(success: false)
         }
 
-        runner.storageState = runner.storageState
+        // storageState / chipLabel are set by the operator in the foreground UI and
+        // persist on the runner, so the background run inherits them as-is.
         runner.runCold(resume: true)              // background runs always resume
 
         // Poll for completion; the runner writes its own CSV row.
