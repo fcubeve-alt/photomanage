@@ -54,43 +54,59 @@ Lucent has the feature list and no traction. Whatever the cause, the safe read i
 
 ---
 
-# PART 3 — HOW WE ACTUALLY DIFFER (and how much of it is provable)
+# PART 3 — HOW WE ACTUALLY DIFFER
 
-The differentiation the Owner names is real. But it must be ranked by **whether a user can feel it in one session**, because that is what Tier 0-B can measure — and what a purchase decision is made on.
+> **CORRECTED 2026-08-22 after Owner challenge.** An earlier version of this section claimed our differentiators "accrue over weeks" and were therefore hard to demo. **That was wrong**, and it contradicted Constitution §12, which I had already read. The Owner was right. The error and its correction are recorded in DEC-012.
 
-| Our claim | Lucent's equivalent | Real difference? | Felt in first session? |
-|---|---|---|---|
-| **Structure First** — a fixed, predictable hierarchy (Documents → IDs → Passport) | 200+ AI-generated collections | **Yes, and it is a genuine inversion** — see below | ✅ **Immediately** |
-| Multi-dimensional index, one asset reachable from many entries | Collections + Timeline + Map | Partly — they have several entries, but not a unified taxonomy | ⚠️ Partly |
-| **Risk-aware autonomous management** (Category × Risk × Lifecycle × Confidence × Recoverability → Action) | Duplicate detection + Quality Score | **Yes, different layer entirely** | ❌ **Accrues over weeks** |
-| **Continuous hygiene** — every new photo auto-filed forever | Auto-analysis of new photos (extent unverified) | Probably, but unproven either way | ❌ **Accrues over months** |
-| Same-Entity across time (same ID card re-shot) | Not described | Yes, as far as public info shows | ❌ Needs a longitudinal library |
-| Equivalence Margin auto-selection from burst | Duplicate detection, Quality Score | Yes — theirs is similarity-based, ours is risk-gated | ⚠️ Demoable on a burst |
-| Personal Policy learning | Not described | Yes | ❌ Accrues over months |
+## 3.0 The product has TWO organisation layers, not one
 
-## 3.1 Why "200+ collections" is a weakness dressed as a strength
-Two hundred auto-generated albums is **another pile to search**. The user cannot predict what exists or where a thing lives; they have to go look. A fixed hierarchy is less impressive in a feature list and better in the hand, because **predictability is the feature**: the user knows before opening the app that their passport is under Documents → IDs → Passport. That is what makes it an *entry point* rather than a *tool*.
+This is the distinction the earlier analysis destroyed by merging:
 
-This is our sharpest weapon and also the cheapest to build and the fastest to demo. It should be the spine of the Tier 0-B prototype.
+| Layer | What it is | When the user feels it |
+|---|---|---|
+| **基础整理 — first-run full-library cataloguing** | On first open, the entire library is already catalogued into a library-style hierarchy; expired temporary content is cleared; duplicates are cleared | **Immediately. The first time they open the app.** Constitution §12 |
+| **持续整理 — continuous hygiene** | Every new photo from then on is auto-filed through the same pipeline | Over weeks and months. Constitution §13 |
 
-## 3.2 The uncomfortable part — say it plainly
-**Our strongest differentiators are our least demoable ones.**
+Constitution §12 states the first-run outcome in plain terms: scan the whole library, build the multi-dimensional index, classify, risk-grade, form the Documents / People / Screenshots / Places / Timeline / Objects views, auto-handle the low-risk high-confidence items, and leave only a very small Review Queue. And it names the resulting first-value moment directly: **『原来我的照片可以这么整齐，而且我不用自己整理。』**
 
-Lucent's differentiator (natural-language search) is *instantly* demoable — you type "sunset at the beach" and it works — and it still did not convert. Ours (risk-aware autonomy, continuous hygiene, personal policy) only pays off over weeks or months.
+So the headline differentiator is **visible in the first session by design.** It is not a promise about the future.
 
-If we reason "we are more differentiated than Lucent, so we will do better", we may actually be saying "we are **harder to sell** than Lucent". That is the real warning in this competitor, and it is sharper than "don't build another Lucent".
+## 3.1 The second differentiator: the entry point itself changes
 
-**Required adjustment:** the first session must deliver a **quantified receipt of work already done**, not a promise of future upkeep. Something like:
+Constitution §22 sets the north star: when the user wants to find an ID, a contract, a person, a receipt, a screenshot, a piece of clothing, a trip or an object, **their first move is to open this product — not to dig through Apple Photos.** §23 makes the home screen a catalogue, not another infinite scroll: *Structure First, Photos Second.*
 
-> *Sorted 12,431 screenshots into Chat / Shopping / Maps / Temporary. Found 340 expired verification codes that are safe to delete. Protected 12 documents and 3 IDs. 23 things need you.*
+This is a **behavioural** difference, not a feature difference. After install, the user stops going to Apple Photos to look at their own photos and comes here instead. That is precisely what Tier 0-B measures as **Retrieval Entry Share**, and it is the single thing the whole tier exists to test.
 
-That converts an unfalsifiable long-term promise into a visible first-run artifact. It is consistent with Constitution §12 but sharper: §12 says the user should feel "my photos are tidy and I didn't do it" — this says **show the receipt, with numbers, including how little is left for them to do.** Human Review Burden is already a core KPI (§18); this makes it the headline of the first screen rather than an internal metric.
+Lucent does not compete for this. Lucent is a **tool you open to search**. We are **where your photos live**.
 
-## 3.3 One-line positioning against Lucent
-Lucent is **AI that understands your photos**. We are **a librarian who maintains your library**.
-The user-facing difference is not intelligence — it is *who does the work*.
+## 3.2 Where Lucent actually sits
 
----
+| | Lucent Pro | Us |
+|---|---|---|
+| What the user opens it for | To *search* for a photo when they already know they want one | To *look at their photos*, full stop — the default entry |
+| Home screen | AI-generated collections + timeline + map | Fixed, predictable catalogue: Documents → IDs → Passport; Purchases → Receipts; Screenshots → Chat / Shopping / Maps / Temporary |
+| First-run outcome | Library gets analysed so search works | **Library comes back organised, cleaned and cleared** |
+| Cleanup | Duplicate detection + Quality Score, user-driven | Expired temporary content and duplicates already handled by risk policy |
+| Ongoing | New photos get analysed | New photos get classified, filed, risk-graded, lifecycle-tracked |
+
+## 3.3 Why "200+ smart collections" is weaker than a fixed hierarchy
+
+Two hundred auto-generated albums is **another pile to search**. The user cannot predict what exists or where a thing lives; they have to go look, which means Lucent is still a *tool*, not an *entry point*.
+
+A fixed hierarchy is less impressive in a feature list and better in the hand, because **predictability is the feature**: the user knows before opening the app that their passport is under Documents → IDs → Passport. Predictability is what converts a tool into a destination — and a destination is what §22 is asking for.
+
+## 3.4 What remains genuinely slow-burn (a small list, not the headline)
+
+Being accurate in both directions: these really do take time to pay off, and they are **not** what we lead with.
+
+- Personal Policy learning from user corrections (§14)
+- Same-Entity across long time spans — the same ID card re-shot months apart (§9)
+- Derived services: Wardrobe, Travel, Purchase & Warranty memory (§15)
+
+These are follow-on value. The first-session value is §12, and it is immediate.
+
+## 3.5 One-line positioning
+**Lucent is AI that searches your photos. We are where your photos live — already sorted, already cleaned, already yours to browse.**
 
 # PART 4 — ADJUSTMENTS TO THE PLAN
 
@@ -98,7 +114,7 @@ The user-facing difference is not intelligence — it is *who does the work*.
 |---|---|---|
 | **ADJ-1** | Lucent Pro promoted to **Benchmark Competitor No.1**. Tier 0-B becomes a 3-way comparison: **Apple Photos vs Lucent Pro vs our prototype.** | T0-B protocol · DEC-010 |
 | **ADJ-2** | **Fair-configuration rule** (see Part 5) — competitors must be tested fully paid and fully analysed. | T0-B protocol |
-| **ADJ-3** | First-run **quantified receipt** becomes a required element of the Tier 0-B prototype, not a Tier 2 nicety. | T0-B protocol · flagged to Constitution §12/§23 as an emphasis, not a change |
+| **ADJ-3** | The Tier 0-B prototype must present the **already-catalogued library** as the first screen, per Constitution §12/§23 — including a visible summary of what was organised and cleared, and how little is left for the user. This is an *implementation* of §12, not a new idea. | T0-B protocol |
 | **ADJ-4** | Competitor-derived test cases added to T0-A: first-launch stall on a large library, PhotoKit init reliability, **index state recovery after app restart** (distinct from the existing checkpoint-resume test). | `T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md` |
 | **ADJ-5** | P-04 tightened: a heavy on-device model must now beat a **demonstrated 262 MB baseline**, not merely function. | `OPERATING_RULES.md` |
 | **ADJ-6** | New failure pattern **PF-06 "Becoming another Lucent"** — capability parity mistaken for differentiation. | `FAILURE_PATTERNS.md` |
@@ -148,7 +164,7 @@ The Owner's sixth proposed task — *clean up 8 near-identical burst photos* —
 | Benchmark Competitor No.1? | Yes |
 | Reason to stop? | **No** |
 
-**The most useful thing Lucent tells us is not about Lucent. It is that a complete, private, on-device AI photo product can exist and still not matter.** Our answer to that cannot be more capability — Lucent had capability. It has to be that the user can *feel*, in the first session, that the work is already done and that almost nothing is left for them.
+**The most useful thing Lucent tells us is not about Lucent. It is that a complete, private, on-device AI photo product can exist and still not matter.** Our answer to that is not more capability — Lucent had capability. It is that we are not selling the same thing. Lucent analysed the library so the user could search it. We hand the library back **already organised, already cleaned**, and become the place the user goes to look at their photos. That is §12 plus §22, and it is visible on first open.
 
 ## Sources
 Archived App Store page `raw/page_LucentPro.html` and `raw/itunes_LucentPro.json`, both retrieved 2026-08-22. Version history and release notes quoted verbatim from that page. Owner's independent research (2026-08-22), verified against the same archive.

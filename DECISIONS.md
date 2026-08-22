@@ -119,4 +119,29 @@ Format: ID · date · decision · rationale · evidence · impact · status
 **Decision.** Log explicitly that a Tier 0-B PASS proves users prefer our **structure and retrieval**, and proves nothing about whether they want, or will pay for, **autonomous management**. `TIER0_GO_NO_GO.md` must carry this limitation in its own words.
 **Rationale.** The Tier 0-B prototype will not contain risk, lifecycle or same-entity capability, because building those now would violate the Execution Index (see DEC-003, P-01). So the differentiator we consider decisive cannot be tested in the tier that decides whether to continue. Naming that gap is the honest move; discovering it later while reading a B PASS as validation of the whole thesis is the failure mode.
 **Consequence for study design.** The Owner's proposed sixth task — cleaning 8 near-identical burst photos — is an Equivalence Margin task (Tier 2-B). It is **kept but inverted**: the user performs it **manually in each app** and the effort is measured. That captures the pain our differentiator would remove, produces a baseline to beat later, and builds nothing that belongs to a later tier.
-**Status.** ACTIVE. Revisit at the Tier 0 gate and again at Tier 2-A/C.
+**Status.** **SUPERSEDED by DEC-012** — the claim was too broad. First-run cataloguing *is* testable in Tier 0-B; only the engine accuracy and the continuous/risk layers are not.
+
+---
+
+### DEC-012 · 2026-08-22 · CORRECTION: the first-run organised library is the headline differentiator, and it is visible immediately
+**Supersedes the reasoning in DEC-011 and in Part 3 of the Lucent analysis.**
+
+**What I got wrong.** I claimed our differentiators "accrue over weeks and months" and therefore that being more differentiated than Lucent might mean being harder to sell. To reach that I merged two distinct layers of the product and then reasoned from a competitor's unexplained failure over the top of a Level 1 document.
+
+**What is actually true — the product has two organisation layers:**
+1. **基础整理 — first-run full-library cataloguing (Constitution §12).** On first open the whole library is already catalogued into a library-style hierarchy, expired temporary content cleared, duplicates cleared, only a very small Review Queue left. §12 names the value moment itself: 『原来我的照片可以这么整齐，而且我不用自己整理。』 **This is immediate, not slow-burn.**
+2. **持续整理 — continuous hygiene (§13).** Every subsequent photo auto-filed. This one does accrue over time.
+
+**And the entry point changes (§22/§23).** After install the user stops opening Apple Photos to look at their own photos. That behavioural switch is the north star, it is what Tier 0-B measures as Retrieval Entry Share, and it is also felt immediately.
+
+**Corrected position.** The headline differentiator is visible on first open by design. Lucent analyses a library so you can *search* it; we hand the library back *organised*. Genuinely slow-burn items are a short list and are not what we lead with: Personal Policy learning (§14), long-span Same-Entity (§9), derived services (§15).
+
+**Correction to DEC-011.** DEC-011 said our primary differentiator is unfalsifiable until Tier 2. Too broad. Correct scope:
+- **Tier 0-B CAN test:** whether the already-organised library beats Apple Photos and Lucent as the place users go to find things, and whether the "it is already organised and I did nothing" moment lands. The Tier 0 doc only requires a Structure First skeleton, so the test library catalogue may be prepared for the study — no engine required.
+- **Tier 0-B CANNOT prove:** that our engine produces that catalogue reliably at scale (Tier 1), or that risk-aware automation is safe and wanted (Tier 2).
+The burst-cleanup task stays inverted per DEC-011 — measure the manual effort, build nothing from a later tier.
+
+**Rationale for recording this at all.** Level 1 may be overridden only by demonstrated technical infeasibility or documented material conflict — never by inference from a competitor whose failure cause is explicitly UNKNOWN (UNKNOWN-1). Logged as `FAILURE_PATTERNS.md` **PF-08**.
+
+**Impact.** Lucent analysis Part 3 rewritten; PF-06 reframed from "our value is invisible" to "do not drift into shipping a search tool"; T0-B protocol will lead with the catalogued library rather than a search box.
+**Status.** ACTIVE.
