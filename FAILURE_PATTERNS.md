@@ -43,8 +43,8 @@ Part 2 is this project. Append a new entry every time a real failure happens her
 
 ### PF-05 · Shell heredoc corrupted by apostrophes in prose content
 **Risk.** Writing long English prose into files through a quoted shell heredoc failed with an EOF parse error when the content contained an odd number of apostrophes, because the command is wrapped in single quotes by the harness. Silent truncation or a lost file is possible.
-**Guard.** Use the Write tool for prose documents. Reserve heredocs for code and short content without apostrophes.
-**Status.** Occurred 2026-08-22 while writing `VALIDATION_MATRIX.md`. Recovered by switching tools; no data lost.
+**Guard.** Use the Write tool for prose documents. For edit scripts containing prose, **write the script to a file with Write and run it by path** — do not inline it in a heredoc. Reserve inline heredocs for short content with no apostrophes.
+**Status.** Occurred three times on 2026-08-22 (VALIDATION_MATRIX write, then two edit scripts, then a git commit message). Each time recovered with no data lost, but it cost round-trips. Guard upgraded after the third occurrence: **commit messages also go via `git commit -F <file>`.**
 
 ### PF-06 · Becoming another Lucent — shipping a search tool instead of an organised library
 **Risk.** Lucent Pro shipped NL search, OCR, object/face recognition, 200+ smart collections and duplicate detection on-device in 262 MB, and got rating volume too low for Apple to display. The trap is drifting into the same product: analysing the library so the user can *search* it, rather than handing the library back **already organised and already cleaned** and becoming the place the user goes to look at their photos.

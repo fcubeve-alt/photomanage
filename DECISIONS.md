@@ -145,3 +145,39 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 
 **Impact.** Lucent analysis Part 3 rewritten; PF-06 reframed from "our value is invisible" to "do not drift into shipping a search tool"; T0-B protocol will lead with the catalogued library rather than a search box.
 **Status.** ACTIVE.
+
+---
+
+### DEC-013 · 2026-08-22 · Lucent Pro is NOT purchased or installed; Tier 0-B returns to a two-arm study
+**Decision (Owner).** Do not download or buy Lucent Pro. It is removed as a study arm. Tier 0-B is **Apple Photos vs our prototype**, exactly as Tier 0 v1.1 §3 specifies. Lucent stays as a **documentary reference only** (`20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`).
+**Rationale.** Owner assessment: its functionality is unremarkable, and Tier 0-B’s PASS bar is written against **Apple native**, not against a low-traction third party. Adding an arm we do not need lengthens an already long session, adds order effects, and spends money for a comparison the kill-question does not ask for.
+**Supersedes.** The three-way design in DEC-010 point 2. Everything else in DEC-010 stands — Lucent is still Benchmark Competitor No.1 as an intelligence source, and the fair-configuration rule (PF-07) survives and now binds **Apple Photos**: an instance that has not finished indexing People, or lacks full authorisation, would hand us a rigged win.
+**Impact.** Removes the **$29.99** spend and the pre-session analysis wall-time. Total pre-payment ask returns to **€2.64 + $99**. P-4 (beat Lucent) retired; P-1/P-2/P-3/P-5/P-6 unchanged. AB-1 counterbalancing simplifies to two sequences.
+**Status.** ACTIVE.
+
+---
+
+### DEC-014 · 2026-08-22 · T0-D Autonomous Management Value Proposition added to Tier 0
+**Decision (Owner).** Add a concept validation to Tier 0 testing whether users clearly prefer *「AI 替我持续管理，只把少数问题交给我决定」*, and whether a first-screen **Work-Done Ledger / Human Review Burden** conveys the core value immediately. Results recorded **separately** from Retrieval Entry; neither may substitute for the other.
+
+**Why this is not scope creep.** Constitution §7 ends with an explicit instruction: *「用户获得巨大持续便利时，对少量、低代价、可恢复的判断错误可能具有容忍度；这必须通过真实用户测试验证，而不能只凭工程师假设。」* The Constitution mandates this test; the Tier 0 document does not contain one. **T0-D closes a gap between L1 and L2.** It is also a genuine kill-question: §17 makes the Risk-Aware Decision Engine the basis of autonomy, so if users reject the model, that fails *before* Tier 1 spends anything on taxonomy and entity resolution.
+
+**Execution Index compliance.** Nothing from Tier 1 or Tier 2 is built. No classifier, no entity resolver, no lifecycle engine, no R0–R6 policy engine, no equivalence selection, no personal policy learning. What is built is **one screen and a structured interview**; the ledger numbers are hand-prepared for the test library, exactly as the T0-B catalogue is. The question is not *does our AI work* but *do users want an AI that does this at all* — answerable before any classifier exists. Limitation **L-4** must be stated in the report summary.
+
+**Separation rule (Owner, binding).** T0-B answers *will they come here to find things* (§22/§23). T0-D answers *will they let it manage for them* (§5/§7/§12/§13). They can dissociate in both directions and are recorded in separate deliverables. Run D after B in the same session, never interleaved.
+
+**Notable design points.** Four ledger variants isolate what carries the value — V1 Full vs **V4 Review-first** is the sharpest, since identical facts in the opposite order test whether the product reads as a service or as homework. Step 4 validates the §6 R0–R6 ladder **as measured user preference** rather than assumption. Step 5 quantifies §7’s recoverability argument for the first time. Step 6 produces the first empirical **Human Review Burden** target for §18, replacing an engineering guess.
+
+**Failure handling.** D-P1 failure (users reject autonomous management) **contradicts Constitution §5–§7 and §17** and is therefore escalated to the Owner as a potential Kill result — never quietly redesigned around (PF-08).
+
+**Impact.** New workstream **T0-D** in `VALIDATION_MATRIX.md`; new deliverable `AUTONOMOUS_MGMT_VALUE_PROP_TIER0.md`; `TIER0_GO_NO_GO.md` now carries four workstreams (A/B/C/D). No new spend — same participants, same prototype, same device.
+**Status.** ACTIVE.
+
+---
+
+### DEC-015 · 2026-08-22 · Apple Developer $99 paid only after the first successful cloud-Mac compile
+**Decision (Owner).** The $99 Apple Developer Program fee is approved in principle but is paid **only after the cloud Mac has successfully compiled the project**, not before.
+**Rationale.** It sequences the risk correctly: the cheap, reversible €2.64 Mac block proves the toolchain works and the project builds; only then is the annual, non-refundable fee committed. If the build fails for reasons we have not anticipated, we have spent €2.64 instead of $102.
+**Consequence for the plan.** Phase 2 of `T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` splits: **2.1–2.3 build and verify → STOP → report success to Owner → Owner enrolls and pays $99 → 2.4–2.5 archive, sign, upload to TestFlight.** Enrollment is HG-1 and must be done by the Owner personally (legal name, own credit card, 2FA, possibly photo ID).
+**Note.** A signing identity is not needed to compile and run in the Simulator, so the pre-payment build check is genuinely possible. Whether the 24-hour block can be paused or must be re-leased after the approval round-trip is a practical detail to confirm at provisioning; if it cannot, budget a second €2.64 block.
+**Status.** ACTIVE.

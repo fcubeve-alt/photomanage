@@ -1,7 +1,7 @@
 # T0-B · RETRIEVAL ENTRY STUDY PROTOCOL
 **Windows-side preparation for Tier 0-B.** Status of Tier 0-B itself: `REQUIRES_USERS` `REQUIRES_MAC` — **NOT RUN.**
 Purpose: make the study runnable the day a prototype and participants exist, with every criterion fixed in advance so the result cannot be argued afterwards.
-Created 2026-08-22 · Session 001 · Design authority: Constitution §12, §22, §23 · Tier 0 v1.1 §3 · DEC-010, DEC-011, DEC-012
+Created 2026-08-22 · Session 001 · Design authority: Constitution §12, §22, §23 · Tier 0 v1.1 §3 · DEC-011, DEC-012, **DEC-013**
 
 ---
 
@@ -27,7 +27,7 @@ Per DEC-012. Anyone reading the result must carry this:
 
 | Provable here | NOT provable here |
 |---|---|
-| Users prefer (or do not prefer) an organised-library entry point over Apple Photos and over Lucent | That our engine can actually produce that catalogue reliably at scale — **Tier 1** |
+| Users prefer (or do not prefer) an organised-library entry point over Apple Photos | That our engine can actually produce that catalogue reliably at scale — **Tier 1** |
 | The first-open organised moment lands (or does not) | That risk-aware automation is safe and wanted — **Tier 2** |
 | Concrete, structured failure cases in native Photos | That users will pay — **T0-C2** |
 
@@ -35,40 +35,41 @@ The Tier 0 document requires only a *Structure First skeleton*. **The prototype'
 
 ---
 
-## 3. Three-way design (DEC-010)
+## 3. Two-arm design (DEC-013 — supersedes the three-way design in DEC-010)
+
+**Owner decision 2026-08-22: Lucent Pro is not to be purchased or installed.** The study returns to the comparison Tier 0 v1.1 §3 specifies.
 
 | Arm | What it is | Configuration |
 |---|---|---|
-| **A · Apple Photos** | The incumbent and the default entry today | Native, full library access, indexing settled |
-| **B · Lucent Pro** | Benchmark Competitor No.1 — the "AI that searches your photos" position | **Premium purchased ($29.99), full-library analysis COMPLETE before the session** |
-| **C · Our prototype** | Structure First catalogued library | Six top-level entries minimum: Documents / People / Screenshots / Places / Timeline / Objects |
+| **A · Apple Photos** | The incumbent and the default entry today — the baseline §22 names | Native, full library access, People identified, indexing settled |
+| **B · Our prototype** | Structure First catalogued library | Six top-level entries minimum: Documents / People / Screenshots / Places / Timeline / Objects |
 
-### 3.1 Fair-configuration rule — non-negotiable (PF-07)
-> Every competitor is tested **fully paid, fully permissioned, and fully finished analysing** before the session starts. If that state cannot be reached, the comparison is not run and the limitation is reported.
+Lucent remains a **documentary reference** (`evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`) for what the AI-search position looks like. It is not an arm, and its absence removes the $29.99 spend and the pre-session analysis wall-time.
 
-Lucent's free tier analyses only **1,000 photos**. Running arm B unpaid on a 10k+ library would measure their paywall and report it as our advantage — a result that collapses the first time anyone checks. Budget the $29.99 and budget the analysis wall-time.
+### 3.1 Fair-configuration rule — still binding (PF-07)
+> Any competitor that *is* included in a comparative study is tested **fully permissioned and fully finished indexing** before the session. If that state cannot be reached, the comparison is not run and the limitation is reported.
 
-Apple Photos gets the same treatment: full access, People identified, indexing complete.
+With Lucent removed this now applies to **Apple Photos**, and it matters: an Apple Photos instance that has not finished indexing People, or lacks full library authorisation, would hand us a rigged win. **Verify and record per session.**
 
 ---
 
 ## 4. Two-part study
 
-### PART 1 — Standardised library, loaner device (all three arms)
-Controls content across participants so task times are comparable, and is the only way arm C can exist before the engine does.
+### PART 1 — Standardised library, loaner device (both arms)
+Controls content across participants so task times are comparable, and is the only way arm B can exist before the engine does.
 
 - One prepared library of **8,000–12,000 assets** on a loaner iPhone, with documented ground truth.
 - Participant is briefed on a persona: *"These are your photos. You are the person in them."* Give them **3 minutes** to browse freely before any task, so they are not searching a stranger's life cold.
-- All three arms installed on the same device with the same library.
+- Both arms on the same device with the same library.
 
-### PART 2 — Participant's own library (arms A and B only)
-Arm C cannot participate — no engine, so we cannot organise a stranger's library. Say so plainly.
+### PART 2 — Participant's own library (arm A only)
+Our prototype cannot participate — no engine, so we cannot organise a stranger's library. Say so plainly.
 
-- Same task *types*, run against their own photos on their own phone.
+- Same task *types*, run against their own photos on their own phone, in Apple Photos.
 - This is where the **real** pain and the **real** failure cases come from, and it produces the structured complaint list Tier 0 §3 explicitly asks for: *把「感觉」变成结构化的失败案例清单*.
 - Those failure cases feed directly into our taxonomy granularity and UI design.
 
-**Why both.** Part 1 gives comparability and lets us test arm C. Part 2 gives ecological validity and the complaint inventory. Neither alone is sufficient.
+**Why both.** Part 1 gives comparability and lets our prototype exist at all before the engine does. Part 2 gives ecological validity and the complaint inventory. Neither alone is sufficient.
 
 ---
 
@@ -140,14 +141,14 @@ Run **before** any task, once per arm, in the arm's assigned order.
 
 | Criterion | Threshold |
 |---|---|
-| **P-1 Preference (primary)** | **≥ 70%** of participants name arm C as where they would rather start looking for something, in a forced choice among A / B / C |
-| **P-2 Reasoned preference** | Of those choosing C, **≥ 70%** cite a **structural** reason (predictable categories, already organised, know where things are) rather than novelty or aesthetics. Coded blind by two coders |
-| **P-3 Task performance** | Arm C beats arm A on **median time** and **median steps** on **≥ 4 of 6** retrieval tasks |
-| **P-4 vs Lucent** | Arm C beats arm B on **≥ 3 of 6** tasks — the arm that matters, since B represents the AI-search alternative |
+| **P-1 Preference (primary)** | **≥ 70%** of participants name our prototype as where they would rather start looking for something, in a forced choice between the two arms |
+| **P-2 Reasoned preference** | Of those choosing our prototype, **≥ 70%** cite a **structural** reason (predictable categories, already organised, know where things are) rather than novelty or aesthetics. Coded blind by two coders |
+| **P-3 Task performance** | Arm B beats arm A on **median time** and **median steps** on **≥ 4 of 6** retrieval tasks |
+| **P-4** *(retired — DEC-013 removed the Lucent arm)* | — |
 | **P-5 Predictability** | **≥ 60%** correctly predict the passport location before tapping (§7 step 4) |
 | **P-6 First-open moment** | **≥ 50%** spontaneously remark on the library being organised, without prompting |
 
-**Overall:** PASS requires **P-1 and P-3**. GO WITH CONSTRAINTS if P-1 passes but P-3 or P-4 fails. **FAIL** if P-1 fails — and per Tier 0 §3, a B FAIL is a **NO-GO / PIVOT**, not a prompt to add features.
+**Overall:** PASS requires **P-1 and P-3**. GO WITH CONSTRAINTS if P-1 passes but P-3 fails. **FAIL** if P-1 fails — and per Tier 0 §3, a B FAIL is a **NO-GO / PIVOT**, not a prompt to add features.
 
 **Sample size:** **n ≥ 10** external participants. Not team members, not friends who know the project. Recruit for mixed ages and mixed photo-library sizes; record library size per participant.
 
@@ -157,19 +158,19 @@ Run **before** any task, once per arm, in the arm's assigned order.
 
 | ID | Rule | Why |
 |---|---|---|
-| **AB-1** | **Counterbalance arm order** across participants (Latin square, 6 sequences over 3 arms). | Three arms × seven tasks is long. Order and fatigue would otherwise dominate the result. |
+| **AB-1** | **Counterbalance arm order** across participants (half A-then-B, half B-then-A). | Two arms × seven tasks is still long enough for order and fatigue effects to matter. |
 | **AB-2** | The facilitator is **not** the prototype's author, or reads a **fixed script verbatim**. | Unconscious steering is the default failure of founder-run usability tests. |
-| **AB-3** | Arms are introduced **neutrally** — "app 1 / app 2 / app 3". No branding, no "ours". | Semi-blind per Tier 0 §3. |
+| **AB-3** | Arms are introduced **neutrally** — "app 1 / app 2". No branding, no "ours". | Semi-blind per Tier 0 §3. |
 | **AB-4** | Never ask "which is better?" Ask **"if you needed to find a photo tomorrow, which would you open first?"** | Preference is cheap; predicted behaviour is the actual metric. |
-| **AB-5** | Fair-configuration rule (§3.1) verified and **recorded per session** — Lucent paid and analysis complete. | PF-07. A rigged win is worse than a loss. |
-| **AB-6** | Record **every** gave-up and every failure **in arm C** with equal prominence. Counter-evidence is sought, not tolerated. | Playbook §8. |
+| **AB-5** | Fair-configuration rule (§3.1) verified and **recorded per session** — Apple Photos fully authorised, People identified, indexing complete. | PF-07. A rigged win is worse than a loss. |
+| **AB-6** | Record **every** gave-up and every failure **in arm B** with equal prominence. Counter-evidence is sought, not tolerated. | Playbook §8. |
 | **AB-7** | Pre-register §8 thresholds before the first session; **no post-hoc threshold changes**. | Otherwise the criteria drift to meet the data. |
 | **AB-8** | Report the prepared-catalogue limitation (**L-1**) in the summary, not a footnote. | See below. |
 
 ### Known limitations, to be stated in the report
-- **L-1 · Prepared catalogue.** Arm C's organisation is hand-made for the test library. It demonstrates the *concept*, not the *engine*. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
+- **L-1 · Prepared catalogue.** Arm B's organisation is hand-made for the test library. It demonstrates the *concept*, not the *engine*. A PASS means the interface concept works if the engine can be built — which Tier 1 must prove independently.
 - **L-2 · Persona library.** In Part 1 the participant is navigating someone else's life. Mitigated by the 3-minute browse and by Part 2, but time-to-find is inflated across all three arms equally.
-- **L-3 · Novelty.** Arm C is unfamiliar; both novelty inflation and unfamiliarity penalty are possible. P-2 (reasoned preference) exists to detect the former.
+- **L-3 · Novelty.** Arm B is unfamiliar; both novelty inflation and unfamiliarity penalty are possible. P-2 (reasoned preference) exists to detect the former.
 
 ---
 
@@ -182,14 +183,16 @@ Run **before** any task, once per arm, in the arm's assigned order.
 4. First-open results (§7), incl. passport-prediction accuracy
 5. Forced-choice preference + blind-coded reasons (P-1, P-2)
 6. **Structured failure-case inventory for Apple Photos** — from Part 2, the deliverable Tier 0 §3 explicitly asks for
-7. Verbatim quotes, including every negative one about arm C
+7. Verbatim quotes, including every negative one about arm B
 8. PASS / GO WITH CONSTRAINTS / FAIL against §8, with L-1…L-3 stated in the summary
 
-## 11. Dependencies
+## 11. Companion study
+**T0-D Autonomous Management Value Proposition** runs with the same participants, **after** this study, on separate instruments. Its results are recorded in a separate deliverable and **neither study may substitute for the other** (Owner instruction, DEC-014). See `T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`.
+
+## 12. Dependencies
 | Need | Gate |
 |---|---|
 | Prototype built and delivered to a device | **HG-1 + HG-2a** (same Mac/TestFlight environment as T0-A) |
-| Lucent Premium purchased | **HG-2a** — $29.99 |
 | ≥10 external participants recruited | **HG-4** |
 | Loaner iPhone + prepared 8–12k test library | Owner fleet — one device set aside, library prepared per §5 |
 

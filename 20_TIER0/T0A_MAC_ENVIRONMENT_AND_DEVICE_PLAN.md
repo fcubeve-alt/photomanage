@@ -56,9 +56,9 @@ Normal iOS development installs a build over USB. That is impossible when the Ma
 
 | Item | Cost | When approval is needed |
 |---|---|---|
-| Scaleway Mac mini **M1**, one 24-hour block | 24 × €0.11 = **€2.64** (~$3) | **Before first launch** |
-| Apple Developer Program, individual, annual | **$99 USD** | **Before enrollment** — also triggers **HG-1** (identity/KYC) |
-| **Total, first round** | **≈ $102** | |
+| Scaleway Mac mini **M1**, one 24-hour block | 24 × €0.11 = **€2.64** (~$3) | **Now** — the only thing being asked for today |
+| Apple Developer Program, individual, annual | **$99 USD** | **Deferred until after a successful compile** (DEC-015). Also triggers **HG-1** (identity/KYC) |
+| **Total, first round** | **≈ $102**, but committed in two steps rather than one | |
 
 ## If more Mac time is needed
 
@@ -75,7 +75,7 @@ Normal iOS development installs a build over USB. That is impossible when the Ma
 - **No photo data ever reaches the cloud Mac.** The Mac compiles and signs; the benchmark executes on the Owner's own iPhones against a library that never leaves those devices. This preserves the Privacy-First constraint (Constitution §26) even though the build machine is rented.
 - The $99 Apple Developer fee is not a sunk cost specific to Tier 0 — it is required for any eventual App Store release.
 
-**➡️ Approval requested for: €2.64 (Scaleway, one 24h M1 block) and $99 (Apple Developer Program). No further spend without a further request.**
+**➡️ Approval requested now for €2.64 only** (Scaleway, one 24h M1 block). The $99 is requested again separately, after the build is proven to compile (DEC-015). No further spend without a further request.
 
 ---
 
@@ -138,17 +138,24 @@ Tier 0 requires 10k / 30k / 100k. The Owner's real libraries are whatever size t
 0.2 Collect the fleet inventory from the Owner (§5.1).
 0.3 Prepare the App Store Connect metadata and the TestFlight internal-tester list, ready to paste.
 
-### Phase 1 — Approval gate ⛔
-1.1 Owner approves **€2.64** (Scaleway) and **$99** (Apple Developer). ← *you are here*
-1.2 Owner enrolls in the Apple Developer Program personally — **this is HG-1 and must be done by the Owner**: it requires their legal name, their own credit card, their Apple Account with 2FA, and possibly government photo ID (F4). I cannot and will not do this step.
+### Phase 1 — Approval gate ⛔  *(revised per DEC-015)*
+1.1 Owner approves **€2.64** (Scaleway) only. ← *you are here*
+1.2 **$99 is NOT paid yet.** Owner instruction: approved in principle, paid **only after the cloud Mac successfully compiles the project**. This sequences the risk correctly — the cheap reversible spend proves the toolchain first; the annual non-refundable fee is committed only once we know the build works.
 
-### Phase 2 — Cloud Mac, one 24-hour block
+### Phase 2a — Cloud Mac, build verification (before any $99)
 2.1 Provision Scaleway Mac mini M1, connect over VNC/SSH.
 2.2 Install Xcode + command line tools.
-2.3 Pull the harness source, resolve compile errors, build.
+2.3 Pull the harness source, resolve compile errors, **build and run in the Simulator**. A signing identity is not required for this, which is what makes the pre-payment check possible.
+**STOP. Report build success to Owner.**
+
+### Phase 1b — Apple Developer enrollment (HG-1)
+Owner enrolls **personally**: legal name, their own credit card, Apple Account with 2FA, possibly government photo ID (F4). I cannot and will not perform this step.
+
+### Phase 2b — Cloud Mac, distribution
 2.4 Archive, sign, upload to App Store Connect.
 2.5 Release to TestFlight internal testing.
-**Exit criterion for the block:** a TestFlight build exists. Then release the instance — billing stops.
+**Exit criterion:** a TestFlight build exists. Then release the instance — billing stops.
+*Practical note:* confirm at provisioning whether the 24-hour block can be paused across the approval round-trip. If it cannot, budget a second €2.64 block rather than rushing the gate.
 
 ### Phase 3 — On device (no Mac needed, no ongoing cost)
 3.1 Install via TestFlight on each device in the §5.4 order.
@@ -179,5 +186,5 @@ Tier 0 requires 10k / 30k / 100k. The Owner's real libraries are whatever size t
 
 # PART 8 — OPEN QUESTIONS FOR OWNER (non-blocking; work continues regardless)
 1. Fleet inventory per §5.1 — exact models, iOS versions, free storage, library sizes, iCloud optimisation setting.
-2. Preference on the **$99 sequencing**: pay it now (Path A, simplest), or spend €3 first to validate the harness via sideload (Path B) before committing? *My recommendation: pay it now — it is required for release anyway, and Path B's 7-day expiry across 5 devices will cost more time than $99 is worth.*
+2. ~~$99 sequencing~~ — **resolved by Owner (DEC-015): paid after the first successful compile.**
 3. Confirm the harness may insert and then delete **its own** synthetic assets on a secondary device. Nothing pre-existing is ever touched, and this is proven on a disposable library before any primary device is used.

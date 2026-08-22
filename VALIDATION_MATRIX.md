@@ -11,20 +11,20 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 ### T0-A · Real-device hardware & thermal limit  `REQUIRES_DEVICE` `REQUIRES_MAC`
 | | |
 |---|---|
-| **Test** | First-run index of 10k / 30k / 100k real assets on ≥3 iPhone tiers (entry/mid/flagship; record model + iOS version). Layer 1 (metadata/time/GPS/hash/basic OCR) + Layer 2 (lightweight visual embedding) **only** — not the full 8-layer pipeline. Also verify PhotoKit full vs limited authorisation, deletion boundaries, change observer, and iCloud-only asset original/thumbnail request behaviour. |
+| **Test** | First-run index of 10k / 30k / 100k assets across the **full TestFlight-capable device gradient** (DEC-008; record model, chip, iOS version, RAM, free storage). Layer 1 (metadata/time/GPS/hash/basic OCR) + Layer 2 (lightweight visual embedding) **only** — not the full 8-layer pipeline. Also verify PhotoKit full vs limited authorisation, deletion boundaries, change observer, and iCloud-only asset original/thumbnail request behaviour. |
 | **Success criteria** | 100k first index completes in a reasonable wall time without thermal throttling or an unrecoverable background kill, **and** supports incremental update (no full rescan each run), **and** resumes from checkpoint after interruption. |
 | **Measurement** | Wall time, peak memory, CPU %, thermal state (`ProcessInfo.thermalState`), battery drain %, index size on disk, checkpoint-resume success — per library size × device tier. Output: `DEVICE_BENCHMARK_TIER0.csv` + `.md`. |
-| **Status** | **BLOCKED — NOT TESTED.** No Mac, no Xcode, no instrumented iPhones. No simulated result may be reported as a PASS. |
-| **Next action** | Windows-side: derive the per-asset compute budget the device must hit, and write the benchmark harness spec + exact metric list so the on-device run is one working session once hardware exists. Escalated as **HG-3**. |
+| **Status** | **NOT TESTED.** HG-3 approved in principle: cloud Mac + existing ~6-iPhone fleet (DEC-008). Redesigned as a **cross-device performance gradient**; minimum supported model derived from the measured curve, never assumed. iPhone 7 excluded on verified evidence. No simulated result may be reported as a PASS. |
+| **Next action** | Spec complete: `T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`; environment plan complete: `T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. HG-3 approved in principle (DEC-008). Remaining: author the Swift harness on Windows, then one EUR 2.64 cloud-Mac block to compile. |
 
 ### T0-B · Retrieval Entry hypothesis  `REQUIRES_USERS` `REQUIRES_MAC`
 | | |
 |---|---|
-| **Test** | Minimal Structure-First home skeleton (6 entries: Documents / People / Screenshots / Places / Timeline / Objects). Real **external** users (not the team) perform the same tasks — find ID card, find one person from one trip, find a receipt, find a screenshot — in **native Apple Photos** vs **this prototype**. |
+| **Test** | Minimal Structure-First home skeleton (6 entries: Documents / People / Screenshots / Places / Timeline / Objects), presenting the **already-catalogued library** — not a search box (§12/§23). Real **external** users (not the team) perform the same tasks — find ID card, find one person from one trip, find a receipt, find a screenshot — in **native Apple Photos** vs **this prototype**. Two arms only; Lucent is not installed (DEC-013). |
 | **Success criteria** | Under blind/semi-blind conditions, a **majority** of test users explicitly state the prototype is better and that they would rather use it as their first stop for finding photos. |
 | **Measurement** | Per task: success rate, step count, time-to-find. Plus subjective forced choice, plus a structured list of concrete complaints about native Photos (turning "feeling" into failure cases). Output: `RETRIEVAL_ENTRY_USABILITY_TIER0.md`. |
-| **Status** | **BLOCKED — NOT TESTED.** Prototype needs iOS; study needs recruited external users. |
-| **Next action** | Windows-side: author the full test protocol (task set, standard test-library definition, scripting, scoring sheet, anti-bias rules) so the study is runnable the day the prototype exists. Escalated as **HG-4**. |
+| **Status** | **NOT RUN.** Protocol complete. Blocked on prototype (HG-1/HG-2a) and participants (HG-4). |
+| **Next action** | Protocol complete: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`. Remaining Windows-side work: build the §5 test library as an asset manifest, write the facilitator script and scoring sheet. Blocked on **HG-4** (participants) and HG-1/HG-2a (prototype). |
 
 ### T0-C1 · Competitor pricing matrix  `WINDOWS_OK`
 | | |
@@ -32,8 +32,8 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Test** | Build the competitor pricing matrix required by Tier 0 §4 / original §9: CleanMyPhone, Clever Cleaner, Slidebox, Queryable, Lucent Pro and other relevant products. |
 | **Success criteria** | For each competitor: free tier, price points and model (subscription / one-off / lifetime), rating and rating count, last update, and structured user complaints about subscriptions. Enough coverage to state which Value Ladder rung the market already prices at zero. |
 | **Measurement** | `20_TIER0/evidence/COMPETITOR_PRICING_MATRIX.md`, each cell carrying source + retrieval date + confidence, with FACT / INTERPRETATION / RECOMMENDATION kept separate (Playbook E-13). UNKNOWN stays UNKNOWN (F-09). |
-| **Status** | **IN PROGRESS — this session.** |
-| **Next action** | Execute now. Highest-priority unblocked Tier-0 deliverable. |
+| **Status** | ✅ **COMPLETE** (2026-08-22) — 12 apps, US storefront. See also `evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`. |
+| **Next action** | Feeds T0-C2 landing-page pricing. No further work required for the gate. |
 
 ### T0-C2 · Real payment signal  `REQUIRES_OWNER`
 | | |
@@ -42,12 +42,23 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Success criteria** | Real intent-to-pay at the **Continuous Automatic Management** rung or above. Cleaner-rung willingness does not count — that market is already trained to free. |
 | **Measurement** | Traffic, click-through to price, reach-checkout rate, deposits collected. Output: `REAL_PAYMENT_SIGNAL_TIER0.md`. |
 | **Status** | **BLOCKED.** Requires domain/landing page, payment processing and spend → **HG-2**. |
-| **Next action** | Windows-side: draft the landing-page value-ladder copy and measurement plan derived from T0-C1 findings, ready for Owner approval and launch. |
+| **Next action** | Windows-side: draft the landing-page value-ladder copy and measurement plan derived from T0-C1, ready for Owner approval and launch. **T0-D now feeds this** — it tells us whether the Continuous Management rung we intend to price is wanted at all. |
+
+### T0-D · Autonomous Management Value Proposition  `REQUIRES_USERS` `REQUIRES_MAC`
+*Added 2026-08-22 by Owner instruction (DEC-014). Mandated by Constitution §7, absent from the Tier 0 document.*
+| | |
+|---|---|
+| **Test** | Concept validation, run with the same participants immediately after T0-B on separate instruments. Does the user clearly prefer *AI 替我持续管理，只把少数问题交给我决定*? Does a first-screen **Work-Done Ledger** convey the value immediately? Four ledger variants; risk-graded tolerance probe across R0–R6 content types; recoverability probe; review-burden threshold. **Nothing from Tier 1/2 is built** — one screen plus a structured interview, ledger numbers hand-prepared. |
+| **Success criteria** | Pre-registered D-P1…D-P6. PASS requires **D-P1** (>=70% choose assisted/autonomous over full manual control) **and D-P5** (tolerance is risk-graded: >=80% protect IDs/contracts, >=60% auto-handle expired codes and duplicate memes). |
+| **Measurement** | `20_TIER0/evidence/AUTONOMOUS_MGMT_VALUE_PROP_TIER0.md` — **a separate deliverable. May never be merged with, or substituted for, the Retrieval Entry report** (Owner instruction). |
+| **Status** | **NOT RUN.** Protocol complete: `20_TIER0/T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`. |
+| **Next action** | Build the ledger screen and interview instrument on Windows. Blocked on HG-1/HG-2a (prototype) and HG-4 (participants). |
+| **Failure handling** | D-P1 FAIL contradicts Constitution §5–§7 and §17 — **escalate to Owner as a potential Kill result**, do not redesign around it (PF-08). |
 
 ### T0-GATE · Tier 0 decision
 | | |
 |---|---|
-| **Rule** | A or B FAIL → **NO-GO / PIVOT**, stop. · A+B PASS and C PASS → **Tier 1**. · A+B PASS but C FAIL → **TECHNICAL/PRODUCT GO + COMMERCIAL PIVOT**: fix the commercial model and retest before heavy investment. |
+| **Rule** | A or B FAIL → **NO-GO / PIVOT**, stop. · A+B PASS and C PASS → **Tier 1**. · A+B PASS but C FAIL → **TECHNICAL/PRODUCT GO + COMMERCIAL PIVOT**: fix the commercial model and retest before heavy investment. · **D FAIL → escalate to Owner** — it contradicts Constitution §5–§7/§17, so it is an Owner decision, not an engineering adjustment (DEC-014). D is reported alongside A/B/C and is never substituted for B. |
 | **Deliverable** | `TIER0_GO_NO_GO.md` — mandatory before any Tier 1 work begins. |
 | **Status** | NOT REACHED. |
 

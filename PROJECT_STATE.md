@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (5 deliverables; HG-3 approved in principle; DEC-012 correction applied)
+Last updated: 2026-08-22 · Session 001 (7 deliverables; T0-D added; Lucent not purchased; $99 deferred to post-compile)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -10,6 +10,7 @@ Last updated: 2026-08-22 · Session 001 (5 deliverables; HG-3 approved in princi
 
 ## Authority (never re-derive this)
 L1 Product Constitution **v1.3** → L2 P0 Execution Index v1.0 + Tier 0/1/2 **v1.1** → L3 Engineering Playbook **v1.1** → L4 Skills/Tools.
+**→ Read `CONSTITUTION_UNDERSTANDING.md` before acting on anything product-related.** It is the section-by-section digest of L1, created after a real misreading on 2026-08-22 (PF-08). It never overrides the source — re-read the cited section before deciding.
 Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_RULES.md`.
 
 ## Done
@@ -22,7 +23,9 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 **T0-A-HARNESS · Swift benchmark harness source** (`WINDOWS_OK` — can be authored here, compiled only on the cloud Mac).
 Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not writing code.
 
-⚠️ **Awaiting Owner approval of spend: EUR 2.64 (Scaleway 24h M1 block) + 99 USD (Apple Developer Program) + 29.99 USD (Lucent Premium, required for a valid 3-way study — DEC-010).** Nothing purchased. See `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. Work continues on everything that does not depend on it.
+⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
+- **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015).
+- **$29.99 Lucent: cancelled** — Owner decided not to download or buy it (DEC-013).
 
 ## Work queue
 
@@ -30,10 +33,12 @@ Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not wri
 1. ~~**T0-C1** Competitor pricing matrix~~ — ✅ **DONE** → `20_TIER0/evidence/COMPETITOR_PRICING_MATRIX.md`
 2. ~~**T0-A-PREP** Device benchmark harness spec~~ — ✅ **DONE** → `20_TIER0/T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`
 3. ~~**T0-A-MAC-PLAN** Cloud Mac environment + device gradient plan~~ — ✅ **DONE** → `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` (pre-payment report, awaiting approval)
-4. ~~**T0-B-PREP** Retrieval-entry study protocol~~ — ✅ **DONE** → `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`
+4. ~~**T0-B-PREP** Retrieval-entry study protocol~~ — ✅ **DONE** (revised to two arms per DEC-013)
+4b. ~~**T0-D-PREP** Autonomous Management Value Prop protocol~~ — ✅ **DONE** → `20_TIER0/T0D_AUTONOMOUS_MANAGEMENT_VALUE_PROP_PROTOCOL.md`
+4c. ~~**CONSTITUTION digest**~~ — ✅ **DONE** → `CONSTITUTION_UNDERSTANDING.md`
 5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
 6. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring. — **NEXT**
-7. **T0-B-ASSETS** Turn the §5 test-library spec into a concrete asset manifest + generator; write the facilitator script and fillable scoring sheet.
+7. **T0-B/D-ASSETS** Turn the §5 test-library spec into an asset manifest + generator; write the facilitator script, the Work-Done Ledger screen (4 variants) and fillable scoring sheets for both studies.
 8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
 
 ### RESEARCH
@@ -46,9 +51,9 @@ Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not wri
 | Gate | Blocker | Wake condition | First action on wake |
 |---|---|---|---|
 | **HG-3** (T0-A) | ✅ **APPROVED IN PRINCIPLE 2026-08-22** — cloud Mac only, existing 6-iPhone fleet. Reduced to the spend gate below | — | — |
-| **HG-2a** (blocking T0-A) | **Spend approval: EUR 2.64 Scaleway + 99 USD Apple Developer.** Nothing purchased | Owner approves both amounts | Provision Scaleway M1, build, upload to TestFlight |
-| **HG-1** (blocking T0-A) | Apple Developer enrollment — legal name, own credit card, 2FA, possibly photo ID. **Owner must do this personally** | Owner completes enrollment | Create App Store Connect record + TestFlight internal testers |
-| **HG-4** (blocking T0-B) | No recruited external test users. Tooling half is now solved by the same Mac environment — this is **purely a recruitment problem** | Users recruited **and** prototype built | Run the study per T0-B-PREP |
+| **HG-2a** (blocking T0-A) | **Spend approval: EUR 2.64 Scaleway only.** Nothing purchased | Owner approves EUR 2.64 | Provision Scaleway M1, install Xcode, compile, run in Simulator, then STOP and report |
+| **HG-1** (blocking T0-A delivery) | Apple Developer enrollment + $99. **Deferred until after a successful compile** (DEC-015). Owner must enroll personally — legal name, own credit card, 2FA, possibly photo ID | Build compiles → Owner enrolls and pays | Archive, sign, upload to App Store Connect, release to TestFlight |
+| **HG-4** (blocking T0-B **and T0-D**) | No recruited external test users (n>=10). Tooling half solved by the same Mac environment — **purely a recruitment problem** | Users recruited **and** prototype built | Run T0-B, then T0-D with the same participants on separate instruments |
 | **HG-2b** (blocking T0-C2) | Needs domain, payment path and real spend | Owner approves the landing page and funds it | Launch page, collect reach-checkout / deposit data |
 
 ### CAPABILITY
@@ -75,13 +80,14 @@ Author the Swift benchmark harness under `20_TIER0/harness/` per `T0A_DEVICE_BEN
 - Category monetises via weekly subs $4-12/wk ($207-623/yr) with documented predatory patterns. Credible non-predatory price point is a **$29.99-49.99 lifetime/one-off**.
 - Search rung is thin: Queryable $4.99 one-off, 88 US ratings despite HN #1.
 - **Lucent Pro** (id 6749473261) = **Benchmark Competitor No.1**. Read `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md` before citing anything about it. Corrections on record: rating volume is **below Apple's display threshold**, NOT "0 ratings"; development was **dense v1.5→v2.0 (Dec 2025 → 2026-02-04)**, quiet since — not abandoned after launch. **UNKNOWN-1 stands**: weak demand vs weak distribution is unresolved; do not cite either way. **UNKNOWN-5**: the $29.99 SKU period is not stated — do not call it lifetime.
-- **Lucent free tier analyses only 1,000 photos.** Any comparative study must buy Premium ($29.99) or it measures their paywall, not their product (PF-07).
+- **Lucent is not purchased or installed** (DEC-013). Its free tier caps at 1,000 analysed photos, which is why any study that *did* include it would have to buy Premium — the fair-configuration rule (PF-07) now binds **Apple Photos** instead: full authorisation, People indexed, indexing complete, verified per session.
 - **Our differentiator is visible on first open — do not re-derive this wrongly (DEC-012, PF-08).** The product has TWO organisation layers: **基础整理** = first-run full-library cataloguing (Constitution §12, **immediate**) and **持续整理** = continuous hygiene (§13, gradual). Plus the entry point changes (§22/§23): the user stops opening Apple Photos to look at their own photos. Lucent analyses a library so you can *search* it; we hand it back *organised*. An earlier session wrongly merged these two layers and concluded we were "harder to sell" — corrected by Owner challenge.
 - **PF-06 reframed:** the risk is not that our value is invisible, it is drifting into shipping a search tool instead of an organised library.
 - On-device semantic search ships in 206-262MB binaries → no 2GB+ model dependency is implied (supports P-04).
 
-### T0-B study design (DEC-010/011/012, do not re-derive)
-- 3-way: Apple Photos vs **Lucent Pro (Premium, fully analysed)** vs our prototype. Two parts: standardised loaner library (all 3 arms) + participant's own library (arms A/B only, where the real complaint list comes from).
+### T0-B / T0-D study design (DEC-011/012/013/014, do not re-derive)
+- **Two arms only: Apple Photos vs our prototype.** Lucent is NOT installed or purchased (DEC-013) — it stays a documentary reference. Two parts: standardised loaner library (both arms) + participant's own library (Apple Photos only, where the real complaint list comes from).
+- **T0-D runs after T0-B with the same participants, on separate instruments, into a separate deliverable. Neither study may substitute for the other** (Owner instruction, DEC-014). T0-D is mandated by Constitution §7, which requires the automation-tolerance bet be validated by real users rather than engineer assumption.
 - **The prototype leads with the already-catalogued library, not a search box.**
 - Sharpest single measurement: *"without tapping, where would you expect your passport to be?"* — tests predictability, which is what separates a destination from a tool.
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
