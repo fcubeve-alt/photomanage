@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 — **repo live, first CI build GREEN** (DEC-018)
+Last updated: 2026-08-23 · Session 001 — Tier 0 instrumentation complete; all four workstreams await Owner gates
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -30,7 +30,6 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 Build-ahead work that needs no approval meanwhile:
 - Extend the prototype: Apple-Photos-style arm-A parity checks, and leaf-level asset views wired to the real test-library manifest
 - Build the three T0-C2 landing pages + event logging + disclosure interstitial (local files only; publishing is HG-2b)
-- Finish `PHPhotoLibraryChangeObserver` change-set handling in the harness (edits to old assets — flagged in the harness README)
 - Source/curate the 136 foreground test-library images per `TEST_LIBRARY_SPEC.md` §3
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
