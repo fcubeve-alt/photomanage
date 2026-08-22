@@ -66,6 +66,29 @@ open PVMBench.xcodeproj
 Everything the old manual setup required — Background Modes capability, the three
 Info.plist keys, iOS 16 deployment target — is declared in `project.yml`.
 
+## Analysing the results
+
+`ash
+python analyze_benchmark.py --selftest                 # exercise the logic, no device
+python analyze_benchmark.py --csv DEVICE_BENCHMARK_TIER0.csv --out ../evidence/DEVICE_BENCHMARK_TIER0.md
+`
+
+The verdict is **computed** from the §8 budgets, which were fixed before any device
+existed. It is not interpreted afterwards (AB-7). Three properties worth keeping:
+
+- **A projection can FAIL a budget but can never PASS one** (PF-01). If 100k was not
+  actually run on a device, A1 is stamped PROJECTION and the device cannot be
+  marked supported on that basis.
+- **The minimum supported model is derived**, by the rule fixed in advance: the
+  oldest device meeting every budget. If no older device was tested, the report says
+  so rather than implying a measured floor.
+- **The CSV header is checked against MetricsCSV.swift.** The file is written by
+  Swift and read by Python; a change on either side would silently misalign every
+  column, so a mismatch aborts the analysis instead of producing plausible nonsense.
+
+Run --selftest before the campaign. It exercises a passing device and a failing one
+with synthetic rows — the analyzer should not meet real data for the first time.
+
 ## Run order on device (spec §5.4)
 
 Cheapest information first — a flagship-first run proves the least.
