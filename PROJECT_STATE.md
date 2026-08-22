@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (4 deliverables; HG-3 approved in principle; Lucent = Benchmark Competitor No.1)
+Last updated: 2026-08-22 · Session 001 (5 deliverables; HG-3 approved in principle; DEC-012 correction applied)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -19,8 +19,8 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**T0-B-PREP · Retrieval Entry study protocol** (`WINDOWS_OK`).
-Target: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`.
+**T0-A-HARNESS · Swift benchmark harness source** (`WINDOWS_OK` — can be authored here, compiled only on the cloud Mac).
+Target: `20_TIER0/harness/`. Goal: the 24h Mac block is spent compiling, not writing code.
 
 ⚠️ **Awaiting Owner approval of spend: EUR 2.64 (Scaleway 24h M1 block) + 99 USD (Apple Developer Program) + 29.99 USD (Lucent Premium, required for a valid 3-way study — DEC-010).** Nothing purchased. See `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. Work continues on everything that does not depend on it.
 
@@ -30,10 +30,11 @@ Target: `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`.
 1. ~~**T0-C1** Competitor pricing matrix~~ — ✅ **DONE** → `20_TIER0/evidence/COMPETITOR_PRICING_MATRIX.md`
 2. ~~**T0-A-PREP** Device benchmark harness spec~~ — ✅ **DONE** → `20_TIER0/T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`
 3. ~~**T0-A-MAC-PLAN** Cloud Mac environment + device gradient plan~~ — ✅ **DONE** → `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` (pre-payment report, awaiting approval)
-4. **T0-B-PREP** Retrieval-entry study protocol: task set, standard test-library definition, script, scoring sheet, anti-bias rules. — **NEXT**
+4. ~~**T0-B-PREP** Retrieval-entry study protocol~~ — ✅ **DONE** → `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md`
 5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
-6. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring.
-7. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
+6. **T0-A-HARNESS** Write the Swift benchmark harness source on Windows (cannot compile here, can be written here) so the cloud-Mac block is spent compiling, not authoring. — **NEXT**
+7. **T0-B-ASSETS** Turn the §5 test-library spec into a concrete asset manifest + generator; write the facilitator script and fillable scoring sheet.
+8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
 
 ### RESEARCH
 - Apple-native on-device capability survey (Vision, Core ML, Live Text/OCR, PhotoKit limits) — FACT/INTERPRETATION separated, feeds the T0-A compute budget and the P-04 route decision. **No model dependency may be added without benchmark evidence.**
@@ -67,7 +68,7 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 | Cleaner-rung commoditisation | The likely C1 finding is that the Cleaner rung is already free. That is expected, and is why the Constitution anchors paid value at Continuous Management and above. |
 
 ## Next action for a recovering session
-Write `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md` (task set, standard test library, script, scoring sheet, anti-bias rules). Then author the Swift benchmark harness source, then `T0C2_LANDING_PAGE_PLAN.md`.
+Author the Swift benchmark harness under `20_TIER0/harness/` per `T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md` (§4 CSV schema, §5 C-1..C-5, §7A CD-1..CD-5). Then T0-B-ASSETS, then `T0C2_LANDING_PAGE_PLAN.md`.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.
@@ -78,6 +79,13 @@ Write `20_TIER0/T0B_RETRIEVAL_ENTRY_STUDY_PROTOCOL.md` (task set, standard test 
 - **Our differentiator is visible on first open — do not re-derive this wrongly (DEC-012, PF-08).** The product has TWO organisation layers: **基础整理** = first-run full-library cataloguing (Constitution §12, **immediate**) and **持续整理** = continuous hygiene (§13, gradual). Plus the entry point changes (§22/§23): the user stops opening Apple Photos to look at their own photos. Lucent analyses a library so you can *search* it; we hand it back *organised*. An earlier session wrongly merged these two layers and concluded we were "harder to sell" — corrected by Owner challenge.
 - **PF-06 reframed:** the risk is not that our value is invisible, it is drifting into shipping a search tool instead of an organised library.
 - On-device semantic search ships in 206-262MB binaries → no 2GB+ model dependency is implied (supports P-04).
+
+### T0-B study design (DEC-010/011/012, do not re-derive)
+- 3-way: Apple Photos vs **Lucent Pro (Premium, fully analysed)** vs our prototype. Two parts: standardised loaner library (all 3 arms) + participant's own library (arms A/B only, where the real complaint list comes from).
+- **The prototype leads with the already-catalogued library, not a search box.**
+- Sharpest single measurement: *"without tapping, where would you expect your passport to be?"* — tests predictability, which is what separates a destination from a tool.
+- PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
+- Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
 
 ### T0-A environment (DEC-008, do not re-derive)
 - **A cloud Mac cannot have an iPhone plugged into it.** Delivery must go via TestFlight, which is why the 99 USD Apple Developer Program is on the critical path.
