@@ -53,6 +53,8 @@ struct ContentView: View {
                         Button("A1/A2 · Cold full index") { start(resume: false) }
                         Button("A3 · Resume from checkpoint") { start(resume: true) }
                         Button("A4 · Incremental (delta only)") { startIncremental() }
+                        // The case the old newest-first walk could never see.
+                        Button("A4 · Edit an old asset, then re-run Incremental") { editForA4() }
                         Button("CD-2 · First-screen stall") { stall() }
                     }
                 }
@@ -120,6 +122,14 @@ struct ContentView: View {
         runner.chipLabel = chip
         note("incremental run started")
         runner.runIncremental()
+    }
+
+    /// A4 sub-test: modify an EXISTING asset and confirm the tracker notices.
+    /// A creationDate-ordered walk cannot detect this; the change token must.
+    private func editForA4() {
+        runner.editOldestSyntheticAssetForA4 { msg in
+            note("A4-edit: " + msg)
+        }
     }
 
     private func stall() {

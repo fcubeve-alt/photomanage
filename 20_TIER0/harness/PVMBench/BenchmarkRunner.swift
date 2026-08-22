@@ -14,6 +14,7 @@ final class BenchmarkRunner: NSObject, ObservableObject {
 
     private let store = IndexStore()
     private lazy var indexer = AssetIndexer(store: store)
+    private lazy var changeTracker = LibraryChangeTracker(store: store)
     private let telemetry = Telemetry()
     private var cancelled = false
 
@@ -151,7 +152,12 @@ final class BenchmarkRunner: NSObject, ObservableObject {
     // MARK: - A4 incremental (C-5)
 
     /// A4 is falsified the moment finding deltas needs a full enumeration.
-    /// This path uses the persisted cursor + change observer, never a rescan.
+    ///
+    /// Uses `LibraryChangeTracker`: the persistent change token for everything that
+    /// happened while the app was closed, plus the live observer while it runs.
+    /// The earlier newest-first walk is gone — it could not see **edits to old
+    /// assets**, so it would have reported "0 new" while the index went stale, and
+    /// A4 would have passed a test that never exercised its own failure case.
     func runIncremental() {
         guard !isRunning else { return }
         isRunning = true; cancelled = false
@@ -162,47 +168,87 @@ final class BenchmarkRunner: NSObject, ObservableObject {
             self.indexer.resetCounters()
             let t0 = CFAbsoluteTimeGetCurrent()
 
-            let opts = PHFetchOptions()
-            opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            let recent = PHAsset.fetchAssets(with: opts)
+            let delta = self.changeTracker.catchUpSinceLastLaunch()
+            let tDelta = CFAbsoluteTimeGetCurrent() - t0
 
-            var newCount = 0
-            self.store.beginBatch()
-            // Stop at the first already-known asset: newest-first ordering means
-            // everything beyond it is already indexed. No full pass.
-            for i in 0..<recent.count {
-                let a = recent.object(at: i)
-                if self.store.contains(a.localIdentifier) { break }
-                autoreleasepool { self.indexer.index(asset: a, isSynthetic: false) }
-                newCount += 1
+            // Only the changed identifiers are fetched. No full enumeration.
+            let touched = Array(Set(delta.inserted + delta.updated))
+            var processed = 0
+
+            if !touched.isEmpty {
+                let fetched = PHAsset.fetchAssets(withLocalIdentifiers: touched, options: nil)
+                self.store.beginBatch()
+                fetched.enumerateObjects { asset, _, _ in
+                    autoreleasepool { self.indexer.index(asset: asset, isSynthetic: false) }
+                    processed += 1
+                }
+                self.store.commitBatch()
             }
-            self.store.commitBatch()
+            for gone in delta.deleted { self.store.remove(gone) }
 
             let wall = CFAbsoluteTimeGetCurrent() - t0
             self.telemetry.stop()
 
             var row = BenchmarkRow()
             row.chip = self.chipLabel
-            row.library_size = recent.count
+            row.library_size = self.store.count()
             row.storage_state = self.storageState
             row.run_type = RunType.incremental.rawValue
             row.wall_time_s = wall
-            row.assets_indexed = newCount
-            row.throughput_assets_per_s = wall > 0 ? Double(newCount) / wall : 0
+            row.assets_indexed = processed
+            row.throughput_assets_per_s = wall > 0 ? Double(processed) / wall : 0
             row.peak_mem_mb = self.telemetry.snap.peakFootprintMB
             row.avg_cpu_pct = self.telemetry.avgCPU
             row.index_bytes_total = self.store.sizeOnDisk()
             row.ocr_attempted = self.indexer.counters.ocrAttempted
             row.ocr_gated_out = self.indexer.counters.ocrGatedOut
             row.embed_attempted = self.indexer.counters.embedAttempted
-            row.notes = "delta-only; no full enumeration"
+            row.delta_source = delta.source
+            row.delta_inserted = delta.inserted.count
+            row.delta_updated = delta.updated.count
+            row.delta_deleted = delta.deleted.count
+            row.delta_discovery_s = tDelta
+            // The A4 verdict hinges on this: a full rescan here means the product
+            // cannot maintain an index without periodically re-reading the library.
+            row.required_full_rescan = (delta.source == "token-expired-full-rescan")
+            row.notes = "delta via \(delta.source); no full enumeration"
             MetricsCSV.append(row)
 
             DispatchQueue.main.async {
                 self.isRunning = false
-                self.statusText = String(format: "incremental: %d new in %.1fs", newCount, wall)
+                self.statusText = String(
+                    format: "incremental (%@): +%d ~%d -%d in %.1fs",
+                    delta.source, delta.inserted.count, delta.updated.count,
+                    delta.deleted.count, wall)
             }
         }
+    }
+
+    /// A4 sub-test that the old implementation could not perform at all:
+    /// modify an EXISTING asset and confirm the tracker sees it.
+    /// Uses a synthetic asset only — never touches anything pre-existing (DEC-009).
+    func editOldestSyntheticAssetForA4(completion: @escaping (String) -> Void) {
+        let ids = store.syntheticIDs()
+        guard let victim = ids.first else {
+            completion("no synthetic asset available; insert some first"); return
+        }
+        let fetched = PHAsset.fetchAssets(withLocalIdentifiers: [victim], options: nil)
+        guard let asset = fetched.firstObject else {
+            completion("synthetic asset not found in library"); return
+        }
+        PHPhotoLibrary.shared().performChanges({
+            let req = PHAssetChangeRequest(for: asset)
+            // A favourite toggle is a metadata edit: it bumps modificationDate
+            // without altering pixels, which is exactly the case a creationDate
+            // ordered walk cannot detect.
+            req.isFavorite = !asset.isFavorite
+        }, completionHandler: { ok, err in
+            DispatchQueue.main.async {
+                completion(ok
+                    ? "edited \(victim) — now run Incremental; it MUST report updated >= 1"
+                    : "edit failed: \(String(describing: err))")
+            }
+        })
     }
 
     // MARK: - CD-2 first-screen stall
@@ -232,6 +278,15 @@ final class BenchmarkRunner: NSObject, ObservableObject {
             let ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
             DispatchQueue.main.async { completion(ms) }
         }
+    }
+
+    /// Live observation, so edits arriving while the app is open are seen too.
+    func startLiveObservation() {
+        changeTracker.onLiveDelta = { [weak self] d in
+            guard let self, d.count > 0 else { return }
+            self.statusText = "live change: +\(d.inserted.count) ~\(d.updated.count) -\(d.deleted.count)"
+        }
+        changeTracker.startObserving()
     }
 
     var indexedCount: Int { store.count() }

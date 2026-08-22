@@ -119,6 +119,15 @@ final class IndexStore {
         return sqlite3_step(st) == SQLITE_ROW
     }
 
+    /// Deletions must drop out of the index, or A4 reports a library that no
+    /// longer matches reality.
+    func remove(_ localID: String) {
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, "DELETE FROM assets WHERE local_id=?;", -1, &st, nil)
+        sqlite3_bind_text(st, 1, localID, -1, IndexStore.SQLITE_TRANSIENT)
+        sqlite3_step(st); sqlite3_finalize(st)
+    }
+
     func count() -> Int { scalar("SELECT COUNT(*) FROM assets;") }
     func syntheticCount() -> Int { scalar("SELECT COUNT(*) FROM synthetic;") }
 

@@ -54,6 +54,13 @@ struct BenchmarkRow {
     var memory_warnings = 0
     var ocr_ms_per_asset: Double = 0
     var embed_ms_per_asset: Double = 0
+    // A4 change-tracking (C-5)
+    var delta_source = ""
+    var delta_inserted = 0
+    var delta_updated = 0
+    var delta_deleted = 0
+    var delta_discovery_s: Double = 0
+    var required_full_rescan = false
     var notes = ""
 }
 
@@ -72,6 +79,8 @@ enum MetricsCSV {
         "real_asset_count","synthetic_asset_count",
         "first_screen_stall_ms","cold_launch_to_first_asset_ms","index_state_recovered_after_kill",
         "bg_expiration_events","memory_warnings","ocr_ms_per_asset","embed_ms_per_asset",
+        "delta_source","delta_inserted","delta_updated","delta_deleted",
+        "delta_discovery_s","required_full_rescan",
         "notes"
     ].joined(separator: ",")
 
@@ -89,6 +98,8 @@ enum MetricsCSV {
           String(r.real_asset_count), String(r.synthetic_asset_count),
           f(r.first_screen_stall_ms), f(r.cold_launch_to_first_asset_ms), String(r.index_state_recovered_after_kill),
           String(r.bg_expiration_events), String(r.memory_warnings), f(r.ocr_ms_per_asset), f(r.embed_ms_per_asset),
+          r.delta_source, String(r.delta_inserted), String(r.delta_updated), String(r.delta_deleted),
+          f(r.delta_discovery_s), String(r.required_full_rescan),
           r.notes ]
     }
 
@@ -101,6 +112,11 @@ enum MetricsCSV {
         return s
     }
 
+    /// Header and fields are two independent arrays of String, so a mismatch is
+    /// invisible to the compiler and would silently misalign EVERY row — discovered
+    /// only after a benchmark campaign, when the data is already worthless.
+    static let columnCount = header.components(separatedBy: ",").count
+
     static var url: URL {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return dir.appendingPathComponent("DEVICE_BENCHMARK_TIER0.csv")
@@ -108,7 +124,15 @@ enum MetricsCSV {
 
     /// Append-only. Survives app death — a row written is a row kept (E-07).
     static func append(_ row: BenchmarkRow) {
-        let line = fields(row).map(escape).joined(separator: ",") + "\n"
+        let f = fields(row)
+        // Refuse to write a misaligned row. Losing one row is recoverable; a whole
+        // campaign of silently shifted columns is not.
+        guard f.count == columnCount else {
+            assertionFailure("CSV schema drift: \(f.count) fields vs \(columnCount) columns")
+            print("[MetricsCSV] REFUSING TO WRITE: \(f.count) fields vs \(columnCount) columns")
+            return
+        }
+        let line = f.map(escape).joined(separator: ",") + "\n"
         let u = url
         if !FileManager.default.fileExists(atPath: u.path) {
             try? (header + "\n").write(to: u, atomically: true, encoding: .utf8)
