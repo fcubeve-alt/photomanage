@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (8 deliverables; Swift harness authored, uncompiled)
+Last updated: 2026-08-22 · Session 001 (9 deliverables; T0-B/D study materials complete)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -20,7 +20,9 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**T0-B/D-ASSETS** — test-library asset manifest + generator, facilitator script, Work-Done Ledger screen (4 variants), fillable scoring sheets for both studies. (`WINDOWS_OK`)
+**T0-C2-PREP** — landing-page value-ladder copy + measurement plan, derived from the pricing matrix. (`WINDOWS_OK`)
+
+This is the **last fully unblocked Tier-0 item**. After it, everything remaining needs Owner action (HG-1/2a/4). See S-04: entering WAITING requires proving nothing authorised is executable.
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
 - **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015).
@@ -37,8 +39,8 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 4c. ~~**CONSTITUTION digest**~~ — ✅ **DONE** → `CONSTITUTION_UNDERSTANDING.md`
 5. ~~**LUCENT-ANALYSIS** Benchmark Competitor No.1 deep analysis~~ — ✅ **DONE** → `20_TIER0/evidence/LUCENT_PRO_BENCHMARK_COMPETITOR.md`
 6. ~~**T0-A-HARNESS** Swift benchmark harness~~ — ✅ **DONE** → `20_TIER0/harness/` (13 files, ~1,400 lines, **NEVER COMPILED** — see README known gaps)
-7. **T0-B/D-ASSETS** Turn the §5 test-library spec into an asset manifest + generator; write the facilitator script, the Work-Done Ledger screen (4 variants) and fillable scoring sheets for both studies. — **NEXT**
-8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it.
+7. ~~**T0-B/D-ASSETS** Study materials~~ — ✅ **DONE** → `20_TIER0/study_assets/` (generator + 4 ledger variants + facilitator script + 2 scoring sheets)
+8. **T0-C2-PREP** Landing-page value-ladder copy + measurement plan, derived from C1. Owner launches it. — **NEXT**
 
 ### RESEARCH
 - Apple-native on-device capability survey (Vision, Core ML, Live Text/OCR, PhotoKit limits) — FACT/INTERPRETATION separated, feeds the T0-A compute budget and the P-04 route decision. **No model dependency may be added without benchmark evidence.**
@@ -72,7 +74,7 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 | Cleaner-rung commoditisation | The likely C1 finding is that the Cleaner rung is already free. That is expected, and is why the Constitution anchors paid value at Continuous Management and above. |
 
 ## Next action for a recovering session
-T0-B/D-ASSETS (test-library manifest + generator, facilitator script, Work-Done Ledger variants, scoring sheets). Then `T0C2_LANDING_PAGE_PLAN.md`.
+Write `20_TIER0/T0C2_LANDING_PAGE_PLAN.md` (value-ladder copy at the Continuous Management rung, price test design, measurement plan). Then the queue is exhausted of unblocked work — do NOT idle without first re-checking S-04.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.
@@ -91,6 +93,13 @@ T0-B/D-ASSETS (test-library manifest + generator, facilitator script, Work-Done 
 - Sharpest single measurement: *"without tapping, where would you expect your passport to be?"* — tests predictability, which is what separates a destination from a tool.
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
 - Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
+
+### T0-B/D study materials (built 2026-08-22, do not rebuild)
+- `20_TIER0/study_assets/` — generator, ledger variants, facilitator script, two scoring sheets.
+- Test library: **deterministic** (SEED 20260822), composition verified within **0.3pp** of §5 at 10k assets.
+- **Foreground/background split is the key design**: 136 assets carry every task target and hard negative and need REAL imagery; 9,864 are synthetic filler for scale and noise. Placeholders are stamped so they cannot be used in a real session by accident.
+- The 4 ledger variants are **generated from one template** — a between-subjects manipulation is only valid if variants differ solely in the manipulated dimension. Never hand-edit the HTML; change `LIBRARY` in the script and regenerate.
+- **V1 vs V4 is the sharpest comparison**: identical facts, opposite order. If V4 reads as homework and V1 as a service, presentation is carrying the value proposition.
 
 ### T0-A harness (authored 2026-08-22, do not rewrite)
 - `20_TIER0/harness/` — 13 Swift files. **Written on Windows, never compiled.** Expect first-build errors; fixing them on the Mac is minutes, authoring there would have been hours.
