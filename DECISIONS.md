@@ -63,3 +63,31 @@ Format: ID · date · decision · rationale · evidence · impact · status
 **Rationale.** The source material is Word-only. Without a text mirror, every future session re-parses binaries to answer one question — precisely the repeated-read waste T-01/T-02/T-07 forbid. Cost: one extraction. Benefit: permanent.
 **Impact.** `OPERATING_RULES.md` P-06 makes the text mirror the required read surface. Regenerate if a .docx is updated.
 **Status.** ACTIVE.
+
+---
+
+### DEC-008 · 2026-08-22 · HG-3 resolved via cloud Mac + TestFlight; iPhone 7 excluded; minimum supported model decided by benchmark
+**Decision.** Owner approved HG-3 in principle: cloud Mac only, no Mac purchase, existing iPhone fleet (~6 devices, iPhone 7 through iPhone 17), Owner approval required before any actual payment. Consequent design decisions:
+1. Build environment = **Scaleway Mac mini M1, hourly** (EUR 0.11/hr, one 24h block ~= EUR 2.64). Delivery to devices = **TestFlight**, which requires the **99 USD/yr Apple Developer Program**. Neither purchased; approval requested.
+2. **iPhone 7 is excluded from the Tier 0-A campaign.**
+3. Tier 0-A is redesigned from "3 device tiers" to a **cross-device performance gradient**, with the **minimum supported model derived from the measured curve**, never assumed in advance.
+4. 30k/100k library sizes are reached by **on-device synthetic asset insertion** layered on top of each device's real library, with real and synthetic counts reported separately.
+
+**Rationale.**
+- A cloud Mac cannot have an iPhone physically attached, so the plan had to solve *delivery*, not just *build*. TestFlight is the only path that scales to five devices and repeated runs.
+- iPhone 7 exclusion rests on three independently verified facts, not preference: TestFlight requires **iOS 16+**; iPhone 7 maxes at **iOS 15.8.x**; and A10 Fusion has **no Neural Engine** (ANE debuted with A11). Including it would cost a separate delivery path, a deployment target that forfeits every Vision/Core ML API added since iOS 15, and ANE-less execution — three compromises for one boundary datapoint. Owner had already ruled that core capability must not be sacrificed for old-device compatibility.
+- Synthetic padding avoids transferring ~50-200 GB of imagery to a phone, which no available path supports. Tier 0-A is a performance/thermal test, not an accuracy test, so a synthetic corpus is valid for A1-A4 provided the screenshot/photo ratio approximates the real library and the composition is disclosed per row.
+
+**Evidence.** scaleway.com/en/pricing/apple-silicon/ ; developer.apple.com/support/enrollment/ ; testflight.apple.com ("iPhone or iPad running iOS 16 or iPadOS 16 or later") ; Apple device support tables ; ANE device generation table. All retrieved 2026-08-22, recorded with confidence levels in `20_TIER0/T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` Part 2.
+
+**Impact.** HG-3 becomes a spend-approval gate rather than a hardware gate. Approving it also unblocks the **tooling** half of Tier 0-B, since the same environment builds the retrieval-entry prototype — leaving HG-4 as purely a user-recruitment problem. HG-1 (Apple Developer identity/KYC) is newly activated and must be performed by the Owner personally.
+
+**Status.** ACTIVE. Blocked on Owner approval of EUR 2.64 + 99 USD.
+
+---
+
+### DEC-009 · 2026-08-22 · The benchmark harness may write to a real photo library, under strict conditions
+**Decision.** The Tier 0-A harness inserts synthetic assets into the iOS photo library via `PHAssetCreationRequest` and deletes them afterwards. Conditions: insertion and cleanup are proven on a **secondary device with a disposable library first**; cleanup deletes **only assets the harness itself created**, tracked by local identifier; nothing pre-existing is ever touched; the Owner confirms before any primary device is used.
+**Rationale.** There is no other way to reach 30k/100k on-device. But this project's own safety red line is "no silent permanent deletion" (Constitution, `OPERATING_RULES.md` P-03) — that rule has to bind the tooling too, not only the product, or it is not a real rule.
+**Impact.** Adds a mandatory pre-flight step before the main campaign. Open question 3 to Owner.
+**Status.** ACTIVE, pending Owner confirmation.

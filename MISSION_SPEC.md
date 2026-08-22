@@ -42,9 +42,9 @@ Do **not** build, even "while we're here":
 ## Human Gates (escalate ONLY for these)
 | Gate | Trigger | Status |
 |---|---|---|
-| HG-1 | Apple Developer account / KYC / CAPTCHA | DORMANT |
+| HG-1 | Apple Developer account / KYC / CAPTCHA | **UPCOMING** - activated by DEC-008. Owner must enroll personally (legal name, own credit card, 2FA, possibly photo ID) |
 | HG-2 | Real payment or spend (domain, ads, deposit collection, Mac/cloud-Mac rental) | **UPCOMING** — needed for Tier 0-C |
-| HG-3 | Access to a Mac / Xcode / real iPhones for Tier 0-A | **BLOCKING for Tier 0-A** |
+| HG-3 | Access to a Mac / Xcode / real iPhones for Tier 0-A | **APPROVED IN PRINCIPLE 2026-08-22** (DEC-008): cloud Mac only, no purchase, existing ~6-iPhone fleet. Now reduced to the spend approval in HG-2 |
 | HG-4 | Recruiting real external test users for Tier 0-B | **UPCOMING** — needed for Tier 0-B |
 | HG-5 | Irreversible / high-risk operations | DORMANT |
 | HG-6 | Material product scope change | DORMANT |

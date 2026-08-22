@@ -34,18 +34,21 @@ Layer 1 + Layer 2 **only** (Constitution §25). Explicitly **not** in this harne
 | L1 OCR | Basic text recognition — **gated**, see §5 |
 | L2 visual | One lightweight image embedding per asset |
 
-## 3. Test grid
+## 3. Test grid  *(revised 2026-08-22 after Owner confirmed a ~6-device fleet)*
 
-3 device tiers × 3 library sizes × 2 runs (cold first index, warm incremental).
+Superseded design: "3 device tiers". Actual design: **a performance gradient across every TestFlight-capable device the Owner owns**, with the minimum supported model derived from the measured curve rather than assumed. Full rationale, fleet handling, corpus strategy and run order: `T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md` Part 5.
 
 | Axis | Values |
 |---|---|
-| Device | entry / mid / flagship — record exact model + iOS version + chip + RAM |
-| Library | 10k / 30k / 100k real assets |
-| Storage state | **all-local** and **iCloud-optimised** — run both; see §6, this is the highest-risk variable |
-| Thermal start | begin each run at `.nominal`, device at ≥80% battery, not charging |
+| Device | Every fleet device running iOS 16+ (iPhone 7 excluded — no TestFlight, no Neural Engine; see plan Part 2). Record exact model, chip, iOS version, RAM, free storage |
+| Library | Real library as-is, then padded to 30k / 100k with synthetic assets where storage allows |
+| Storage state | **all-local** and **iCloud-optimised** — both; see §6, still the highest-risk variable |
+| Thermal start | begin each run at `.nominal`, battery ≥ 80%, not charging |
+| Run type | cold first index → deliberate interrupt → resume → incremental |
 
-Minimum viable grid if devices are scarce: **lowest tier × 100k × iCloud-optimised**. That is the worst case, and it is the case that decides the gate.
+**Run order is cheapest-information-first, not oldest-first or newest-first:** the Owner's daily-driver device runs first (proves the harness, answers the fatal A3/A4), then the oldest TestFlight-capable device (where A1/A2 will break if anywhere), then the rest of the curve. A flagship-first run proves the least.
+
+**Minimum supported model rule, fixed in advance:** a device is supported if it meets the A1 time budget, the A2 thermal budget and A4 at its realistic library size. The minimum supported model is the **oldest device that passes**. Failures are reported with the specific budget missed and the margin. Choosing a minimum model first and then testing it is explicitly rejected.
 
 ## 4. Metrics — the exact columns of `DEVICE_BENCHMARK_TIER0.csv`
 
@@ -133,13 +136,10 @@ Set now, before data exists, so the result cannot be rationalised afterwards.
 3. Harness source, committed
 4. Raw thermal/memory traces, archived
 
-## 10. Owner-side unblock (HG-3) — options, cheapest first
+## 10. Environment status
 
-| Option | Gets us | Cost shape |
-|---|---|---|
-| Cloud Mac (MacStadium / Scaleway / AWS EC2 Mac) + Owner's own iPhone via TestFlight | Full A1–A4 on one real device | Hourly/monthly rental; **no hardware purchase** |
-| Borrowed/second-hand entry-tier iPhone for the low end | The tier that actually decides the gate | One-off, modest |
-| Owner's iPhone only, single tier | Partial — enough to falsify A3 and A4, not to characterise the tier spread | Free if a Mac is available |
-| Mac purchase | Everything, permanently | Highest |
+**HG-3 approved in principle by Owner on 2026-08-22**: cloud Mac only, no Mac purchase, existing iPhone fleet, explicit approval required before any actual payment.
 
-**Recommendation:** cloud Mac + Owner's iPhone is enough to reach a defensible Tier 0-A verdict on **A3 and A4** and a single-tier reading on **A1/A2**. That is materially better than nothing and is the cheapest path off this blocker. Multi-tier characterisation can be deferred to Tier 2 without invalidating the Tier 0 gate — **provided the single tested device is not the flagship**, since a flagship-only pass proves the least.
+Environment plan, verified costs, delivery path and step-by-step execution now live in **`T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`**. Summary: Scaleway Mac mini M1 at €0.11/hr (one 24h block ≈ €2.64) builds and signs; delivery to the fleet is via TestFlight, which requires the $99/yr Apple Developer Program. Nothing purchased yet — awaiting Owner approval of €2.64 + $99.
+
+Note the constraint that drove that design: **a cloud Mac cannot have an iPhone plugged into it**, so the plan must solve delivery to device, not just build.
