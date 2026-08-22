@@ -1,5 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Visual Library</title><style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#eef0f3;font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",
@@ -9,15 +11,12 @@ a{text-decoration:none;color:inherit}
        box-shadow:0 12px 40px rgba(0,0,0,.18);min-height:760px}
 .status{height:44px;display:flex;align-items:center;justify-content:space-between;
         padding:0 26px;font-size:13px;font-weight:600}
-/* ---- first-run summary: compressed into the header so the LIBRARY gets the
-   prime real estate. The work report is second, per DEC-017. ---- */
 .summary{padding:6px 22px 18px}
 .summary h1{font-size:26px;font-weight:700;letter-spacing:-.4px}
 .summary .lines{margin-top:7px;font-size:13.5px;color:#5b626b;line-height:1.6}
 .summary .lines b{color:#111;font-variant-numeric:tabular-nums}
 .summary .need{margin-top:10px;display:inline-block;background:#eef4ff;color:#0b63e5;
      border-radius:20px;padding:6px 13px;font-size:13px;font-weight:600}
-/* ---- nav bar for drill-down levels ---- */
 .nav{display:flex;align-items:center;gap:10px;padding:10px 18px 6px}
 .nav a.back{font-size:15px;color:#0b63e5;font-weight:600}
 .nav .crumb{font-size:12px;color:#8a8f98;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -27,15 +26,12 @@ a{text-decoration:none;color:inherit}
 .lbl{font-size:11px;font-weight:700;letter-spacing:1.1px;color:#8a8f98;text-transform:uppercase;
      margin:14px 22px 9px;display:flex;justify-content:space-between;align-items:baseline}
 .lbl .foot{font-weight:500;letter-spacing:.2px;text-transform:none;font-size:11px;color:#9aa0a8}
-/* ---- library grid: the main event ---- */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 22px}
-.card{background:#f5f6f8;border-radius:14px;padding:13px 12px;display:block;
-      border:1px solid transparent}
+.card{background:#f5f6f8;border-radius:14px;padding:13px 12px;display:block;border:1px solid transparent}
 .card:hover{border-color:#d9dde3;background:#f0f2f5}
 .card .ic{font-size:20px}
 .card .nm{font-size:14.5px;font-weight:650;margin-top:6px}
 .card .ct{font-size:12px;color:#8a8f98;margin-top:1px;font-variant-numeric:tabular-nums}
-/* ---- list rows for deeper levels ---- */
 .list{padding:0 22px}
 .row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid #f0f1f3}
 .row:last-child{border-bottom:none}
@@ -44,11 +40,11 @@ a{text-decoration:none;color:inherit}
 .row .ch{font-size:16px;color:#c3c8cf}
 .row .tag{font-size:10.5px;color:#8a6f2e;background:#f7f4ee;border-radius:5px;padding:2px 6px}
 .row .pend{font-size:10.5px;color:#a33;background:#fdeaea;border-radius:5px;padding:2px 6px}
-/* ---- leaf asset grid ---- */
 .assets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 22px}
-.asset{aspect-ratio:1;border-radius:5px;display:flex;align-items:flex-end;justify-content:center;
-       font-size:9px;color:#fff;padding-bottom:4px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-/* ---- work report: BELOW the library ---- */
+.asset{aspect-ratio:1;border-radius:5px;display:flex;align-items:flex-end;
+       font-size:8.5px;color:#fff;padding:4px;text-shadow:0 1px 2px rgba(0,0,0,.6);
+       line-height:1.15;overflow:hidden}
+.more{padding:14px 22px 0;font-size:12px;color:#8a8f98}
 .hr{height:9px;background:#f1f3f5;margin-top:26px}
 .wrow{display:flex;align-items:center;gap:11px;padding:10px 22px;border-bottom:1px solid #f4f5f7}
 .wrow .n{font-size:16px;font-weight:700;min-width:50px;font-variant-numeric:tabular-nums}
@@ -63,10 +59,9 @@ a{text-decoration:none;color:inherit}
      display:flex;align-items:center;justify-content:space-between}
 .cta .l{font-size:15px;font-weight:600}
 .cta .r{font-size:14px;opacity:.95}
-.note{margin:0 22px 20px;font-size:11.5px;color:#9aa0a8;text-align:center}
 .caption{width:390px;text-align:center;color:#8a8f98;font-size:12px;margin-top:14px}
 </style></head><body>
 <div><div class="phone">
 <div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679; &#9646;</span></div>
-<div class="nav"><a class="back" href="clothing.html">&lsaquo; Back</a><div class="crumb">Clothing › Tops</div></div><div class="title"><h2>Tops</h2><div class="c">128 items</div></div><div class="assets"><div class="asset" style="background:hsl(315,42%,58%)">Tops</div><div class="asset" style="background:hsl(212,42%,58%)">Tops</div><div class="asset" style="background:hsl(109,42%,58%)">Tops</div><div class="asset" style="background:hsl(6,42%,58%)">Tops</div><div class="asset" style="background:hsl(263,42%,58%)">Tops</div><div class="asset" style="background:hsl(160,42%,58%)">Tops</div><div class="asset" style="background:hsl(57,42%,58%)">Tops</div><div class="asset" style="background:hsl(314,42%,58%)">Tops</div><div class="asset" style="background:hsl(211,42%,58%)">Tops</div><div class="asset" style="background:hsl(108,42%,58%)">Tops</div><div class="asset" style="background:hsl(5,42%,58%)">Tops</div><div class="asset" style="background:hsl(262,42%,58%)">Tops</div><div class="asset" style="background:hsl(159,42%,58%)">Tops</div><div class="asset" style="background:hsl(56,42%,58%)">Tops</div><div class="asset" style="background:hsl(313,42%,58%)">Tops</div><div class="asset" style="background:hsl(210,42%,58%)">Tops</div><div class="asset" style="background:hsl(107,42%,58%)">Tops</div><div class="asset" style="background:hsl(4,42%,58%)">Tops</div></div>
+<div class="nav"><a class="back" href="clothing.html">&lsaquo; Back</a><div class="crumb">Clothing › Tops</div></div><div class="title"><h2>Tops</h2><div class="c">89 items</div></div><div class="assets"><div class="asset" style="background:hsl(244,42%,55%)">PEOPLE FAMILY<br>2026-07-23</div><div class="asset" style="background:hsl(36,42%,55%)">PEOPLE FAMILY<br>2026-05-28</div><div class="asset" style="background:hsl(257,42%,55%)">PEOPLE FAMILY<br>2026-05-15</div><div class="asset" style="background:hsl(295,42%,55%)">PEOPLE FAMILY<br>2026-05-04</div><div class="asset" style="background:hsl(126,42%,55%)">PEOPLE FAMILY<br>2026-04-29</div><div class="asset" style="background:hsl(326,42%,55%)">PEOPLE FAMILY<br>2026-04-23</div><div class="asset" style="background:hsl(106,42%,55%)">PEOPLE FAMILY<br>2026-04-23</div><div class="asset" style="background:hsl(101,42%,55%)">PEOPLE FAMILY<br>2026-04-02</div><div class="asset" style="background:hsl(170,42%,55%)">PEOPLE FAMILY<br>2026-03-27</div><div class="asset" style="background:hsl(281,42%,55%)">PEOPLE FAMILY<br>2026-03-11</div><div class="asset" style="background:hsl(123,42%,55%)">PEOPLE FAMILY<br>2026-02-27</div><div class="asset" style="background:hsl(272,42%,55%)">PEOPLE FAMILY<br>2026-01-19</div><div class="asset" style="background:hsl(53,42%,55%)">PEOPLE FAMILY<br>2026-01-05</div><div class="asset" style="background:hsl(120,42%,55%)">PEOPLE FAMILY<br>2025-12-21</div><div class="asset" style="background:hsl(358,42%,55%)">PEOPLE FAMILY<br>2025-12-21</div><div class="asset" style="background:hsl(278,42%,55%)">PEOPLE FAMILY<br>2025-11-29</div><div class="asset" style="background:hsl(180,42%,55%)">PEOPLE FAMILY<br>2025-11-23</div><div class="asset" style="background:hsl(78,42%,55%)">PEOPLE FAMILY<br>2025-10-24</div><div class="asset" style="background:hsl(319,42%,55%)">PEOPLE FAMILY<br>2025-10-04</div><div class="asset" style="background:hsl(82,42%,55%)">PEOPLE FAMILY<br>2025-10-01</div><div class="asset" style="background:hsl(158,42%,55%)">PEOPLE FAMILY<br>2025-09-22</div><div class="asset" style="background:hsl(108,42%,55%)">PEOPLE FAMILY<br>2025-09-01</div><div class="asset" style="background:hsl(56,42%,55%)">PEOPLE FAMILY<br>2025-08-23</div><div class="asset" style="background:hsl(209,42%,55%)">PEOPLE FAMILY<br>2025-08-07</div></div><div class="more">+ 65 more</div>
 </div><div class="caption">T0-B prototype · Clothing › Tops</div></div></body></html>

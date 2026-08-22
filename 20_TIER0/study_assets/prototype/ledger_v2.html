@@ -1,5 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Visual Library</title><style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#eef0f3;font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",
@@ -9,15 +11,12 @@ a{text-decoration:none;color:inherit}
        box-shadow:0 12px 40px rgba(0,0,0,.18);min-height:760px}
 .status{height:44px;display:flex;align-items:center;justify-content:space-between;
         padding:0 26px;font-size:13px;font-weight:600}
-/* ---- first-run summary: compressed into the header so the LIBRARY gets the
-   prime real estate. The work report is second, per DEC-017. ---- */
 .summary{padding:6px 22px 18px}
 .summary h1{font-size:26px;font-weight:700;letter-spacing:-.4px}
 .summary .lines{margin-top:7px;font-size:13.5px;color:#5b626b;line-height:1.6}
 .summary .lines b{color:#111;font-variant-numeric:tabular-nums}
 .summary .need{margin-top:10px;display:inline-block;background:#eef4ff;color:#0b63e5;
      border-radius:20px;padding:6px 13px;font-size:13px;font-weight:600}
-/* ---- nav bar for drill-down levels ---- */
 .nav{display:flex;align-items:center;gap:10px;padding:10px 18px 6px}
 .nav a.back{font-size:15px;color:#0b63e5;font-weight:600}
 .nav .crumb{font-size:12px;color:#8a8f98;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -27,15 +26,12 @@ a{text-decoration:none;color:inherit}
 .lbl{font-size:11px;font-weight:700;letter-spacing:1.1px;color:#8a8f98;text-transform:uppercase;
      margin:14px 22px 9px;display:flex;justify-content:space-between;align-items:baseline}
 .lbl .foot{font-weight:500;letter-spacing:.2px;text-transform:none;font-size:11px;color:#9aa0a8}
-/* ---- library grid: the main event ---- */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 22px}
-.card{background:#f5f6f8;border-radius:14px;padding:13px 12px;display:block;
-      border:1px solid transparent}
+.card{background:#f5f6f8;border-radius:14px;padding:13px 12px;display:block;border:1px solid transparent}
 .card:hover{border-color:#d9dde3;background:#f0f2f5}
 .card .ic{font-size:20px}
 .card .nm{font-size:14.5px;font-weight:650;margin-top:6px}
 .card .ct{font-size:12px;color:#8a8f98;margin-top:1px;font-variant-numeric:tabular-nums}
-/* ---- list rows for deeper levels ---- */
 .list{padding:0 22px}
 .row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid #f0f1f3}
 .row:last-child{border-bottom:none}
@@ -44,11 +40,11 @@ a{text-decoration:none;color:inherit}
 .row .ch{font-size:16px;color:#c3c8cf}
 .row .tag{font-size:10.5px;color:#8a6f2e;background:#f7f4ee;border-radius:5px;padding:2px 6px}
 .row .pend{font-size:10.5px;color:#a33;background:#fdeaea;border-radius:5px;padding:2px 6px}
-/* ---- leaf asset grid ---- */
 .assets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 22px}
-.asset{aspect-ratio:1;border-radius:5px;display:flex;align-items:flex-end;justify-content:center;
-       font-size:9px;color:#fff;padding-bottom:4px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-/* ---- work report: BELOW the library ---- */
+.asset{aspect-ratio:1;border-radius:5px;display:flex;align-items:flex-end;
+       font-size:8.5px;color:#fff;padding:4px;text-shadow:0 1px 2px rgba(0,0,0,.6);
+       line-height:1.15;overflow:hidden}
+.more{padding:14px 22px 0;font-size:12px;color:#8a8f98}
 .hr{height:9px;background:#f1f3f5;margin-top:26px}
 .wrow{display:flex;align-items:center;gap:11px;padding:10px 22px;border-bottom:1px solid #f4f5f7}
 .wrow .n{font-size:16px;font-weight:700;min-width:50px;font-variant-numeric:tabular-nums}
@@ -63,10 +59,9 @@ a{text-decoration:none;color:inherit}
      display:flex;align-items:center;justify-content:space-between}
 .cta .l{font-size:15px;font-weight:600}
 .cta .r{font-size:14px;opacity:.95}
-.note{margin:0 22px 20px;font-size:11.5px;color:#9aa0a8;text-align:center}
 .caption{width:390px;text-align:center;color:#8a8f98;font-size:12px;margin-top:14px}
 </style></head><body>
 <div><div class="phone">
 <div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679; &#9646;</span></div>
-<div class="summary"><h1>Your library is organised.</h1><div class="lines">Everything analysed.<br>Duplicates, expired codes and burst frames handled.</div><div class="need">A few items need you &rsaquo;</div></div><div class="lbl">Your library</div><div class="grid"><a class="card" href="documents.html"><div class="ic">📄</div><div class="nm">Documents</div><div class="ct">604</div></a><a class="card" href="people.html"><div class="ic">🧑</div><div class="nm">People</div><div class="ct">1,532</div></a><a class="card" href="screenshots.html"><div class="ic">📱</div><div class="nm">Screenshots</div><div class="ct">2,491</div></a><a class="card" href="places.html"><div class="ic">📍</div><div class="nm">Places</div><div class="ct">3,118</div></a><a class="card" href="travel.html"><div class="ic">✈️</div><div class="nm">Travel</div><div class="ct">716</div></a><a class="card" href="objects.html"><div class="ic">🚲</div><div class="nm">Objects</div><div class="ct">208</div></a><a class="card" href="purchases.html"><div class="ic">🧾</div><div class="nm">Purchases</div><div class="ct">498</div></a><a class="card" href="clothing.html"><div class="ic">👕</div><div class="nm">Clothing</div><div class="ct">341</div></a><a class="card" href="work.html"><div class="ic">💼</div><div class="nm">Work</div><div class="ct">452</div></a><a class="card" href="downloads.html"><div class="ic">⬇️</div><div class="nm">Downloads</div><div class="ct">397</div></a><a class="card" href="timeline.html"><div class="ic">🗓</div><div class="nm">Timeline</div><div class="ct">10,000</div></a></div><div class="hr"></div><div class="lbl">Handled for you <span class="foot">all recoverable for 30 days</span></div><div class="wrow"><div class="d">expired verification &amp; pickup codes</div><div class="s">cleared</div><div class="why">why?</div></div><div class="wrow"><div class="d">duplicate downloads</div><div class="s">cleared</div><div class="why">why?</div></div><div class="wrow"><div class="d">near-identical burst frames</div><div class="s">best kept</div><div class="why">why?</div></div><div class="lbl">Protected</div><div class="prot"><div class="l">12 documents · 3 IDs · 1 contract</div><div class="m">Never touched automatically</div></div><a class="cta" href="#"><div class="l">23 items need you</div><div class="r">Review &rsaquo;</div></a>
-</div><div class="caption">T0-D variant · ledger_v2</div></div></body></html>
+<div class="summary"><h1>Your library is organised.</h1><div class="lines">Everything analysed.<br>Duplicates, expired codes and burst frames handled.</div><div class="need">A few items need you &rsaquo;</div></div><div class="lbl">Your library</div><div class="grid"><a class="card" href="documents.html"><div class="ic">📄</div><div class="nm">Documents</div><div class="ct">607</div></a><a class="card" href="people.html"><div class="ic">🧑</div><div class="nm">People</div><div class="ct">1,529</div></a><a class="card" href="screenshots.html"><div class="ic">📱</div><div class="nm">Screenshots</div><div class="ct">2,487</div></a><a class="card" href="places.html"><div class="ic">📍</div><div class="nm">Places</div><div class="ct">4,256</div></a><a class="card" href="travel.html"><div class="ic">✈️</div><div class="nm">Travel</div><div class="ct">877</div></a><a class="card" href="objects.html"><div class="ic">🚲</div><div class="nm">Objects</div><div class="ct">205</div></a><a class="card" href="purchases.html"><div class="ic">🧾</div><div class="nm">Purchases</div><div class="ct">501</div></a><a class="card" href="clothing.html"><div class="ic">👕</div><div class="nm">Clothing</div><div class="ct">381</div></a><a class="card" href="work.html"><div class="ic">💼</div><div class="nm">Work</div><div class="ct">548</div></a><a class="card" href="downloads.html"><div class="ic">⬇️</div><div class="nm">Downloads</div><div class="ct">399</div></a><a class="card" href="timeline.html"><div class="ic">🗓</div><div class="nm">Timeline</div><div class="ct">10,000</div></a></div><div class="hr"></div><div class="lbl">Handled for you <span class="foot">all recoverable for 30 days</span></div><div class="wrow"><div class="d">expired verification &amp; pickup codes</div><div class="s">cleared</div><div class="why">why?</div></div><div class="wrow"><div class="d">duplicate downloads</div><div class="s">cleared</div><div class="why">why?</div></div><div class="wrow"><div class="d">near-identical burst frames</div><div class="s">best kept</div><div class="why">why?</div></div><div class="lbl">Protected</div><div class="prot"><div class="l">12 documents · 3 IDs · 1 contract</div><div class="m">Never touched automatically</div></div><a class="cta" href="#"><div class="l">23 items need you</div><div class="r">Review &rsaquo;</div></a>
+</div><div class="caption">T0-D variant V2 · No numbers</div></div></body></html>

@@ -27,6 +27,7 @@ Usage:
 """
 
 import argparse, json, os, random, hashlib, shutil
+import taxonomy
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
@@ -34,18 +35,31 @@ SEED = 20260822
 random.seed(SEED)
 
 # --- §5 composition -------------------------------------------------------------
+# NOTE: Constitution §23 has NO generic "Photography" bucket. Ordinary photos are
+# not a category — they are reached through Places and Timeline. That is the
+# taxonomy being faithful, not an omission.
 COMPOSITION = [
-    ("ordinary_photography", 0.35, "Photography"),
-    ("screenshot",           0.25, "Screenshots"),
-    ("people_family",        0.15, "People"),
-    ("burst",                0.08, "Photography/Burst"),
-    ("document_id",          0.06, "Documents"),
-    ("purchase",             0.05, "Purchases"),
-    ("downloaded_meme",      0.04, "Downloads"),
-    ("object",               0.02, "Objects"),
+    ("ordinary_photography", 0.35, ["Places > United Kingdom > London",
+                                    "Places > United Kingdom > Brighton",
+                                    "Places > Japan > Tokyo"]),
+    ("screenshot",           0.25, ["Screenshots > Chat", "Screenshots > Shopping",
+                                    "Screenshots > Maps", "Screenshots > Web",
+                                    "Screenshots > Work", "Screenshots > Errors"]),
+    ("people_family",        0.15, ["People > Anna", "People > Ben",
+                                    "People > Chris", "People > Dana"]),
+    ("burst",                0.08, ["Places > United Kingdom > Brighton"]),
+    ("document_id",          0.06, ["Documents > Other Documents",
+                                    "Documents > Financial > Bank",
+                                    "Documents > Financial > Statements",
+                                    "Documents > Contracts > Insurance"]),
+    ("purchase",             0.05, ["Purchases > Orders", "Purchases > Delivery"]),
+    ("downloaded_meme",      0.04, ["Downloads > Memes", "Downloads > Wallpapers",
+                                    "Downloads > Social"]),
+    ("object",               0.02, ["Objects > Devices", "Objects > Appliances",
+                                    "Objects > Furniture", "Objects > Other"]),
 ]
 
-PEOPLE = ["PERSON_A", "PERSON_B", "PERSON_C", "PERSON_D"]
+PEOPLE = ["Anna", "Ben", "Chris", "Dana"]
 
 PLACES = {
     "home":   ("United Kingdom", "London",  51.5074,  -0.1278),
@@ -72,10 +86,27 @@ class Builder:
 
     def add(self, **kw):
         self.n += 1
+        paths = list(kw.get("paths") or
+                     ([kw["category_path"]] if kw.get("category_path") else []))
+        # §11: time is a first-class index. EVERY asset is reachable from Timeline.
+        tl = f"Timeline > {kw['captured_at'].year}"
+        if tl not in paths:
+            paths.append(tl)
+        # §11: trips form automatically from time + place. The user never builds a
+        # travel album — the view is derived.
+        if TOKYO_TRIP[0] <= kw["captured_at"] <= TOKYO_TRIP[1] + timedelta(days=1):
+            if kw.get("place") == "tokyo" or any("Japan" in x for x in paths):
+                trip = "Travel > Tokyo · Apr 2025"
+                if trip not in paths:
+                    paths.append(trip)
         a = {
             "id": f"A{self.n:05d}",
             "category": kw.get("category"),
-            "category_path": kw.get("category_path"),
+            # Constitution §3: ONE asset, MANY index entries, no duplicated original.
+            # paths[0] is the primary browse location; the rest are additional
+            # entries the same single asset is reachable from.
+            "paths": paths,
+            "category_path": paths[0] if paths else None,
             "captured_at": kw["captured_at"].isoformat(),
             "place": kw.get("place"),
             "people": kw.get("people", []),
@@ -98,7 +129,7 @@ class Builder:
     def foreground(self):
         # ---- T1 · ID card front and back (same real entity, both must stay findable)
         for side in ("front", "back"):
-            self.add(category="document_id", category_path=f"Documents/Identity/ID Card/{side.title()}",
+            self.add(category="document_id", category_path="Documents > Identity > ID Cards",
                      captured_at=d(430, 14, 3), place="home",
                      same_entity_group="ENTITY_ID_CARD", requires_real_imagery=True,
                      source_query=f"specimen national id card {side}, sample document",
@@ -106,7 +137,7 @@ class Builder:
                      note="T1 answer. Both sides required; grouping must not hide either.")
 
         # A second, LATER capture of the SAME id card — §9 Same Entity across time.
-        self.add(category="document_id", category_path="Documents/Identity/ID Card/Front",
+        self.add(category="document_id", category_path="Documents > Identity > ID Cards",
                  captured_at=d(90, 9, 12), place="home",
                  same_entity_group="ENTITY_ID_CARD", requires_real_imagery=True,
                  source_query="specimen national id card front, sample document, different lighting",
@@ -114,19 +145,19 @@ class Builder:
                  note="Same physical card months later. Same Entity, NOT a duplicate to delete.")
 
         # ---- Passport / driver licence (used by the §7 predictability question)
-        self.add(category="document_id", category_path="Documents/Identity/Passport",
+        self.add(category="document_id", category_path="Documents > Identity > Passports",
                  captured_at=d(510, 11, 20), place="home", requires_real_imagery=True,
                  source_query="specimen passport photo page, sample document",
                  task_target="PASSPORT_PREDICTION", placeholder_text="PASSPORT",
                  note="Target of the pre-tap predictability question (protocol §7 step 4).")
-        self.add(category="document_id", category_path="Documents/Identity/Driver Licence",
+        self.add(category="document_id", category_path="Documents > Identity > Driver Licenses",
                  captured_at=d(505, 11, 25), place="home", requires_real_imagery=True,
                  source_query="specimen driving licence card, sample document",
                  placeholder_text="DRIVER LICENCE")
 
         # ---- HARD NEGATIVE · 4-page contract: near-identical, different content
         for page in range(1, 5):
-            self.add(category="document_id", category_path="Documents/Legal/Contract",
+            self.add(category="document_id", category_path="Documents > Contracts > Tenancy",
                      captured_at=d(200, 16, 40 + page), place="office",
                      same_entity_group="ENTITY_CONTRACT_TENANCY", requires_real_imagery=True,
                      source_query=f"printed contract page {page} of 4, dense text, plain paper",
@@ -135,23 +166,23 @@ class Builder:
                      note="Pages look alike and MUST NOT be treated as duplicates (§9).")
 
         # ---- T3 · receipt for a specific purchase
-        self.add(category="purchase", category_path="Purchases/Receipts",
+        self.add(category="purchase", paths=["Purchases > Receipts", "Documents > Receipts"],
                  captured_at=d(160, 13, 5), place="home", requires_real_imagery=True,
                  source_query="paper till receipt for headphones, electronics store",
                  task_target="T3", placeholder_text="RECEIPT — HEADPHONES £129.00",
                  note="T3 answer.")
         for i, q in enumerate(["supermarket till receipt", "restaurant bill receipt",
                                "pharmacy receipt", "taxi receipt", "hardware store receipt"]):
-            self.add(category="purchase", category_path="Purchases/Receipts",
+            self.add(category="purchase", paths=["Purchases > Receipts", "Documents > Receipts"],
                      captured_at=d(150 - i * 9, 18, 12), place="home",
                      requires_real_imagery=True, source_query=q,
                      placeholder_text=f"RECEIPT — {q.split()[0].upper()}",
                      note="Distractor receipt; T3 must not be findable by 'only one receipt exists'.")
-        self.add(category="purchase", category_path="Purchases/Warranty",
+        self.add(category="purchase", category_path="Purchases > Warranty",
                  captured_at=d(159, 13, 9), place="home", requires_real_imagery=True,
                  source_query="product warranty card", placeholder_text="WARRANTY CARD — HEADPHONES",
                  same_entity_group="ENTITY_HEADPHONES")
-        self.add(category="purchase", category_path="Purchases/Orders",
+        self.add(category="purchase", category_path="Purchases > Orders",
                  captured_at=d(163, 20, 41), place="home", requires_real_imagery=True,
                  is_screenshot=True, source_query="order confirmation email screenshot",
                  placeholder_text="ORDER CONFIRMATION — HEADPHONES",
@@ -159,22 +190,22 @@ class Builder:
 
         # ---- T2 · person in a white top, Tokyo trip, last year
         trip_days = (TOKYO_TRIP[1] - TOKYO_TRIP[0]).days
-        self.add(category="people_family", category_path="People/PERSON_B",
+        self.add(category="people_family", category_path="People > Ben",
                  captured_at=TOKYO_TRIP[0] + timedelta(days=3, hours=10),
-                 place="tokyo", people=["PERSON_B"], requires_real_imagery=True,
+                 place="tokyo", people=["Ben"], requires_real_imagery=True,
                  source_query="woman in white top standing in tokyo street, daytime",
-                 task_target="T2", placeholder_text="PERSON_B · WHITE TOP · TOKYO",
-                 note="T2 answer. Must be the ONLY white-top PERSON_B shot on the trip.")
+                 task_target="T2", placeholder_text="Ben · WHITE TOP · TOKYO",
+                 note="T2 answer. Must be the ONLY white-top Ben shot on the trip.")
         # Trip distractors: same person, same trip, other clothing.
         for i in range(14):
-            self.add(category="people_family", category_path="People/PERSON_B",
+            self.add(category="people_family", category_path="People > Ben",
                      captured_at=TOKYO_TRIP[0] + timedelta(days=random.randint(0, trip_days),
                                                            hours=random.randint(8, 20)),
-                     place="tokyo", people=["PERSON_B"], requires_real_imagery=True,
+                     place="tokyo", people=["Ben"], requires_real_imagery=True,
                      source_query=f"woman in {random.choice(['blue jacket','red dress','black coat','green shirt'])} in tokyo",
-                     placeholder_text="PERSON_B · TOKYO")
+                     placeholder_text="Ben · TOKYO")
         for i in range(22):
-            self.add(category="ordinary_photography", category_path="Photography/Travel",
+            self.add(category="ordinary_photography", category_path="Travel > Tokyo · Apr 2025",
                      captured_at=TOKYO_TRIP[0] + timedelta(days=random.randint(0, trip_days),
                                                            hours=random.randint(8, 21)),
                      place="tokyo", requires_real_imagery=True,
@@ -184,32 +215,32 @@ class Builder:
         # ---- T4 · one person across three years
         for year_offset, count in ((0, 9), (1, 11), (2, 8)):
             for i in range(count):
-                self.add(category="people_family", category_path="People/PERSON_A",
+                self.add(category="people_family", category_path="People > Anna",
                          captured_at=d(365 * year_offset + random.randint(5, 350)),
                          place=random.choice(["home", "coast", "office"]),
-                         people=["PERSON_A"], requires_real_imagery=True,
+                         people=["Anna"], requires_real_imagery=True,
                          source_query="same man portrait, casual, varied settings",
                          task_target="T4" if year_offset == 0 and i == 0 else None,
-                         placeholder_text=f"PERSON_A · {2026 - year_offset}")
-        # Group shots — PERSON_A present but not alone.
+                         placeholder_text=f"Anna · {2026 - year_offset}")
+        # Group shots — Anna present but not alone.
         for i in range(6):
-            self.add(category="people_family", category_path="People/Groups",
+            self.add(category="people_family", category_path="People > Groups",
                      captured_at=d(random.randint(30, 900)), place="home",
-                     people=["PERSON_A", random.choice(["PERSON_C", "PERSON_D"])],
+                     people=["Anna", random.choice(["Chris", "Dana"])],
                      requires_real_imagery=True, source_query="two people together, casual photo",
-                     placeholder_text="GROUP · PERSON_A + OTHER",
-                     note="T4 completeness check: must surface in a PERSON_A view.")
+                     placeholder_text="GROUP · Anna + OTHER",
+                     note="T4 completeness check: must surface in a Anna view.")
 
         # ---- T5 · same object on three separate occasions
         for i, (days, place) in enumerate([(700, "home"), (330, "office"), (45, "coast")]):
-            self.add(category="object", category_path="Objects/Bicycle",
+            self.add(category="object", category_path="Objects > Bicycle",
                      captured_at=d(days, 15, 30), place=place,
                      same_entity_group="ENTITY_BICYCLE", requires_real_imagery=True,
                      source_query="same blue bicycle, different background and angle",
                      task_target="T5" if i == 0 else None,
                      placeholder_text=f"BICYCLE · OCCASION {i+1}")
         for i in range(5):
-            self.add(category="object", category_path="Objects/Other",
+            self.add(category="object", category_path="Objects > Other",
                      captured_at=d(random.randint(60, 800)), place="home",
                      requires_real_imagery=True,
                      source_query=random.choice(["kettle", "office chair", "houseplant",
@@ -218,20 +249,20 @@ class Builder:
 
         # ---- T6 · pickup-code screenshot from a given week
         target_day = 47
-        self.add(category="screenshot", category_path="Screenshots/Temporary/Pickup Code",
+        self.add(category="screenshot", category_path="Screenshots > Temporary > Pickup Codes",
                  captured_at=d(target_day, 9, 14), place="home", is_screenshot=True,
                  requires_real_imagery=True, source_query="parcel pickup code sms screenshot",
                  task_target="T6", placeholder_text="PICKUP CODE 4417 — LOCKER B12",
                  note="T6 answer. Week of " + d(target_day).strftime("%Y-%m-%d") + ".")
         for i in range(11):
-            self.add(category="screenshot", category_path="Screenshots/Temporary/Pickup Code",
+            self.add(category="screenshot", category_path="Screenshots > Temporary > Pickup Codes",
                      captured_at=d(target_day + random.choice([-40, -25, 25, 60, 120]), 10, 5),
                      place="home", is_screenshot=True, requires_real_imagery=True,
                      source_query="parcel pickup code sms screenshot",
                      placeholder_text=f"PICKUP CODE {1000+i*137}",
                      note="Distractor: same type, different week. Forces a time-scoped answer.")
         for i in range(9):
-            self.add(category="screenshot", category_path="Screenshots/Temporary/Verification Code",
+            self.add(category="screenshot", category_path="Screenshots > Temporary > Verification Codes",
                      captured_at=d(random.randint(20, 400), 12, 0), place="home",
                      is_screenshot=True, requires_real_imagery=True,
                      source_query="one time verification code sms screenshot",
@@ -240,18 +271,18 @@ class Builder:
 
         # ---- T7 · burst of 8, and the HARD NEGATIVE burst
         for i in range(8):
-            self.add(category="burst", category_path="Photography/Burst",
+            self.add(category="burst", category_path="Places > United Kingdom > Brighton",
                      captured_at=d(120, 16, 22) + timedelta(seconds=i),
-                     place="coast", people=["PERSON_C"],
+                     place="coast", people=["Chris"],
                      same_moment_group="MOMENT_BURST_T7", requires_real_imagery=True,
                      source_query="near identical burst frame, person on beach, slight pose variation",
                      task_target="T7" if i == 0 else None,
                      placeholder_text=f"BURST T7 · FRAME {i+1}/8")
         for i in range(7):
             different = (i == 4)
-            self.add(category="burst", category_path="Photography/Burst",
+            self.add(category="burst", category_path="Places > United Kingdom > Brighton",
                      captured_at=d(260, 13, 8) + timedelta(seconds=i),
-                     place="home", people=["PERSON_D"],
+                     place="home", people=["Dana"],
                      same_moment_group="MOMENT_BURST_HARDNEG", requires_real_imagery=True,
                      source_query=("same burst but subject laughing with eyes closed, clearly different"
                                    if different else "near identical burst frame, neutral expression"),
@@ -261,13 +292,13 @@ class Builder:
                           if different else None)
 
         # ---- HARD NEGATIVE · one image downloaded four times, byte-identical
-        first = self.add(category="downloaded_meme", category_path="Downloads/Memes",
+        first = self.add(category="downloaded_meme", category_path="Downloads > Memes",
                          captured_at=d(310, 21, 3), place=None, requires_real_imagery=True,
                          source_query="a single reaction meme image",
                          same_entity_group="ENTITY_MEME_DUP",
                          placeholder_text="MEME (original download)")
         for i in range(3):
-            self.add(category="downloaded_meme", category_path="Downloads/Memes",
+            self.add(category="downloaded_meme", category_path="Downloads > Memes",
                      captured_at=d(310 - (i + 1) * 12, 21, 30), place=None,
                      requires_real_imagery=True, source_query="identical copy of the same meme",
                      same_entity_group="ENTITY_MEME_DUP", exact_duplicate_of=first["id"],
@@ -282,14 +313,43 @@ class Builder:
         if remaining <= 0:
             return
         buckets = []
-        for cat, share, path in COMPOSITION:
-            buckets.extend([(cat, path)] * max(1, int(round(share * remaining))))
+        for cat, share, paths in COMPOSITION:
+            buckets.extend([(cat, paths)] * max(1, int(round(share * remaining))))
         random.shuffle(buckets)
-        for cat, path in buckets[:remaining]:
-            place = random.choice(list(PLACES.keys()) + [None])
-            people = [random.choice(PEOPLE)] if cat == "people_family" else []
-            self.add(category=cat, category_path=path,
-                     captured_at=d(random.randint(1, 1500)),
+        for cat, paths in buckets[:remaining]:
+            leaf = random.choice(paths)
+            ts = d(random.randint(1, 1500))
+            # Put a realistic share of Tokyo photos inside the actual trip window so
+            # the derived Travel view is not empty.
+            if leaf.endswith("> Tokyo") and random.random() < 0.75:
+                span = (TOKYO_TRIP[1] - TOKYO_TRIP[0]).days
+                ts = TOKYO_TRIP[0] + timedelta(days=random.randint(0, span),
+                                               hours=random.randint(7, 22),
+                                               minutes=random.randint(0, 59))
+            # Every asset is ALSO reachable from Timeline — the multi-index in action.
+            entries = [leaf, f"Timeline > {ts.year}"]
+            place = None
+            if leaf.startswith("Places > "):
+                city = leaf.split(" > ")[-1]
+                place = {"London": "home", "Brighton": "coast", "Tokyo": "tokyo"}.get(city)
+            people = []
+            if leaf.startswith("People > "):
+                who = leaf.split(" > ")[-1]
+                if who in PEOPLE:
+                    people = [who]
+                # ~28% of person photos are also wardrobe evidence (§15 Wardrobe
+                # derives from existing person photos — it does not ask the user
+                # to enter anything).
+                if random.random() < 0.28:
+                    entries.append(random.choice([
+                        "Clothing > Tops", "Clothing > Outerwear",
+                        "Clothing > Shoes", "Clothing > Other"]))
+            # ~22% of screenshots are work material, also indexed under Work.
+            if leaf.startswith("Screenshots > ") and random.random() < 0.22:
+                entries.append(random.choice([
+                    "Work > Whiteboards", "Work > Meetings",
+                    "Work > Documents", "Work > Other"]))
+            self.add(category=cat, paths=entries, captured_at=ts,
                      place=place, people=people,
                      is_screenshot=(cat == "screenshot"),
                      requires_real_imagery=False,
@@ -391,6 +451,22 @@ def main():
         if a["hard_negative"]:
             manifest["hard_negatives"].append({"id": a["id"], "kind": a["hard_negative"],
                                                "note": a["note"]})
+
+    # Fail loudly if any asset landed on a path the browse tree does not contain —
+    # that would mean a task answer is unreachable in the prototype.
+    valid = set(taxonomy.leaf_paths()) | {f"Timeline > {y}" for y in range(2015, 2031)}
+    bad = {}
+    for a in b.assets:
+        for pth in a["paths"]:
+            if pth not in valid:
+                bad.setdefault(pth, 0)
+                bad[pth] += 1
+    if bad:
+        print("\nINVALID PATHS (not leaves of the canonical taxonomy):")
+        for k, v in sorted(bad.items(), key=lambda kv: -kv[1]):
+            print(f"   {v:>6}  {k}")
+        raise SystemExit("aborting: fix taxonomy.py or the path mapping")
+    print("all asset paths validate against taxonomy.py")
 
     with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=1, ensure_ascii=False)

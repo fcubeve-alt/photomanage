@@ -261,3 +261,25 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 **DEC-015 condition is now MET.** The rule was: pay the $99 only after a successful compile. The compile is green, at $0, with no Mac and no Apple account. **HG-1 is now the Owner's move.**
 
 **Status.** ACTIVE. Evidence: run 32579093228, and `20_TIER0/T0A_CI_ENVIRONMENT_EVALUATION.md`.
+
+---
+
+### DEC-019 · 2026-08-22 · One canonical taxonomy; prototype driven by the real manifest
+**Decision.** `20_TIER0/study_assets/taxonomy.py` becomes the single source of truth for the browse tree. Both `generate_test_library.py` (which assigns every asset its index entries) and `build_prototype.py` (which builds the tree and rolls up counts) import it. The prototype now renders **real assets from `library/manifest.json`** — nothing on screen is hand-written.
+
+**Why this mattered more than it looked.** The prototype had invented counts and coloured rectangles at the leaves. A facilitator **could not have completed a single task inside it**, and we would have discovered that with a participant sitting in the room. The build now **fails loudly** if any task answer is unreachable, and prints the reachability table on every run. All 8 targets verified clickable.
+
+**Three fidelity bugs surfaced the moment real counts replaced invented ones** — each would have damaged the study:
+1. **Clothing = 0, Work = 0.** Two of the eleven §23 entries were empty. A participant tapping an empty top-level category discredits the whole prototype.
+2. **Travel = 22.** §11 says trips form automatically from time + place and the user never builds a travel album. They were not being derived.
+3. **Timeline = 9,864, not 10,000.** Foreground assets had no time index at all.
+
+**Fixed by multi-indexing, not by adding content.** A clothing photo *is* a person/photography asset that is **also** indexed under Clothing; a work screenshot *is* a screenshot also indexed under Work; Tokyo photos inside the trip window join the derived Travel view. This is exactly what §3 describes — one stored asset, many entries — and it leaves the §5 composition untouched: re-verified **within 0.3pp on all eight content classes**.
+
+**Result:** 10,000 assets, **21,790 index entries (2.18 per asset)**, all 11 top-level entries populated, Timeline complete at 10,000. Cross-listing verified genuinely shared rather than duplicated: `Documents > Receipts` and `Purchases > Receipts` resolve to the **same 6 asset ids**.
+
+**Guard added.** The generator now validates every emitted path against `taxonomy.py` and aborts on any path the browse tree does not contain. Taxonomy and library cannot silently drift apart again.
+
+**Also noted:** Constitution §23 has **no generic "Photography" bucket**. Ordinary photos are not a category — they are reached through Places and Timeline. That is the taxonomy being faithful, not an omission, and the generator now reflects it.
+
+**Status.** ACTIVE.
