@@ -238,3 +238,26 @@ The burst-cleanup task stays inverted per DEC-011 — measure the manual effort,
 
 **Impact.** 82-page clickable prototype at `20_TIER0/study_assets/prototype/`. T0-B protocol §3/§7 updated: the predictability question now tests **path depth**, not just top-level placement.
 **Status.** ACTIVE.
+
+---
+
+### DEC-018 · 2026-08-22 · Repository live on GitHub; first CI build GREEN; UNKNOWN-6 resolved at zero cost
+**Outcome.** `github.com/fcubeve-alt/photomanage` — **PRIVATE**, 170 files, 14 commits, both workflows registered. First `ios-build.yml` run **succeeded**.
+
+**The build result.** ~1,400 lines of Swift, written blind on Windows with no Mac and no Xcode, produced **exactly one compile error**: a no-op self-assignment in `BackgroundIndexing.swift`. Fixed in one round. Second run green in **48 seconds**.
+
+**UNKNOWN-6 resolved.** The Actions timing API reports `billable.MACOS.total_ms = 0` for the run — **on a PRIVATE repository**. The macOS minutes are covered by the included allowance. This settles the question DEC-016 costed both ways: **private costs nothing at our volume**, so the argument for making the repo public to obtain free minutes is now closed on evidence, not estimate. Strategy stays unpublished.
+
+**Two blockers were discovered and fixed en route — both are environment facts worth keeping.**
+1. **`credential.helper = manager` was configured but Git Credential Manager was never installed.** Git failed with exit 128 and *completely empty stderr*, which is close to undiagnosable if you are not looking for it. Overridden locally to `!gh auth git-credential`.
+2. **git 2.9.0 (2016) cannot negotiate TLS with GitHub at all.** `ls-remote` failed with exit 128 and no message; forcing `http.sslVersion=tlsv1.2` and disabling `sslVerify` both changed nothing. `gh` worked throughout because it carries its own modern HTTP stack — which is what isolated the fault to git. Fixed by installing **MinGit 2.55.0.5** (official git-for-windows zip, no installer) to `C:\Users\admin\tools\git`.
+
+**Tooling installed** (both official releases, extracted locally, no admin, no system changes):
+- `C:\Users\admin\tools\bin\gh.exe` — GitHub CLI 2.98.0
+- `C:\Users\admin\tools\git\cmd\git.exe` — MinGit 2.55.0.5
+
+⚠️ **The system default `git` is still the broken 2.9.0.** Any session that runs `git` without prefixing the new path will hit the same silent exit-128. See `SESSION_HANDOFF.md`.
+
+**DEC-015 condition is now MET.** The rule was: pay the $99 only after a successful compile. The compile is green, at $0, with no Mac and no Apple account. **HG-1 is now the Owner's move.**
+
+**Status.** ACTIVE. Evidence: run 32579093228, and `20_TIER0/T0A_CI_ENVIRONMENT_EVALUATION.md`.

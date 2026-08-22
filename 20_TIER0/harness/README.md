@@ -1,8 +1,12 @@
 # PVM Bench — Tier 0-A device benchmark harness
 
-**Status: WRITTEN ON WINDOWS, NEVER COMPILED.** No Mac, no Xcode, no device.
-Expect compile errors on first build — that is the point: fixing them on the cloud Mac
-is minutes, writing this from scratch there would have been hours.
+**Status: COMPILES GREEN.** Written blind on Windows with no Mac and no Xcode; built on
+GitHub Actions (`macos-15` arm64, Xcode 16.4). The first CI run surfaced **exactly one**
+compile error across ~1,400 lines — a no-op self-assignment — fixed in one round.
+Second run green in **48 seconds**, at **zero billable minutes**.
+
+**Still NOT run on a device.** Compiling is not measuring. Every A1–A4 claim remains
+`REQUIRES_DEVICE` and untested (PF-01).
 
 Implements `../T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`:
 §4 CSV schema · §5 C-1…C-5 design constraints · §7 V-1…V-5 PhotoKit probes · §7A CD-1…CD-5.

@@ -15,7 +15,7 @@ Legend — **WINDOWS_OK** executable now · **REQUIRES_MAC** needs macOS/Xcode �
 | **Success criteria** | 100k first index completes in a reasonable wall time without thermal throttling or an unrecoverable background kill, **and** supports incremental update (no full rescan each run), **and** resumes from checkpoint after interruption. |
 | **Measurement** | Wall time, peak memory, CPU %, thermal state (`ProcessInfo.thermalState`), battery drain %, index size on disk, checkpoint-resume success — per library size × device tier. Output: `DEVICE_BENCHMARK_TIER0.csv` + `.md`. |
 | **Status** | **NOT TESTED.** HG-3 approved in principle: cloud Mac + existing ~6-iPhone fleet (DEC-008). Redesigned as a **cross-device performance gradient**; minimum supported model derived from the measured curve, never assumed. iPhone 7 excluded on verified evidence. No simulated result may be reported as a PASS. |
-| **Next action** | Spec complete: `T0A_DEVICE_BENCHMARK_HARNESS_SPEC.md`; environment plan complete: `T0A_MAC_ENVIRONMENT_AND_DEVICE_PLAN.md`. HG-3 approved in principle (DEC-008). Remaining: author the Swift harness on Windows, then one EUR 2.64 cloud-Mac block to compile. |
+| **Next action** | Harness **compiles green** on GitHub Actions (run 32579093228, 48s, 0 billable min) — DEC-018. Build environment resolved at $0 (DEC-016). **Remaining: HG-1** — Owner enrols in Apple Developer ($99) and adds signing secrets, then `ios-testflight.yml` delivers to the device fleet. |
 
 ### T0-B · Retrieval Entry hypothesis  `REQUIRES_USERS` `REQUIRES_MAC`
 | | |

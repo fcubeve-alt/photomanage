@@ -8,14 +8,23 @@ Overwrite the CURRENT block at the end of every session. Template kept below it.
 | Field | Value |
 |---|---|
 | Repository | `D:\photomanage` |
-| Remote | **none** — local only (open MAINTENANCE item) |
+| Remote | `github.com/fcubeve-alt/photomanage` (**PRIVATE**) |
 | Branch | `main` |
 | Full SHA | see `git log -1 --format=%H` |
 | Stage | M1 / Tier 0 — 生死开关 |
-| Session did | Bootstrap + documentation audit + persistent state + validation matrix; started T0-C1 |
-| Next action | Complete `20_TIER0/evidence/COMPETITOR_PRICING_MATRIX.md`, then T0-A-PREP |
+| Session did | Bootstrap, doc audit, persistent state, validation matrix, T0-C1, T0-A harness + CI, T0-B/D protocols + prototype, T0-C2 plan; repo live; **first CI build GREEN** |
+| Next action | Owner: HG-1 ($99 Apple Developer + secrets). Meanwhile: wire prototype leaves to the real manifest; build T0-C2 landing pages |
 
-**Must read (in order):** `PROJECT_STATE.md` → this file → `OPERATING_RULES.md` → `VALIDATION_MATRIX.md`.
+> ⚠️ **TOOLING — read before running any git or gh command.**
+> The system default `git` is **2.9.0 (2016) and cannot reach GitHub at all** — it fails with exit 128 and *empty stderr*. Prefix PATH every session:
+> ```
+> export PATH="/c/Users/admin/tools/git/cmd:/c/Users/admin/tools/bin:$PATH"
+> ```
+> (PowerShell: `$env:PATH = "C:\Users\admin\tools\git\cmd;C:\Users\admin\tools\bin;$env:PATH"`)
+> `gh` 2.98.0 is authenticated as **fcubeve-alt** with `repo` + `workflow` scopes.
+> The repo-local credential helper is `!gh auth git-credential`; the global `manager` helper is broken (GCM was never installed). See DEC-018.
+
+**Must read (in order):** `PROJECT_STATE.md` → this file → `CONSTITUTION_UNDERSTANDING.md` → `OPERATING_RULES.md` → `VALIDATION_MATRIX.md`.
 Only if you need product-level detail: `10_SOURCE_DOCS/_extracted_text/L1_PRODUCT_CONSTITUTION_v1.3.txt`.
 
 **Do NOT repeat:**

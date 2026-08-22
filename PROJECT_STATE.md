@@ -1,12 +1,15 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-22 · Session 001 (12 deliverables; T0-B prototype rebuilt as a Visual Library — DEC-017)
+Last updated: 2026-08-22 · Session 001 — **repo live, first CI build GREEN** (DEC-018)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
-- Repo: `D:\photomanage` · branch `main` · remote: **none yet** (local-only — see MAINTENANCE queue)
+- Repo: `D:\photomanage` · branch `main` · remote: **`github.com/fcubeve-alt/photomanage` (PRIVATE)**
 - Stage: **M1 / Tier 0 — 生死开关**
-- Environment: Windows 10, Python 3.12.10, git 2.9. No Mac, no Xcode. Owner has an iPhone.
+- Environment: Windows 10, Python 3.12.10. No Mac, no Xcode. Owner has ~6 iPhones (7 → 17).
+- ⚠️ **The system `git` is 2.9.0 and CANNOT reach GitHub** (exit 128, empty stderr). Prefix PATH every session:
+  `export PATH="/c/Users/admin/tools/git/cmd:/c/Users/admin/tools/bin:$PATH"`
+  Working tools: MinGit **2.55.0.5**, `gh` **2.98.0** (authenticated as `fcubeve-alt`, scopes `repo`+`workflow`). See DEC-018.
 
 ## Authority (never re-derive this)
 L1 Product Constitution **v1.3** → L2 P0 Execution Index v1.0 + Tier 0/1/2 **v1.1** → L3 Engineering Playbook **v1.1** → L4 Skills/Tools.
@@ -20,7 +23,9 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
 ## Doing now
-**Waiting on one small Owner action that now unblocks the whole T0-A path: create a PRIVATE GitHub repo and push.** After that, `ios-build.yml` runs at **$0** and I iterate compile errors until green — no Mac, no Apple account, no card.
+✅ **Repo live. First CI build GREEN** (run 32579093228, 48 s, **0 billable macOS minutes**). One compile error across ~1,400 lines of blind-written Swift, fixed in one round.
+
+**DEC-015 condition is MET** — the compile is proven at $0. **HG-1 is now the Owner's move: enrol in Apple Developer ($99) and add the 8 signing secrets.** Then `ios-testflight.yml` delivers to the device fleet and the real A1–A4 measurement can begin.
 
 Build-ahead work that needs no approval meanwhile:
 - Extend the prototype: Apple-Photos-style arm-A parity checks, and leaf-level asset views wired to the real test-library manifest
@@ -57,8 +62,8 @@ Build-ahead work that needs no approval meanwhile:
 |---|---|---|---|
 | **HG-3** (T0-A) | ✅ **APPROVED IN PRINCIPLE 2026-08-22** — cloud Mac only, existing 6-iPhone fleet. Reduced to the spend gate below | — | — |
 | ~~**HG-2a**~~ | ~~EUR 2.64 Scaleway~~ — **WITHDRAWN (DEC-016).** GitHub Actions replaces it at $0 | — | — |
-| **HG-5** (blocking T0-A) | **No GitHub remote exists.** Owner must create a **PRIVATE** repo and push | Owner creates repo, gives remote URL | Run `ios-build.yml` at $0; iterate compile errors to green; report |
-| **HG-1** (blocking T0-A delivery) | Apple Developer enrolment + $99. **Deferred until `ios-build.yml` is green** (DEC-015 intent, DEC-016 mechanics). Owner must enrol personally — legal name, own credit card, 2FA, possibly photo ID. Then add 8 repo secrets | Green build → Owner enrols, pays, adds secrets | Dispatch `ios-testflight.yml`: archive, sign, upload, release to TestFlight |
+| ~~**HG-5**~~ | ~~No GitHub remote~~ — ✅ **DONE 2026-08-22.** `fcubeve-alt/photomanage`, private, 170 files, CI green | — | — |
+| **HG-1** ← **NOW THE CRITICAL PATH** | Apple Developer enrolment + **$99**. Precondition (green build) is **satisfied** — DEC-018. Owner must enrol personally: legal name, own credit card, 2FA, possibly photo ID. Then add 8 repo secrets | Owner enrols, pays, adds secrets | Dispatch `ios-testflight.yml`: archive, sign, upload, release to TestFlight, then run A1–A4 on the fleet |
 | **HG-4** (blocking T0-B **and T0-D**) | No recruited external test users (n>=10). Tooling half solved by the same Mac environment — **purely a recruitment problem** | Users recruited **and** prototype built | Run T0-B, then T0-D with the same participants on separate instruments |
 | **HG-2b** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
 
@@ -66,7 +71,8 @@ Build-ahead work that needs no approval meanwhile:
 - Web search/fetch: available. If it drops, fall back to the search-free queue (T0-A-PREP, T0-B-PREP) — do not idle (S-03, F-05).
 
 ### MAINTENANCE
-- ~~Create a git remote~~ — now **HG-5** and on the critical path: the same action that enables CI also closes this E-06 gap. Repo is still local-only.
+- ~~Create a git remote~~ — ✅ done. E-06 cross-machine recovery gap closed.
+- Consider adding `C:\Users\admin\tools\git\cmd` and `...\tools\bin` to the persistent user PATH so sessions stop needing the prefix. **System setting — Owner decision, not mine to change.**
 
 ## Blockers
 Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining gates are: **spend approval + Apple Developer enrollment** (T0-A, and by extension the T0-B tooling), **external user recruitment** (T0-B), and **landing page + payment path** (T0-C2). This blocks the *gate*, not the *mission* — all PREP and harness-authoring work proceeds.
@@ -107,7 +113,10 @@ Pick up the build-ahead list under "Doing now". Highest value first: the three T
 - PASS thresholds pre-registered (P-1..P-6, n≥10). B FAIL = NO-GO/PIVOT, not a prompt to add features.
 - Known limitation L-1: arm C's catalogue is hand-prepared — proves the concept, not the engine. Must be stated in the summary, not a footnote.
 
-### Build/CI facts (DEC-016, do not re-research)
+### Build/CI facts (DEC-016 + **DEC-018 measured**, do not re-research)
+- **UNKNOWN-6 RESOLVED at zero cost.** Timing API reports `billable.MACOS.total_ms = 0` on a **private** repo — included allowance covers it. The case for making the repo public to get free minutes is closed **on evidence**. Strategy stays unpublished.
+- Measured build: **48 seconds** end to end, far under the 4–8 min estimate.
+- Two environment traps, both fixed, both silent-failure modes worth remembering: (a) `credential.helper = manager` configured while GCM was never installed → git exit 128 with empty stderr; (b) git 2.9.0 cannot negotiate TLS with GitHub at all, and neither `http.sslVersion=tlsv1.2` nor disabling `sslVerify` helps. `gh` kept working throughout, which is what isolated the fault to git.
 - `macos-latest` = macOS 26 arm64; `macos-15` arm64 GA; `macos-14` deprecated. Xcode 16.0-16.4 (16.4 default) + 26.x preinstalled.
 - Standard macOS runner = $0.062/min, free and unmetered on public repos; Free plan gives 2,000 included min/mo, 5 concurrent macOS jobs, 500 MB artifacts, 6 h job cap.
 - **UNKNOWN-6**: 10x vs 1x multiplier on private-repo included minutes post-Jan-2026 repricing. Costed both ways; irrelevant to the decision. Resolve from the account billing page once the repo exists.
