@@ -23,7 +23,8 @@ Normal iOS development installs a build over USB. That is impossible when the Ma
 |---|---|---|---|
 | F1 | Scaleway Mac mini M1 — **€0.11/hr or €75/month**, M1 8C CPU / 16-core Neural Engine, 8 GB RAM, 256 GB SSD, dedicated hardware, no hypervisor | scaleway.com/en/pricing/apple-silicon/ | HIGH |
 | F2 | Scaleway M2 **€0.17/hr / €115 mo** (16 GB) · M2 Pro **€0.21/hr / €139 mo** · M4-S **€0.22/hr / €149 mo** · M4 Pro **€0.49/hr / €335 mo** | same | HIGH |
-| F3 | Apple's licence terms impose a **24-hour minimum lease** on Apple-silicon-as-a-service | Scaleway docs / press | MEDIUM — confirm at checkout |
+| F3 | Apple's licence terms impose a **24-hour minimum lease**; a Mac mini **cannot be deleted before 24 hours** from lease start | Scaleway docs | HIGH |
+| **F8** | **Stopping an instance does NOT stop billing.** You pay for as long as it is assigned to your account; you must explicitly **delete** it in the console or CLI. Scaleway offers an **auto-delete after 24 h** setting | Scaleway Apple silicon FAQ / docs | HIGH |
 | F4 | **Apple Developer Program = 99 USD/year.** Requires an Apple Account with 2FA, legal name as App Store seller, and payment by the enrollee's own credit card — otherwise government photo ID is requested | developer.apple.com/support/enrollment/ | HIGH |
 | F5 | **TestFlight requires iOS 16 or later** — verbatim: *"iPhone or iPad running iOS 16 or iPadOS 16 or later."* | testflight.apple.com | HIGH |
 | F6 | **iPhone 7 maxes out at iOS 15.8.x** and cannot run iOS 16 | Apple device support / multiple | HIGH |
@@ -64,6 +65,7 @@ Normal iOS development installs a build over USB. That is impossible when the Ma
 
 | Usage shape | Cost |
 |---|---|
+| **Realistic plan: 2 blocks** (block 1 compile-verify, block 2 archive + upload after enrolment) | **~€5.28** |
 | 4 × 24-hour blocks (spread over ~2 weeks of iteration) | ~€10.56 |
 | Full month, M1, if iteration proves heavy | €75 |
 | Upgrade to M2 (16 GB — more comfortable for Xcode) | €0.17/hr, €115/mo |
@@ -155,7 +157,7 @@ Owner enrolls **personally**: legal name, their own credit card, Apple Account w
 2.4 Archive, sign, upload to App Store Connect.
 2.5 Release to TestFlight internal testing.
 **Exit criterion:** a TestFlight build exists. Then release the instance — billing stops.
-*Practical note:* confirm at provisioning whether the 24-hour block can be paused across the approval round-trip. If it cannot, budget a second €2.64 block rather than rushing the gate.
+*Practical note — now confirmed, not speculative (F3 + F8):* the block **cannot be paused**, and it **cannot be deleted before 24 h**. So the DEC-015 approval round-trip (report build success → Owner enrols → pays $99) will almost certainly not fit inside the first block. **Budget two blocks: ~€5.28 total.** That is the correct trade — an extra €2.64 to avoid rushing a $99 irreversible decision.
 
 ### Phase 3 — On device (no Mac needed, no ongoing cost)
 3.1 Install via TestFlight on each device in the §5.4 order.
