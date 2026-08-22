@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free up space on your iPhone — Personal Visual Memory</title>
+<meta name="description" content="Find duplicates, screenshots and blurry shots in one scan.">
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#12141a;--muted:#5d646e;--line:#e6e9ee;--bg:#fff;--accent:#0b63e5}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font:17px/1.6 -apple-system,BlinkMacSystemFont,
+     "Segoe UI","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:0 22px}
+header{padding:64px 0 8px}
+h1{font-size:clamp(34px,6vw,50px);line-height:1.08;letter-spacing:-1.2px;font-weight:750}
+.sub{font-size:clamp(19px,2.6vw,23px);color:var(--muted);margin-top:14px;line-height:1.35;
+     font-weight:450}
+.lede{margin-top:26px;font-size:18px;color:#3a4049;max-width:600px}
+.cta-block{margin:34px 0 8px}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;
+     border:none;border-radius:13px;padding:17px 30px;font-size:18px;font-weight:640;
+     cursor:pointer;font-family:inherit}
+.btn:hover{background:#0a58cc}
+.btn .p{opacity:.85;font-weight:500}
+.terms{margin-top:11px;font-size:14px;color:var(--muted)}
+.shot{margin:52px 0;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+      background:#f7f8fa}
+.shot .bar{display:flex;gap:6px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.shot .bar i{width:10px;height:10px;border-radius:50%;background:#d6dae1;display:block}
+.shot .body{padding:26px 24px;font-size:14.5px;color:#4a515b;line-height:1.75}
+.shot .body b{color:var(--ink)}
+.points{margin:56px 0 0;display:grid;gap:34px}
+.pt h3{font-size:20px;letter-spacing:-.3px;font-weight:680}
+.pt p{margin-top:8px;color:var(--muted);font-size:16.5px}
+.price{margin:64px 0;padding:30px 26px;border:1px solid var(--line);border-radius:18px;
+       background:#fafbfc}
+.price .amt{font-size:31px;font-weight:740;letter-spacing:-.6px}
+.price .amt span{font-size:18px;font-weight:500;color:var(--muted)}
+.price ul{list-style:none;margin-top:16px;display:grid;gap:7px}
+.price li{font-size:16px;color:#3a4049;padding-left:24px;position:relative}
+.price li::before{content:"✓";position:absolute;left:0;color:#0a7d3f;font-weight:700}
+footer{margin:64px 0 90px;padding-top:26px;border-top:1px solid var(--line);
+       font-size:14px;color:var(--muted)}
+footer a{color:var(--muted)}
+/* ---- disclosure: full screen, unmissable, fires the instant anyone commits ---- */
+.veil{position:fixed;inset:0;background:rgba(14,17,22,.62);display:none;
+      align-items:center;justify-content:center;padding:22px;z-index:99}
+.veil.on{display:flex}
+.card{background:#fff;border-radius:20px;max-width:520px;width:100%;padding:36px 32px}
+.card h2{font-size:27px;letter-spacing:-.6px;font-weight:730}
+.card p{margin-top:14px;color:#3a4049;font-size:17px}
+.card .row{margin-top:24px;display:flex;gap:11px;flex-wrap:wrap}
+.card input{flex:1;min-width:220px;padding:15px 16px;border:1px solid #ccd2da;
+            border-radius:12px;font-size:16px;font-family:inherit}
+.card .no{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;
+          margin-top:16px;text-decoration:underline;font-family:inherit;padding:0}
+.done{display:none}
+.done.on{display:block}
+@media(prefers-color-scheme:dark){
+  :root{--ink:#f2f4f7;--muted:#a2abb6;--line:#2a2f37;--bg:#111318}
+  .shot,.price{background:#171a20}
+  .card{background:#1a1d24}
+  .card input{background:#111318;color:#f2f4f7;border-color:#333a44}
+}
+</style></head>
+<body data-arm="c">
+<div class="wrap">
+
+<header>
+  <h1>Free up space on your iPhone.</h1>
+  <div class="sub">Find duplicates, screenshots and blurry shots in one scan.</div>
+  <p class="lede">Scan your library, see what is taking up room, and clear it in a few taps.</p>
+  <div class="cta-block">
+    <button class="btn" data-buy="hero">Get it <span class="p">— $39</span></button>
+    <div class="terms">One-off. No subscription.</div>
+  </div>
+</header>
+
+<div class="shot">
+  <div class="bar"><i></i><i></i><i></i></div>
+  <div class="body"><b>4.2 GB</b> in duplicate photos<br><b>1.8 GB</b> in old screenshots<br><b>6.1 GB</b> in large videos<br><br>Review and clear in a few taps.</div>
+</div>
+
+<div class="points"><div class="pt"><h3>Find duplicates</h3><p>Exact copies and near-identical shots, grouped, with the best one marked.</p></div><div class="pt"><h3>Clear out screenshots</h3><p>Old screenshots and expired codes, gathered in one place.</p></div><div class="pt"><h3>Recover space fast</h3><p>See the biggest videos and photos first.</p></div></div>
+
+<div class="price" id="price">
+  <div class="amt">$39<span>, once</span></div>
+  <ul>
+    <li>No subscription. No weekly charge.</li>
+    <li>No ads, ever.</li>
+    <li>Runs on your iPhone. Nothing is uploaded.</li>
+  </ul>
+  <div class="cta-block">
+    <button class="btn" data-buy="price">Get it <span class="p">— $39</span></button>
+  </div>
+</div>
+
+<footer>
+  Personal Visual Memory runs entirely on your device. We do not upload your photos,
+  and we do not sell data to anyone.<br>
+  <a href="mailto:hello@example.invalid">Contact</a>
+</footer>
+</div>
+
+<!-- Fires the instant anyone commits. Full screen, before anything else happens. -->
+<div class="veil" id="veil">
+  <div class="card">
+    <div id="form-wrap">
+      <h2>We are not charging you.</h2>
+      <p><b>Personal Visual Memory is not out yet.</b> You just helped us prove people
+      want it — that is genuinely what we needed to know.</p>
+      <p>Leave your email and you will get first access at <b>$39</b>, locked in.
+      Nothing to pay now, and we will only email you about this.</p>
+      <form id="form" class="row" novalidate>
+        <input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+        <button class="btn" type="submit">Lock in $39</button>
+      </form>
+      <button class="no" id="nothanks">No thanks</button>
+    </div>
+    <div class="done" id="done">
+      <h2>Done.</h2>
+      <p>You are on the list at <b>$39</b>. We will email you once — when it is ready.</p>
+      <p style="color:#8a8f98;font-size:15px">Thank you. Genuinely: a real click on a real
+      price is the only honest way to find out whether this is worth building.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ARM = document.body.dataset.arm;
+  var SID = (function(){
+    try{ var k='pvm_sid'; var v=sessionStorage.getItem(k);
+         if(!v){ v=Math.random().toString(36).slice(2)+Date.now().toString(36);
+                 sessionStorage.setItem(k,v); } return v; }
+    catch(e){ return 'nostore'; }
+  })();
+  var sent = {};
+
+  // First-party only. No third-party pixel, no cookies, no Google Analytics (§26).
+  function ev(name, extra){
+    if(sent[name] && name!=='E7') return;
+    sent[name] = true;
+    var body = JSON.stringify({arm:ARM, sid:SID, event:name,
+                               t:Date.now(), extra:extra||null});
+    try{
+      if(navigator.sendBeacon){
+        navigator.sendBeacon('/event', new Blob([body],{type:'application/json'}));
+      }else{
+        fetch('/event',{method:'POST',headers:{'Content-Type':'application/json'},
+                        body:body, keepalive:true});
+      }
+    }catch(e){}
+    if(location.protocol==='file:') console.log('[event]', name, extra||'');
+  }
+
+  ev('E2');  // landing page view
+
+  // E3 — scrolled at least halfway: did the pitch hold attention at all
+  window.addEventListener('scroll', function(){
+    var h = document.body.scrollHeight - window.innerHeight;
+    if(h>0 && (window.scrollY/h) >= 0.5) ev('E3');
+  }, {passive:true});
+
+  // E4 — the price block actually entered the viewport: they saw a real number
+  var price = document.getElementById('price');
+  if(price && 'IntersectionObserver' in window){
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting) ev('E4'); });
+    },{threshold:.5}).observe(price);
+  }
+
+  var veil = document.getElementById('veil');
+  var form = document.getElementById('form');
+  var done = document.getElementById('done');
+
+  // E5 — PRIMARY METRIC. The deliberate act taken after seeing a real price.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-buy]'), function(b){
+    b.addEventListener('click', function(){
+      ev('E5', {where: b.dataset.buy});
+      veil.classList.add('on');            // disclosure, immediately
+      // Lock the page behind it. The disclosure must not be scrollable past.
+      document.body.style.overflow = 'hidden';
+      ev('E6');
+      var i = document.getElementById('email'); if(i) i.focus();
+    });
+  });
+
+  if(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var email = document.getElementById('email').value.trim();
+      if(!email) return;
+      ev('E7', {email: email});            // intent survived the truth
+      form.style.display='none';
+      done.classList.add('on');
+    });
+  }
+
+  var no = document.getElementById('nothanks');
+  if(no) no.addEventListener('click', function(){
+    ev('E8');                              // wanted the product, not the waitlist
+    veil.classList.remove('on');
+    document.body.style.overflow = '';
+  });
+})();
+</script>
+</body></html>

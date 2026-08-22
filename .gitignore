@@ -6,3 +6,11 @@ Thumbs.db
 *.tmp
 tmp/
 logs/
+
+# T0-C2 collected data. emails.jsonl contains real people's addresses and must
+# NEVER be committed. events.jsonl is study data, kept out of git so a smoke test
+# can never contaminate a real run.
+20_TIER0/landing/events.jsonl
+20_TIER0/landing/emails.jsonl
+20_TIER0/study_assets/library/
+20_TIER0/study_assets/_smoke*/
