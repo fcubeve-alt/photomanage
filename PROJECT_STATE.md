@@ -39,7 +39,7 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 
 Build-ahead work that needs no approval meanwhile:
 - Extend the prototype: Apple-Photos-style arm-A parity checks, and leaf-level asset views wired to the real test-library manifest
-- Build the three T0-C2 landing pages + event logging + disclosure interstitial (local files only; publishing is HG-2b)
+- Build the three T0-C2 landing pages + event logging + disclosure interstitial (local files only; publishing is HG-2)
 - Source/curate the 136 foreground test-library images per `TEST_LIBRARY_SPEC.md` §3
 
 ⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
@@ -70,11 +70,11 @@ Build-ahead work that needs no approval meanwhile:
 | Gate | Blocker | Wake condition | First action on wake |
 |---|---|---|---|
 | **HG-3** (T0-A) | ✅ **APPROVED IN PRINCIPLE 2026-08-22** — cloud Mac only, existing 6-iPhone fleet. Reduced to the spend gate below | — | — |
-| ~~**HG-2a**~~ | ~~EUR 2.64 Scaleway~~ — **WITHDRAWN (DEC-016).** GitHub Actions replaces it at $0 | — | — |
+| ~~Scaleway rental~~ | ~~EUR 2.64~~ — **WITHDRAWN (DEC-016).** GitHub Actions replaced it at $0 | — | — |
 | ~~**HG-5**~~ | ~~No GitHub remote~~ — ✅ **DONE 2026-08-22.** `fcubeve-alt/photomanage`, private, 170 files, CI green | — | — |
 | **HG-1** ← **NOW THE CRITICAL PATH** | Apple Developer enrolment + **$99**. Precondition (green build) is **satisfied** — DEC-018. Owner must enrol personally: legal name, own credit card, 2FA, possibly photo ID. Then add 8 repo secrets | Owner enrols, pays, adds secrets | Dispatch `ios-testflight.yml`: archive, sign, upload, release to TestFlight, then run A1–A4 on the fleet |
 | **HG-4** (blocking T0-B **and T0-D**) | **No recruited external test users (n>=10).** Corrected 2026-08-22: these two studies need **no Mac, no TestFlight and no $99** — the prototype is HTML. Prototype is built. This is now **purely a recruitment + test-library-prep problem** | ≥10 external users recruited, test library loaded on a loaner iPhone | Run T0-B, then T0-D with the same participants on separate instruments |
-| **HG-2b** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
+| **HG-2** (blocking T0-C2) | Domain (~$12) + **ad spend ~$500-700** + Owner approval of positioning, $39 price and the disclosure wording | Owner approves and funds | Build and publish 3 arms, run traffic, collect E1-E8 |
 
 ### CAPABILITY
 - Web search/fetch: available. If it drops, fall back to the search-free queue (T0-A-PREP, T0-B-PREP) — do not idle (S-03, F-05).
@@ -97,7 +97,7 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 Every Tier-0 workstream is prepared to the boundary of an Owner gate:
 - **T0-A** — spec + harness + XcodeGen spec + both CI workflows written. Needs **HG-5** (private GitHub repo, $0) then HG-1 ($99, only after a green build).
 - **T0-B** — protocol + test-library generator + facilitator script + scoring sheet. Needs HG-4 (participants) and a built prototype.
-- **T0-C1** — COMPLETE. **T0-C2** — plan + copy + measurement. Needs HG-2b (~$520-720).
+- **T0-C1** — COMPLETE. **T0-C2** — plan + copy + measurement. Needs HG-2 (~$520-720).
 - **T0-D** — protocol + 4 ledger variants + scoring sheet. Needs HG-4.
 Build-ahead work remains and requires no approval, so the mission is **not** blocked (S-03). Do not enter WAITING.
 

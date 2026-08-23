@@ -363,3 +363,20 @@ Both were bugs in the instrument, not the project. That distinction is the point
 **Standing rule:** `recovery_check.py --strict` must stay green. A FAIL means a fresh session would have to ask the Owner something, or would rediscover something already solved — which is precisely the cost E-04/E-05 exist to prevent.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-023 · 2026-08-23 · MASTER_PLAN and MISSION_SPEC recalibrated; two governance defects fixed
+Both files were written on the first morning and had not been revisited across DEC-008 … DEC-022. `recovery_check.py` verifies that references *resolve*; it could not see a document that resolves perfectly while saying something untrue. Reading them found two real defects.
+
+**Defect 1 — `MASTER_PLAN` contradicted itself.** The header said *"M1 complete → M2 in progress"* while the M1 section said IN PROGRESS. **A cold session reading the top line would have concluded Tier 0 was finished and Tier 1 had started** — the single most damaging thing that file could get wrong. Rewritten: `M0 complete · M1 (Tier 0) IN PROGRESS · zero measurements taken`, with the workstream table rebuilt around the real gates, T0-D added, and the stale "Windows-side preparation" list replaced by what actually exists.
+
+**Defect 2 — `HG-5` was defined twice**, as *"irreversible or high-risk operations"* and as *"create a private GitHub repository"*. I introduced the collision myself when adding the repo gate. **"HG-5 is blocking" was ambiguous**, which is worse than having no identifier. The repo gate is done and removed; HG-5 keeps only its original meaning. The gate table was also corrected for DEC-016 (the cloud-Mac spend was withdrawn) and DEC-021 (n ≥ 15), and `HG-2a`/`HG-2b` in `PROJECT_STATE` were collapsed to `HG-2` so the two files use one vocabulary.
+
+**Three new semantic-staleness checks** added to `recovery_check.py`, because both defects survived a 0-FAIL run: milestone agreement between the two files, Human Gate id uniqueness, and every gate referenced in `PROJECT_STATE` being defined in `MISSION_SPEC`.
+
+**The checks themselves then failed their own negative control** — see `FAILURE_PATTERNS.md` **PF-09**. The milestone check used a substring test that matched both "M1 in progress" and "M1 complete", so it reported agreement while the contradiction was live. Now verified by deliberately breaking the file and confirming it goes red.
+
+**Standing rule added:** every new check gets a negative control before it is trusted. If it cannot be made to fail on demand, it is decoration.
+
+**Status.** ACTIVE.

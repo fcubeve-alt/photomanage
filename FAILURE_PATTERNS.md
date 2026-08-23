@@ -62,3 +62,19 @@ Part 2 is this project. Append a new entry every time a real failure happens her
 **Risk.** Lucent's free tier analyses only 1,000 photos. A 3-way study run against free Lucent on a 20,000-photo library would measure Lucent's paywall and report it as our advantage — a result that collapses the first time anyone checks, after we have already made decisions on it.
 **Guard.** Fair-configuration rule, fixed before data collection: every competitor is tested **fully paid, fully permissioned and fully finished analysing**. If that state cannot be reached, the comparison is not run and the limitation is reported. Task order counterbalanced across participants. Session facilitator follows a fixed script or is not the prototype's author.
 **Status.** Guard active. Caught during study design, before any data was collected.
+
+### PF-09 · A check that cannot fail is worse than no check
+**Risk.** A green result creates confidence. If the check could not have gone red, that confidence is manufactured, and it is *more* dangerous than having no check — because nobody looks again at something already verified.
+
+**Three instances in one sitting, all in `recovery_check.py`:**
+1. **Vacuous pass.** `all 0 internal links resolve` reported OK. There are zero markdown links in the state files — they use backticks. The check ran, matched nothing, and reported success.
+2. **Cry wolf.** Two files that plainly existed were reported missing, because the resolver guessed candidate directories instead of indexing the tree. False alarms train people to ignore the tool, which disables every *true* alarm alongside them.
+3. **Undetectable contradiction.** The milestone-agreement check used `"M1" in pos`, which matches both *"M1 in progress"* and *"M1 complete"*. It reported agreement while `MASTER_PLAN` said M2 was current and `PROJECT_STATE` said M1.
+
+Case 3 is the worst of the three: the check existed **specifically** to catch that contradiction, and the contradiction was live in the repo while it reported green.
+
+**Guard.** Every check gets a **negative control** before it is trusted: deliberately break the thing it is meant to catch and confirm it goes red, then restore. If it cannot be made to fail on demand, it is not a check — it is decoration. Applied to the milestone check, which now demonstrably reports `FAIL` when `MASTER_PLAN` and `PROJECT_STATE` disagree, and `ok` when they do not.
+
+**Also:** an empty check must report **N/A**, never OK. Zero things verified is not zero things wrong.
+
+**Status.** Occurred 2026-08-23, three times. All three fixed. Negative control is now the standard before relying on any new check — the same discipline already applied to the four analyzers (self-test before real data).

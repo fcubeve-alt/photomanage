@@ -19,7 +19,7 @@ Mission-level success for this phase = a defensible `TIER0_GO_NO_GO.md` backed b
 Gate: A or B FAIL → NO-GO/PIVOT. C FAIL → **COMMERCIAL MODEL PIVOT only** (does not kill the product). A+B+C PASS → Tier 1.
 
 ## IN SCOPE (now)
-- Tier 0 Workstreams A, B, C and their required deliverables.
+- Tier 0 Workstreams **A, B, C and D** and their required deliverables. D was added by Owner instruction (DEC-014) to satisfy Constitution §7, which requires the automation-tolerance bet be validated by real users.
 - Windows-executable research, modelling, data structures, protocols, test harnesses and benchmark design that directly serve Tier 0.
 - Persistent state, evidence store, decision log.
 
@@ -35,23 +35,28 @@ Do **not** build, even "while we're here":
 1. **Safety red lines (active from Tier 0):** no silent permanent deletion; IDs / contracts / family memories default to Protect; every suggestion must be able to explain *why*.
 2. **Privacy-first:** private photos, IDs, relationships, purchases and travel data must never be uploaded or exploited for ad profiling (Constitution §26).
 3. **Evidence only:** "looks fine", "should work in theory", "the code is written" are never PASS. Real run, real numbers, real users (Launch Instruction, Phase C).
-4. **No on-device claims without a device.** Anything requiring macOS/Xcode/real iPhone is tagged `REQUIRES_MAC` / `REQUIRES_DEVICE` and reported as untested — never simulated and presented as validated.
+4. **No on-device claims without a device.** Anything requiring a real iPhone is tagged `REQUIRES_DEVICE` and reported as untested — never simulated and presented as validated. *Scope corrected 2026-08-22:* only **T0-A** is device-bound. T0-B and T0-D use an HTML prototype and need no Mac, no TestFlight and no Apple Developer account.
 5. **No 2GB+ model dependency without benchmark evidence.** Apple-native capability is the default hypothesis to test first; Gemma / external GPT API are neither presumed nor excluded. Route decided by benchmark, not by model name.
 6. **One Tier at a time.** Later-Tier docs may be read for planning; their tasks may not be implemented.
 
 ## Human Gates (escalate ONLY for these)
 | Gate | Trigger | Status |
 |---|---|---|
-| HG-1 | Apple Developer account / KYC / CAPTCHA | **UPCOMING** - activated by DEC-008. Owner must enroll personally (legal name, own credit card, 2FA, possibly photo ID) |
-| HG-2 | Real payment or spend (domain, ads, deposit collection, Mac/cloud-Mac rental) | **UPCOMING** — needed for Tier 0-C |
-| HG-3 | Access to a Mac / Xcode / real iPhones for Tier 0-A | **RESOLVED at $0 (DEC-016)** — GitHub Actions standard arm64 macOS runners. Now reduced to **HG-5** (create a private repo) |
-| HG-4 | Recruiting real external test users for Tier 0-B | **UPCOMING** — needed for Tier 0-B |
-| HG-5 | Irreversible / high-risk operations | DORMANT |
-| HG-6 | Material product scope change | DORMANT |
-| HG-7 | Two reasonable technical routes with major long-term architectural divergence | DORMANT |
-| HG-8 | A P0 result that genuinely could kill the project | DORMANT |
-| HG-5 | **Create a PRIVATE GitHub repository and push** — no cost, no card | **BLOCKING T0-A** (DEC-016). Also closes the E-06 local-only single-point-of-failure |
-| HG-9 | All valuable work externally blocked | DORMANT |
+| **HG-1** | Apple Developer Program enrolment — $99, legal name, own credit card, 2FA, possibly photo ID. Then 8 signing secrets | **BLOCKING T0-A.** Precondition satisfied: the harness compiles green at $0 (DEC-018), which was the rule DEC-015 set |
+| **HG-2** | Real payment or spend | **BLOCKING T0-C2** — domain (~$12) + ~$500–700 ad spend, plus Owner approval of positioning, the $39 price and the disclosure wording. *The cloud-Mac rental was withdrawn (DEC-016) — GitHub Actions replaced it at $0* |
+| **HG-3** | Access to a Mac / Xcode for Tier 0-A | ✅ **RESOLVED at $0** (DEC-016) — GitHub Actions standard arm64 macOS runners |
+| **HG-4** | Recruiting real external test users | **BLOCKING T0-B and T0-D.** n ≥ 15 (raised from 10 — DEC-021). **Needs no Mac and no spend**: the cheapest path to answering two of the four kill questions |
+| **HG-5** | Irreversible or high-risk operations | DORMANT |
+| **HG-6** | Material product scope change | DORMANT |
+| **HG-7** | Two reasonable technical routes with major long-term architectural divergence | DORMANT |
+| **HG-8** | A P0 result that genuinely could kill the project | DORMANT. **Armed trigger:** a T0-D `D-P1` failure contradicts Constitution §5–§7/§17 and escalates here (DEC-014, PF-08) |
+| **HG-9** | All valuable work externally blocked | DORMANT |
+
+> ~~HG-5 "create a private GitHub repository"~~ — ✅ **DONE 2026-08-22.** That gate was
+> assigned an ID already in use by "irreversible operations"; the collision is removed
+> and HG-5 means only its original definition. The repo exists at
+> `github.com/fcubeve-alt/photomanage` (private), which also closed the E-06
+> local-only single point of failure.
 
 A gate blocks **its own branch only**, never the whole mission (Playbook S-03).
 Ordinary bugs, test failures, dependency installs, research, refactors, docs and local technical choices are **never** escalated.

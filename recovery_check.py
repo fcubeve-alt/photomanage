@@ -21,6 +21,9 @@ What it verifies:
   5. No stale claims — the classic being a document still saying "no remote" after
      one exists.
   6. Environment traps a fresh session would otherwise hit are recorded.
+  7. SEMANTIC staleness — documents that resolve perfectly while saying something
+     untrue. Added after this checker reported 0 FAIL while MASTER_PLAN contradicted
+     itself about the current milestone and MISSION_SPEC defined HG-5 twice.
 
     python recovery_check.py            # report
     python recovery_check.py --strict   # non-zero exit if anything fails
@@ -227,6 +230,74 @@ if re.search(r"Must read|读|reading order", handoff, re.I):
     ok("order", "SESSION_HANDOFF states an explicit reading order")
 else:
     fail("order", "no reading order in SESSION_HANDOFF — a cold session has no entry point")
+
+
+# --- 8. semantic staleness ---------------------------------------------------
+# The link/ref checks verify that references RESOLVE. They cannot see a document
+# that resolves perfectly while saying something untrue. Both defects below existed
+# while this checker reported 0 FAIL, which is exactly why they are now checked.
+
+plan = read("MASTER_PLAN.md") or ""
+mission = read("MISSION_SPEC.md") or ""
+
+# 8a. MASTER_PLAN's headline position must agree with PROJECT_STATE's stage.
+# Tolerate both "**Current position: X**" and "Current position: **X**".
+m_pos = re.search(r"Current position:\s*\**([^*\n]+)", plan)
+m_stage = re.search(r"^- Stage:\s*(.+)$", state, re.M)
+if m_pos and m_stage:
+    pos, stage = m_pos.group(1), m_stage.group(1)
+    pos_m = set(re.findall(r"\bM\d\b", pos))
+    # Compare the milestone each file claims is CURRENT. Substring tests like
+    # ("M1" in pos) cannot distinguish "M1 in progress" from "M1 complete" and
+    # silently pass on a real contradiction — verified by negative control.
+    cur_plan = re.search(r"\b(M\d)\b[^·|]{0,60}?IN PROGRESS", pos, re.I)
+    cur_state = re.search(r"\b(M\d)\b", stage)
+    if cur_plan and cur_state:
+        if cur_plan.group(1) == cur_state.group(1):
+            ok("staleness", f"MASTER_PLAN and PROJECT_STATE agree the current milestone "
+                            f"is {cur_state.group(1)} ({stage.strip()})")
+        else:
+            fail("staleness", f"MASTER_PLAN says {cur_plan.group(1)} is in progress but "
+                              f"PROJECT_STATE says {cur_state.group(1)} — a cold session "
+                              f"would read the wrong milestone off the top line")
+    else:
+        warn("staleness", "could not identify the current milestone in both files "
+                          f"(plan={'yes' if cur_plan else 'no'}, "
+                          f"state={'yes' if cur_state else 'no'})")
+    # Internal contradiction: claiming a milestone is complete AND in progress.
+    # The section must be ISOLATED first. A DOTALL search starting at one heading
+    # runs on into the next milestone and finds ITS status — which produced a false
+    # FAIL here, the same cry-wolf failure this checker already had once.
+    for mid in pos_m:
+        sec = re.search(rf"^##\s*{mid}\b(.*?)(?=^##\s|\Z)", plan, re.S | re.M)
+        if not sec:
+            continue
+        if re.search(r"IN PROGRESS", sec.group(1), re.I) and \
+           re.search(rf"{mid}\s*complete", pos, re.I):
+            fail("staleness", f"MASTER_PLAN calls {mid} complete in the header while the "
+                              f"{mid} section is marked IN PROGRESS")
+else:
+    warn("staleness", "could not locate MASTER_PLAN position or PROJECT_STATE stage")
+
+# 8b. Human Gate ids must be unique. A duplicated id makes "HG-5 is blocking"
+# ambiguous, which is worse than having no id.
+gate_ids = re.findall(r"^\|\s*\*{0,2}(HG-\d[a-z]?)\*{0,2}\s*\|", mission, re.M)
+dupes = {g for g in gate_ids if gate_ids.count(g) > 1}
+if dupes:
+    fail("staleness", f"duplicate Human Gate id(s) in MISSION_SPEC: {sorted(dupes)} — "
+                      "'HG-x is blocking' becomes ambiguous")
+elif gate_ids:
+    ok("staleness", f"{len(gate_ids)} Human Gate ids, all unique")
+
+# 8c. Gate ids referenced in PROJECT_STATE should be defined in MISSION_SPEC.
+referenced = set(re.findall(r"\bHG-\d[a-z]?", state))
+defined = set(gate_ids)
+undefined = referenced - defined
+if undefined:
+    fail("staleness", f"PROJECT_STATE references gate(s) NOT defined in MISSION_SPEC: "
+                      f"{sorted(undefined)} — the gate table is the single source of truth")
+elif referenced:
+    ok("staleness", f"all {len(referenced)} gate ids used in PROJECT_STATE are defined")
 
 # ---------------------------------------------------------------------------
 print("COLD-START RECOVERY TEST")
