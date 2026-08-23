@@ -60,6 +60,10 @@ Open Human Gates:
 
 ## Bootstrap integrity check (E-05) — run before any work
 ```bash
-cat PROJECT_STATE.md | head -30 && git status --short && git log --oneline -5
+python recovery_check.py
+```
+That verifies the coordinates below still match reality and that every file this handoff points at still exists. Then:
+```bash
+cat PROJECT_STATE.md | head -40 && git status --short && git log --oneline -5
 ```
 If the coordinates disagree with this file, fix state first. Never re-run Phase 0 from scratch.

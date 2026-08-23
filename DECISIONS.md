@@ -341,3 +341,25 @@ Smallest n that resolves P-1, by the effect size that actually appears:
 **Propagated to:** both protocols (§8.1 with the power table), both scoring sheets, the facilitator rota (extended to P15, balance checked: 8/7 arm order, V1×4 V2×4 V3×4 V4×3), and `analyze_studies.py` (`MIN_N = 15`, which now stamps any smaller sample UNDERPOWERED and forbids a PASS).
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-022 · 2026-08-23 · Cold-Start Recovery Test implemented and wired into CI
+**Closes the last unchecked item on the Playbook §5 Bootstrap Checklist:** *做一次 Cold-Start Recovery Test：假设换了新模型/新 Session，验证能否不靠 Owner 解释继续。*
+
+**Asserting that recovery works is worth nothing**, so it is checked mechanically by `recovery_check.py` and re-run automatically in CI whenever any `.md` changes. Recovery rots silently — documents drift, a file keeps claiming something that stopped being true, a referenced path gets renamed — and none of that is visible until a fresh session actually needs to recover and cannot.
+
+**What it verifies:** all 11 canonical state files exist · handoff coordinates match *reality* (live git remote, branch, working-tree state) rather than what someone wrote down days ago · every backtick file reference in the handoff chain resolves · the **seven questions** a session with no conversation history must answer are actually answerable from the documented reading order · no stale claims (the classic being "no remote" after one exists) · the gate document still states plainly that it is unfilled.
+
+**Result: 29 checks, 0 FAIL, 2 WARN — RECOVERY VIABLE.** All 25 file references resolve.
+
+**Two flaws found in the checker itself, both worth recording because they are the failure mode of checkers generally:**
+
+1. **It cried wolf.** Two files were reported missing that plainly existed; the resolver guessed at candidate directories instead of indexing the tree. A checker that produces false alarms gets ignored, which is worse than not having one. Replaced with a real filename index.
+2. **It reported a vacuous check as green.** "All 0 internal links resolve" looked like a pass but there are *zero* markdown links in the state files — they reference files with backticks instead. An empty check reporting OK is actively misleading, so it now reports N/A and names the backtick check as the one that matters.
+
+Both were bugs in the instrument, not the project. That distinction is the point of running the instrument before trusting it.
+
+**Standing rule:** `recovery_check.py --strict` must stay green. A FAIL means a fresh session would have to ask the Owner something, or would rediscover something already solved — which is precisely the cost E-04/E-05 exist to prevent.
+
+**Status.** ACTIVE.

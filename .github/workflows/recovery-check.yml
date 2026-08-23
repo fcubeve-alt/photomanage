@@ -1,0 +1,35 @@
+name: Cold-start recovery check
+
+# Recovery rots silently. State files drift apart, a document keeps claiming
+# something that stopped being true, a referenced file gets renamed — and none of it
+# is visible until a fresh session actually needs to recover and cannot.
+#
+# Runs on Linux (cheapest runner) whenever the state files or the checker change.
+
+on:
+  push:
+    paths:
+      - '**.md'
+      - 'recovery_check.py'
+      - '.github/workflows/recovery-check.yml'
+  pull_request:
+    paths:
+      - '**.md'
+      - 'recovery_check.py'
+  workflow_dispatch:
+
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the check inspects real git coordinates
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cold-start recovery test
+        run: python recovery_check.py --strict

@@ -22,6 +22,10 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - Validation matrix built for all three tiers with measurable pass criteria.
 - Plain-text mirror of every source .docx committed for grep-able reuse.
 
+## Recovery guarantee (DEC-022)
+`python recovery_check.py --strict` verifies that a session with no conversation history can reach the next action unaided. It runs in CI on every `.md` change and **must stay green** — a FAIL means a fresh session would have to ask the Owner, or would re-solve something already solved.
+Last run: **29 checks, 0 FAIL, RECOVERY VIABLE.**
+
 ## Tier 0 gate
 `20_TIER0/TIER0_GO_NO_GO.md` — template in place, gate logic fixed in advance:
 **A or B FAIL → NO-GO/PIVOT · A+B PASS but C FAIL → COMMERCIAL PIVOT (the product survives, DEC-002) · D FAIL → escalate to Owner as a potential Kill (DEC-014, PF-08).**
