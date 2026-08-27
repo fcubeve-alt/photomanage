@@ -137,6 +137,10 @@ Carry these forward verbatim. Each one bounds what a PASS actually means.
 - **Sample size (DEC-021).** n=15 resolves an effect of ~90% or above. A result in the
   **70–89%** band is *directionally positive but not statistically resolved* and
   **must not be written as PASS** — say so in this document.
+- **Photos only — no video (FC-2, L1-B).** T0-A was measured on a JPEG-only corpus. Real
+  libraries contain substantial video, and video is where naive per-frame processing
+  explodes. **An A1 PASS here is an optimistic bound for a mixed library, not a
+  representative one.** Video architecture is Tier 1/Tier 2 work.
 - **Single storefront / single channel.** T0-C1 covers the US App Store on one date;
   T0-C2 covers one traffic source.
 

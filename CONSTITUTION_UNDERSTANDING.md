@@ -50,10 +50,25 @@ Everything else serves these. If a proposal weakens any of them, it is wrong reg
 | **22** | **Retrieval Entry Strategy.** Apple keeps Capture and Storage; we take Management, Browsing and Finding. North star: their first instinct is to open us. New KPI **Retrieval Entry Share** | **T0-B** | We are the Intelligence + Management + Retrieval layer over the system library |
 | **23** | **Structure First, Photos Second.** Home = a catalogue, not another infinite scroll. 11 top-level entries; drill down; one asset reachable from many entries **without copying the original** | **T0-B**, T2-D | Must validate that real users *start here* instead of Apple Photos |
 | **24** | Five gates: **G1** local hardware/thermal · **G2** no universal Same-Entity model — use category-specific resolvers · **G3** Progressive Indexing + TTFUV · **G4** must not degrade into a Cleaner · **G5** classification reliability via multi-signal | G1→**T0-A**, G2→T1-B, G3→T2-C, G4→T0-C, G5→T2-E | G2 forbids the single-magic-model approach outright |
-| **25** | **Progressive Intelligence Pipeline, 8 layers:** L1 cheap signals · L2 visual understanding · L3 taxonomy · L4 category-specific entity resolution · L5 risk+lifecycle · L6 policy engine · L7 visual library views · L8 personal memory | T0-A uses **L1+L2 only** | Scope lock for the benchmark harness |
+| **25** | *(+ **L1-B Architecture Methodology 2026-08-24**: adds **Candidate Reduction** as an explicit stage §25 lacks, and requires video through the same pipeline. See `ARCHITECTURE_METHODOLOGY.md`.)* **Progressive Intelligence Pipeline, 8 layers:** L1 cheap signals · L2 visual understanding · L3 taxonomy · L4 category-specific entity resolution · L5 risk+lifecycle · L6 policy engine · L7 visual library views · L8 personal memory | T0-A uses **L1+L2 only** | Scope lock for the benchmark harness |
 | **26** | **Monetization guardrail.** Private photos, IDs, relationships, purchases and travel must never be uploaded or abused for ad profiling. Ads are not a P0 premise and must not break Privacy-First trust | T2-F | |
 
 ---
+
+## L1-B · ARCHITECTURE METHODOLOGY (2026-08-24)
+
+An **Information-Change-First / Minimum Necessary Inference** methodology update was
+incorporated as a long-term engineering constraint. It explicitly does **not** change
+product goals, taxonomy, risk grading, lifecycle, retrieval, or the Tier 0 execution
+order. Full digest and the conflict review: **`ARCHITECTURE_METHODOLOGY.md`**.
+
+> **Do not understand everything. Understand what changed, and spend intelligence only
+> where it creates new memory.**
+
+- **MNI** — `Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory`. Handing every asset to a heavy model is wrong by construction.
+- **ICF** — ask *what changed / what is new / does it deserve deeper inference* before spending compute.
+- **Video** — never default to frame-sampling with a full model per frame; produce a **Video Memory Record** into the same Unified Visual Memory Graph.
+- **Model choice** — minimum capability for the task, not maximum capability available.
 
 ## HARD PROHIBITIONS (from the Constitution itself)
 
@@ -62,6 +77,8 @@ Everything else serves these. If a proposal weakens any of them, it is wrong reg
 - **No asset duplication for UI convenience** (§3, §23).
 - **No universal Same-Entity model** (§24 G2) — category-specific resolvers only.
 - **No FP=0 as the objective** (§7, §18, §20) — that is the Cleaner failure mode this product rejects.
+- **No heavy model over the whole library** (L1-B / P-09). Cheap signals and candidate reduction come first, always.
+- **No default frame-sampling for video** (L1-B / P-10).
 - **No unrequested sensitive inference** (§16). Specifically: `Documents > Medical` classifies **documents**, never health states, conditions or medications (P-08, DEC-020).
 - **No cloud upload or ad profiling of private visual data** (§26).
 - **No degradation into a Cleaner** (§24 G4) — Cleaner is an internal capability, never the product.

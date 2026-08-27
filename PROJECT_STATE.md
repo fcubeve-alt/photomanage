@@ -11,8 +11,20 @@ Last updated: 2026-08-23 · Session 001 — Tier 0 instrumentation complete; all
   `export PATH="/c/Users/admin/tools/git/cmd:/c/Users/admin/tools/bin:$PATH"`
   Working tools: MinGit **2.55.0.5**, `gh` **2.98.0** (authenticated as `fcubeve-alt`, scopes `repo`+`workflow`). See DEC-018.
 
+## Architecture methodology (L1-B, 2026-08-24)
+**Information-Change-First / Minimum Necessary Inference** is now a binding long-term
+engineering constraint → **`ARCHITECTURE_METHODOLOGY.md`** (digest + conflict review +
+the FC-1…FC-7 register).
+> *Do not understand everything. Understand what changed, and spend intelligence only
+> where it creates new memory.*
+It changed **no** product goal, taxonomy, risk grade, lifecycle, retrieval path or the
+Tier 0 execution order. Two violations are **marked, not fixed**: **MNI-1** the harness
+computes `dHash` and never uses it to skip work (**FC-1, Owner decision, recommended
+before the device campaign**); **MNI-2** the corpus is photos-only, so A1 is an
+optimistic bound for mixed libraries (**FC-2, state as a limitation**).
+
 ## Authority (never re-derive this)
-L1 Product Constitution **v1.3** → L2 P0 Execution Index v1.0 + Tier 0/1/2 **v1.1** → L3 Engineering Playbook **v1.1** → L4 Skills/Tools.
+L1 Product Constitution **v1.3** → **L1-B Architecture Methodology v1.0** → L2 P0 Execution Index v1.0 + Tier 0/1/2 **v1.1** → L3 Engineering Playbook **v1.1** → L4 Skills/Tools.
 **→ Read `CONSTITUTION_UNDERSTANDING.md` before acting on anything product-related.** It is the section-by-section digest of L1, created after a real misreading on 2026-08-22 (PF-08). It never overrides the source — re-read the cited section before deciding.
 Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_RULES.md`.
 

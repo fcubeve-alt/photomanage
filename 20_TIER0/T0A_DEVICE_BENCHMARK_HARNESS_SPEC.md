@@ -128,6 +128,26 @@ Lucent Pro spent three consecutive releases (v1.6–1.8, Dec 2025) fixing librar
 
 CD-5 is the one most likely to be missed, because checkpoint-resume within a run and state recovery across a process death are different failure modes and only the first is usually tested.
 
+## 7B. Architecture-methodology findings (2026-08-24, L1-B)
+
+Marked per `ARCHITECTURE_METHODOLOGY.md`. **Neither is fixed here** — the methodology
+says to review and mark, not to refactor working results.
+
+**MNI-1 · the cheap signal is computed and then not used.** `AssetIndexer` computes
+`dHash`, `IndexStore` stores and indexes it, and nothing ever queries it. Every asset
+pays for gated OCR *and* an embedding, including exact re-downloads of an identical
+image. §5 already states the harness must "measure the intended design rather than a
+naive baseline" — as written it measures the naive one, so **A1 would be pessimistic**
+and could fail a budget the intended architecture meets. **FC-1, Owner decision:
+recommended before the device campaign, since no data exists yet to invalidate.**
+
+**MNI-2 · photos only, no video.** The harness treats every asset as an image and the
+test corpus is JPEG-only. Real 100k libraries contain substantial video, and video is
+exactly where naive per-frame processing explodes. **A1 measured here is an optimistic
+bound for a mixed library, not a representative one.** Building video handling now would
+be Tier 1/2 work and is forbidden — so this is **FC-2: state it as an explicit
+limitation of the T0-A result and in `TIER0_GO_NO_GO.md`.**
+
 ## 8. Time budget — TARGETS set in advance
 
 Set now, before data exists, so the result cannot be rationalised afterwards.

@@ -380,3 +380,28 @@ Both files were written on the first morning and had not been revisited across D
 **Standing rule added:** every new check gets a negative control before it is trusted. If it cannot be made to fail on demand, it is decoration.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-024 · 2026-08-24 · Information-Change-First / Minimum Necessary Inference incorporated as L1-B
+**Owner supplied** `PVME_Information_Change_First_Methodology_Update_v1.0.docx` with the instruction: incorporate as long-term architectural methodology, **do not restart, rewrite or interrupt the current P0 / Tier 0 execution**, review current work for conflicts, record required future changes, continue the existing order.
+
+**Registered at authority level L1-B** — binds all architecture and model decisions, sits below Constitution v1.3 on product truth. The source states explicitly that it changes no product goal, no taxonomy, no risk grading, no lifecycle, no retrieval path, and not the Tier 0 execution order. Where it appeared to conflict with L1, L1 would win; no such conflict was found.
+
+**Two principles, now `OPERATING_RULES.md` P-09 and P-10:**
+- **MNI** — `Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory`. Handing every asset to a heavy model is wrong *by construction*, not merely slow. The architecture never bends to accommodate a model.
+- **ICF** — *what changed / what is actually new / does it deserve deeper inference* before any expensive inference. Video may never default to frame-sampling with a full model per frame; it produces a **Video Memory Record** into the same Unified Visual Memory Graph.
+
+**P-04 restated:** the question is the *minimum* capability required for the task, not the *maximum* available. Rules/metadata → no AI; light model → no large model; Apple Native → no added model. LocateAnything, Mage and Gemma stay Candidate/Benchmark and are not product dependencies.
+
+**Conflict review — checked against the code, not from memory.** Much of the existing work was already compliant before the methodology arrived: the Tier 0 scope lock to Layers 1–2, **C-1 gated OCR**, C-2 thumbnails-only, the Apple-native zero-model embedding, and `LibraryChangeTracker` — which is Information-Change-First implemented at the index layer in everything but name.
+
+**Two violations marked, neither fixed** (§7: review and mark; do not refactor working results without reason):
+- **MNI-1** — `dHash` is computed, stored *and indexed*, and never queried. We pay for the cheap signal that would authorise skipping, then discard it and run gated OCR plus an embedding on every asset including exact re-downloads. **This matters for the kill test:** §5 says the harness must measure the intended design rather than a naive baseline, and as written it measures the naive one, so **A1 is pessimistic and could fail a budget the intended architecture meets.** Recorded as **FC-1** and recommended before the device campaign — no data exists yet to invalidate — but left as an **Owner decision** rather than done unilaterally.
+- **MNI-2** — the harness and test corpus are **photos only**. Real 100k libraries contain substantial video, and video is precisely where naive per-frame processing explodes. **An A1 PASS is therefore an optimistic bound for a mixed library.** Building video handling now would be Tier 1/2 work and is forbidden, so this is **FC-2**: stated as an explicit limitation in the T0-A spec and carried into `TIER0_GO_NO_GO.md`.
+
+**Seven required future changes registered (FC-1 … FC-7)**, scoped to the tier that owns each — including the Video Memory Record pipeline (Tier 2), video in the Tier 1 corpus, re-scoping T1-A/T2-E around candidate reduction rather than whole-library classification, and making Candidate Reduction an explicit stage alongside Constitution §25.
+
+**Nothing was stopped, reversed or redone. No Tier 1/Tier 2 development was started. The T0-A/B/C/D order is unchanged.**
+
+**Status.** ACTIVE.

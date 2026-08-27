@@ -7,6 +7,7 @@ Audit date: 2026-08-22 · Auditor: Claude Code (Session 001)
 | Level | Role | Canonical document |
 |---|---|---|
 | L1 | **WHAT** — product truth | `10_SOURCE_DOCS/Personal_Visual_Memory_Engine_v1.3_Product_Constitution.docx` |
+| **L1-B** | **HOW THE ARCHITECTURE MUST BE BUILT** — Information-Change-First / Minimum Necessary Inference | `10_SOURCE_DOCS/PVME_Information_Change_First_Methodology_Update_v1.0.docx` → digest `ARCHITECTURE_METHODOLOGY.md` |
 | L2 | **NOW** — what must be proven first | `10_SOURCE_DOCS/P020Test20EXECUTION%20INDEX_v1.0.docx` + Tier 0/1/2 **v1.1** |
 | L3 | **HOW TO WORK** | `10_SOURCE_DOCS/Cross_Project_Engineering_Playbook_v1.1_...docx` |
 | L4 | Capability library (not requirements) | Skills/MCP available in this environment + Project M Preflight Spec (method only) |
@@ -26,6 +27,7 @@ Plain-text extractions of every document above live in `10_SOURCE_DOCS/_extracte
 | D4 | P0 Kill Test Tier 1 — 核心能力可行性 | L2 | **v1.1** | AUTHORITATIVE / **LOCKED** | Read-only until Tier 0 gate passes. |
 | D5 | P0 Kill Test Tier 2 — 完整体验与规模化 | L2 | **v1.1** | AUTHORITATIVE / **LOCKED** | Read-only until Tier 1 gate passes. |
 | D6 | Cross-Project Engineering Playbook | L3 | **v1.1** | **AUTHORITATIVE** | E-01..E-15, S-01..S-10, F-01..F-12, Bootstrap Checklist, §5A Context/Token Protocol T-01..T-17. Header text says "v1.0" internally; filename and Owner both say v1.1 — treated as v1.1. |
+| **D8** | **PVME 底层方法论更新 — Information-Change-First / Minimum Necessary Inference** | **L1-B** | **v1.0** (2026-08-24) | **AUTHORITATIVE** | Binds all architecture and model decisions. Explicitly does *not* change product goals, taxonomy, risk grading, lifecycle, retrieval, or the Tier 0 execution order. Digest + conflict review: `ARCHITECTURE_METHODOLOGY.md` |
 | D7 | Claude Code 正式启动指令 | L0 | v1.0 | CONSUMED | Identical in substance to the Owner's chat launch prompt. Executed by this session. |
 
 ## 3. Superseded / duplicate / out-of-scope (moved, nothing deleted)

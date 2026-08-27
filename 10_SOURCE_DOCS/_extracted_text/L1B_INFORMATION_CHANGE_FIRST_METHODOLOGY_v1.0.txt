@@ -1,0 +1,87 @@
+
+PVME 底层方法论更新 v1.0
+Information-Change-First / Minimum Necessary Inference
+供 Claude Code / Codex 执行与长期工程约束
+0. 更新性质
+本更新不是新增两个功能，也不是因为发现 Mage-VL 就更换模型。它是 PVME 底层视觉计算方法论的调整。它不改变产品目标、Visual Library 分类体系、风险分级、生命周期管理、自然语言检索，以及当前 P0 / Tier 0 的执行顺序。
+核心变化只有两条：
+Minimum Necessary Inference：不要让昂贵 AI 理解所有东西，只让它理解必须理解的东西。
+Information-Change-First：优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理。
+1. 原则一：Minimum Necessary Inference
+PVME 面对的可能是 30,000–100,000 张照片和大量视频。任何“把所有照片、所有视频帧全部交给重型模型理解”的架构，原则上都应视为错误设计。
+统一处理顺序：
+Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory
+Cheap Signals 优先包括：
+Metadata：时间、地点、文件属性、来源等
+Hash / perceptual hash
+OCR
+轻量 embeddings
+Apple Vision / 系统原生能力
+已有 PVME 索引与 Taxonomy
+视频 codec、scene-change、motion/change information
+只有廉价信号无法可靠完成任务时，才允许进入更昂贵的视觉理解层。
+示例：用户搜索“我以前拍过的黑色充电器”。
+50,000 photos → cheap retrieval → 30–50 candidates → stronger grounding model → 1–3 results
+禁止采用：50,000 photos → heavy VLM × 50,000。
+Apple Native、Gemma、Mage、LocateAnything 或未来任何模型都必须服从这套架构，而不是让架构反过来服从某一个模型。
+2. 原则二：Information-Change-First
+PVME 应处理“新增的信息”，而不是机械地重新理解每一份视觉数据。系统在进行更昂贵的推理前，应优先回答三个问题：
+What changed? —— 什么发生了变化？
+What is actually new? —— 什么是真正新增的信息？
+Does this new information deserve deeper inference? —— 这些新增信息是否值得更深层推理？
+3. 对照片处理的影响
+如果两张照片高度重复、属于同一场景连拍、同一内容重新下载，或只是轻微变化，不应该默认把它们当成两个完全独立的新对象重新进行完整理解。
+系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类、grounding 或 same-entity 判断。
+4. 对视频处理的影响
+视频是这次方法论更新最重要的应用场景之一。
+禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型。
+优先研究与采用：
+Video → codec / metadata → scene & change detection → meaningful segments / representative frames → selective visual understanding → Video Memory Record
+PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息。
+示例 Video Memory Record：
+Date: 2026-08-20
+Place: Tokyo Hotel
+Person: Anna
+Object: Red suitcase
+Event: Packing
+Relevant segment: 00:17–00:24
+Representative frames: 4
+这些信息应进入与照片相同的 Unified Visual Memory Graph。用户以后搜索“我的红色行李箱最后在哪里出现过？”，PVME 应能够同时返回照片和视频，并在可能时直接跳到相关视频时间点。
+5. 更新后的统一底层架构
+Camera Roll
+↓
+Visual Ingestion Layer
+↓
+Cheap Understanding Layer
+Metadata / Hash / OCR / Embedding / Apple Vision / Codec / Scene & Change Detection
+↓
+Candidate Reduction
+↓
+Selective Intelligence Layer
+仅在必要时调用更强模型
+↓
+Unified Visual Memory Graph
+↓
+Documents / People / Objects / Clothing / Places / Travel / Purchases / Work / Screenshots / Timeline ...
+↓
+Visual Library Entry + Natural Language Entry
+6. 模型选择原则同步更新
+从现在开始，不以“哪个模型最强”作为主要判断标准。核心问题改为：
+完成这个具体视觉任务所需的最小计算能力是什么？
+规则 / metadata 能解决 → 不用 AI。
+轻模型能解决 → 不用大模型。
+Apple Native 能解决 → 不增加额外模型。
+只有 Benchmark 证明存在明确能力缺口 → 才进入 Gemma / Mage / LocateAnything / Grounding Mini 等候选研究。
+任何新增模型都必须证明其准确率或能力提升，足以抵偿模型体积、内存、耗电、发热和工程复杂度。
+7. 对当前 P0 / Tier 0 的要求
+不要因为本方法论更新停止、推翻或重做当前 P0。T0-A / B / C / D 的执行顺序保持不变。
+当前只执行以下调整：
+将 Minimum Necessary Inference 与 Information-Change-First 写入 PVME Product Constitution / Engineering Playbook，作为长期工程约束。
+审查当前 benchmark 和未来架构，标记明显违反上述原则的设计；不要无理由重构已通过的工作。
+将长期 Video Intelligence 架构从“视频分类/关键帧搜索”升级为“Information Change → Video Memory Record → Unified Visual Memory Graph”。
+LocateAnything、Mage、Gemma 保持 Candidate / Benchmark 身份，不直接成为产品依赖。
+不得因此提前进入 Tier 1 / Tier 2 产品开发。
+8. 给 Claude Code / Codex 的最终工程约束
+Do not understand everything. Understand what changed, and spend intelligence only where it creates new memory.
+PVME 的目标不是让 AI 看更多，而是让 AI 少看、看对，并把真正有价值的新信息写入长期视觉记忆。
+图书馆不会每天重新阅读所有藏书；它建立索引，并在真正需要时打开少数相关内容。PVME 对用户的视觉资产也应遵循同样的原则。

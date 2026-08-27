@@ -37,6 +37,7 @@ CANONICAL = [
     "README.md", "PROJECT_STATE.md", "SESSION_HANDOFF.md", "MISSION_SPEC.md",
     "MASTER_PLAN.md", "OPERATING_RULES.md", "DECISIONS.md", "FAILURE_PATTERNS.md",
     "DOCUMENTATION_MAP.md", "VALIDATION_MATRIX.md", "CONSTITUTION_UNDERSTANDING.md",
+    "ARCHITECTURE_METHODOLOGY.md",
 ]
 
 # The questions a session with NO conversation history must be able to answer.
