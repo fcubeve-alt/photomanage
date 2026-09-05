@@ -28,6 +28,15 @@ Usage:  python generate_test_library.py --out ./library --count 10000 --manifest
 
 import os, json, html, hashlib
 import taxonomy
+import sys
+# Output is UTF-8 regardless of console locale (PF-10 — cp936 cannot encode the
+# report glyphs and the tool would die after doing all the work).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "prototype")

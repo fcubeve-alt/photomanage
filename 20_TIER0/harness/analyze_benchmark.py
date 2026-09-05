@@ -23,6 +23,17 @@ on one side of the language boundary cannot silently misalign the analysis.
 
 import argparse, csv, io, os, re, sys, statistics
 from datetime import datetime
+# The reports below carry U+26A0/U+2705 and em dashes. On a Chinese-locale Windows
+# console stdout defaults to cp936, which cannot encode them, so the tool dies with
+# UnicodeEncodeError *after* the analysis has already run and prints nothing usable.
+# Pin the stream to UTF-8 rather than stripping the characters out of the report.
+# (PF-10)
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SWIFT_CSV = os.path.join(HERE, "PVMBench", "MetricsCSV.swift")

@@ -8,8 +8,11 @@ Documentation audit, authority map, conflict resolution, persistent state, valid
 matrix, git repository, GitHub remote.
 **Acceptance:** a new session on a new machine can recover from `PROJECT_STATE.md` +
 git alone, without the Owner explaining anything.
-**Verified** — not asserted: `recovery_check.py --strict`, 29 checks, 0 FAIL, and it
-now runs in CI on every `.md` change (DEC-022).
+**Verified** — not asserted: `recovery_check.py --strict`, 33 checks, 0 FAIL, and it
+now runs in CI on every `.md` change (DEC-022). **Proven in the real event on
+2026-09-06**: the project moved to a different computer and a cold session recovered
+from the repo alone. What the recovery test could not see — that the analyzers
+themselves were broken on the new machine — is DEC-025 / PF-10.
 
 ## M1 · Tier 0 — 生死开关 — 🔵 IN PROGRESS
 Answer the kill questions with real evidence. **Four workstreams** — D was added by
@@ -78,3 +81,5 @@ product** — everything to date is validation instrumentation.
 | Taxonomy ↔ test library agree | `generate_test_library.py` aborts on any path not in `taxonomy.py` |
 | CSV schema ↔ writer agree | `analyze_benchmark.py` aborts on header mismatch |
 | Landing arms differ only as intended | `build_landing.py` aborts on drift |
+| Analyzers still run (incl. non-UTF-8 console) | `.github/workflows/tools-check.yml` on every `.py` change — PF-10 |
+| Generators still deterministic; manifest reproduces from its seed | same workflow, verified by negative control |

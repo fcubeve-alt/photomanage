@@ -30,6 +30,15 @@ import argparse, json, os, random, hashlib, shutil
 import taxonomy
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
+import sys
+# Output is UTF-8 regardless of console locale (PF-10 — cp936 cannot encode the
+# report glyphs and the tool would die after doing all the work).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 
 SEED = 20260822
 random.seed(SEED)

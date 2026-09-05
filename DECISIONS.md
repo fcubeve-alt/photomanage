@@ -405,3 +405,54 @@ Both files were written on the first morning and had not been revisited across D
 **Nothing was stopped, reversed or redone. No Tier 1/Tier 2 development was started. The T0-A/B/C/D order is unchanged.**
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-025 · 2026-09-06 · Machine migration: environment pinned in code, not in the handoff
+**Context.** The project moved from `D:\photomanage` on the previous computer to
+`D:\Documents\GitHub\photomanage` on a new one. Session 002 opened cold, with the repo
+and the state files as the only inputs. `recovery_check.py` reported **33 checks,
+0 FAIL, RECOVERY VIABLE** — the E-06 / M0 acceptance criterion held in the real event
+it was written for, not in rehearsal.
+
+**What the recovery test could not see.** It verifies that documents agree and that
+referenced files exist. It does not execute anything. So it passed while **both Tier 0
+analyzers were broken on this machine** — see `FAILURE_PATTERNS.md` **PF-10**. The new
+machine has a Chinese locale, `sys.stdout` defaults to cp936, and the report glyphs
+(`⚠️`, `✅`) cannot be encoded in it. Each analyzer ran the full analysis and then died
+on `print`. These are the tools that will meet the T0-A CSV and the T0-B/T0-D session
+data exactly once.
+
+**Decided.**
+1. **The console locale is not an input.** All seven Python entry points pin
+   `sys.stdout`/`sys.stderr` to UTF-8 at start-up. Rejected alternative: stripping the
+   glyphs from the reports — that lets the environment dictate the deliverable, and
+   `⚠️ Projected, not measured` is load-bearing (PF-01).
+2. **New standing check — `.github/workflows/tools-check.yml`**, on every `.py` change:
+   the analyzer self-tests, the same self-tests under `PYTHONIOENCODING=gbk`, generator
+   determinism, and test-library manifest reproducibility. Both new checks were given a
+   negative control per DEC-023/PF-09 — the pre-fix code exits 1 under the gbk step,
+   and a manifest with one altered field is rejected.
+3. **Two claims re-verified rather than inherited.** Generator determinism now proves
+   itself: `build_prototype.py` and `build_landing.py` rebuild byte-identical output,
+   and the test-library manifest reproduces from SEED 20260822 in every field except
+   its wall-clock stamp (10,000 assets, 136 foreground). The `--manifest-only` path
+   still validates every asset path against `taxonomy.py`.
+4. **`PROJECT_STATE` coordinates rewritten for this machine.** The DEC-018 git trap —
+   system git 2.9.0 unable to reach GitHub, requiring a `C:\Users\admin\tools` PATH
+   prefix — **does not exist here**: git is 2.50.0 and works unprefixed. That warning
+   was the loudest text in `SESSION_HANDOFF.md` and it now describes a machine that is
+   gone; leaving it would send the next session chasing a fault that is not there. It
+   is demoted to a historical note under DEC-018. **`gh` is not installed on this
+   machine** — a real new gap, since HG-1 and the CI workflows are driven through it.
+5. **`PROJECT_STATE`'s "Doing now" list was stale and is corrected.** It listed the
+   landing pages, the manifest-wired prototype and the analyzers as build-ahead work
+   still to do. All three were finished in commits `9502cbc`, `5af1e4a` and `32382ea`,
+   and `MASTER_PLAN` already said so. A cold session would have rebuilt finished work —
+   the F-06 failure, reached through a stale file rather than a missing one.
+
+**Not done, deliberately.** No Tier 1/Tier 2 work, no scope change, no re-derivation of
+any finding, and **FC-1 (MNI-1) remains an open Owner decision** — it is still the one
+substantive engineering change recommended before the device campaign.
+
+**Status.** ACTIVE.

@@ -1,15 +1,15 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-08-23 · Session 001 — Tier 0 instrumentation complete; all four workstreams await Owner gates
+Last updated: 2026-09-06 · Session 002 — machine migration; tooling repaired and guarded (DEC-025)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
-- Repo: `D:\photomanage` · branch `main` · remote: **`github.com/fcubeve-alt/photomanage` (PRIVATE)**
+- Repo: `D:\Documents\GitHub\photomanage` · branch `main` · remote: **`github.com/fcubeve-alt/photomanage` (PRIVATE)**
 - Stage: **M1 / Tier 0 — 生死开关**
-- Environment: Windows 10, Python 3.12.10. No Mac, no Xcode. Owner has ~6 iPhones (7 → 17).
-- ⚠️ **The system `git` is 2.9.0 and CANNOT reach GitHub** (exit 128, empty stderr). Prefix PATH every session:
-  `export PATH="/c/Users/admin/tools/git/cmd:/c/Users/admin/tools/bin:$PATH"`
-  Working tools: MinGit **2.55.0.5**, `gh` **2.98.0** (authenticated as `fcubeve-alt`, scopes `repo`+`workflow`). See DEC-018.
+- Environment: **new machine since 2026-09-06** — Windows 10 Pro 19045, user `claudetest`, Python **3.14.3**, git **2.50.0** on `PATH` and working unprefixed. No Mac, no Xcode. Owner has ~6 iPhones (7 → 17).
+- ⚠️ **Console locale is cp936 (Chinese Windows).** Every Python entry point now pins its own stdout to UTF-8, so the tools run unprefixed — but **anything new that prints `⚠️`/`✅` must do the same**, or it dies on `print` after doing all its work. See **PF-10 / DEC-025**.
+- ⚠️ **`gh` is NOT installed on this machine.** HG-1 (adding signing secrets) and dispatching either CI workflow both run through it. Install GitHub CLI and `gh auth login` as `fcubeve-alt` (scopes `repo` + `workflow`) before touching Actions.
+- The previous machine's git trap (system git 2.9.0 unable to reach GitHub, `C:\Users\admin\tools` PATH prefix) **does not apply here** — historical only, DEC-018.
 
 ## Architecture methodology (L1-B, 2026-08-24)
 **Information-Change-First / Minimum Necessary Inference** is now a binding long-term
@@ -45,18 +45,24 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 **`NO DATA` is never a soft PASS** — a workstream not run leaves the gate INCOMPLETE, and Tier 1 may not begin on partial evidence.
 
 ## Doing now
-✅ **Repo live. First CI build GREEN** (run 32579093228, 48 s, **0 billable macOS minutes**). One compile error across ~1,400 lines of blind-written Swift, fixed in one round.
+**All four Tier 0 workstreams are instrumented to the boundary of an Owner gate. What is missing is data, not tooling** — see the `MASTER_PLAN` M1 table for the per-workstream status.
 
-**DEC-015 condition is MET** — the compile is proven at $0. **HG-1 is now the Owner's move: enrol in Apple Developer ($99) and add the 8 signing secrets.** Then `ios-testflight.yml` delivers to the device fleet and the real A1–A4 measurement can begin.
+Verified on this machine 2026-09-06, not inherited from the previous one (DEC-025):
+- Both analyzer self-tests pass, including under a non-UTF-8 console.
+- `build_prototype.py` and `build_landing.py` rebuild byte-identical output.
+- The test library reproduces from SEED 20260822 — 10,000 assets, 136 foreground, every path validated against `taxonomy.py`.
+- `recovery_check.py --strict`: 33 checks, 0 FAIL.
 
-Build-ahead work that needs no approval meanwhile:
-- Extend the prototype: Apple-Photos-style arm-A parity checks, and leaf-level asset views wired to the real test-library manifest
-- Build the three T0-C2 landing pages + event logging + disclosure interstitial (local files only; publishing is HG-2)
-- Source/curate the 136 foreground test-library images per `TEST_LIBRARY_SPEC.md` §3
+**DEC-015's condition is MET** — the compile is proven green at $0. **HG-1 is the Owner's move: enrol in Apple Developer ($99) and add the 8 signing secrets.** Then `ios-testflight.yml` delivers to the device fleet and the real A1–A4 measurement can begin. Note `gh` must be installed here first.
 
-⚠️ **Awaiting Owner approval of EUR 2.64 only** (Scaleway one 24h M1 block). Nothing purchased.
-- **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015).
+**Build-ahead work still open, needing no approval:**
+1. **Source or curate the 136 foreground test-library images** per `TEST_LIBRARY_SPEC.md` §3. This is the last thing standing between HG-4 being granted and T0-B/T0-D actually running; the placeholders are deliberately stamped so they cannot be used in a real session by accident.
+2. **FC-1 (MNI-1) — Owner decision, recommended before the device campaign.** The harness computes and indexes `dHash`, then never queries it, so it re-runs gated OCR and an embedding on exact re-downloads. **A1 is therefore measuring the naive baseline rather than the intended architecture, and could fail a budget the real design meets** (`ARCHITECTURE_METHODOLOGY.md` FC-1).
+
+⚠️ **Awaiting Owner approval of spend only.** Nothing purchased.
+- **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015) — that compile is green.
 - **$29.99 Lucent: cancelled** — Owner decided not to download or buy it (DEC-013).
+- ~~Scaleway EUR 2.64~~ — **withdrawn** (DEC-016), GitHub Actions replaced it at $0.
 
 ## Work queue
 
@@ -92,8 +98,9 @@ Build-ahead work that needs no approval meanwhile:
 - Web search/fetch: available. If it drops, fall back to the search-free queue (T0-A-PREP, T0-B-PREP) — do not idle (S-03, F-05).
 
 ### MAINTENANCE
-- ~~Create a git remote~~ — ✅ done. E-06 cross-machine recovery gap closed.
-- Consider adding `C:\Users\admin\tools\git\cmd` and `...\tools\bin` to the persistent user PATH so sessions stop needing the prefix. **System setting — Owner decision, not mine to change.**
+- ~~Create a git remote~~ — ✅ done. E-06 cross-machine recovery gap closed, and **proven in the real event** on 2026-09-06: the project moved machines and a cold session recovered from the repo alone (DEC-025).
+- ~~Persist the git tools on `PATH`~~ — moot. The new machine's git 2.50.0 is already on `PATH` and works unprefixed.
+- **Install GitHub CLI on this machine** and `gh auth login` as `fcubeve-alt` with scopes `repo` + `workflow`. Not needed for local work; needed the moment HG-1 opens or a workflow must be dispatched.
 
 ## Blockers
 Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining gates are: **spend approval + Apple Developer enrollment** (T0-A, and by extension the T0-B tooling), **external user recruitment** (T0-B), and **landing page + payment path** (T0-C2). This blocks the *gate*, not the *mission* — all PREP and harness-authoring work proceeds.
@@ -105,16 +112,19 @@ Tier 0 **cannot be closed** on Windows alone. After HG-3 approval the remaining 
 | PF-01 simulated device numbers | Guarded by P-02. Watch for it. |
 | Cleaner-rung commoditisation | The likely C1 finding is that the Cleaner rung is already free. That is expected, and is why the Constitution anchors paid value at Continuous Management and above. |
 
-## Idle justification (S-04) — checked 2026-08-22
-Every Tier-0 workstream is prepared to the boundary of an Owner gate:
-- **T0-A** — spec + harness + XcodeGen spec + both CI workflows written. Needs **HG-5** (private GitHub repo, $0) then HG-1 ($99, only after a green build).
-- **T0-B** — protocol + test-library generator + facilitator script + scoring sheet. Needs HG-4 (participants) and a built prototype.
-- **T0-C1** — COMPLETE. **T0-C2** — plan + copy + measurement. Needs HG-2 (~$520-720).
-- **T0-D** — protocol + 4 ledger variants + scoring sheet. Needs HG-4.
-Build-ahead work remains and requires no approval, so the mission is **not** blocked (S-03). Do not enter WAITING.
+## Idle justification (S-04) — re-checked 2026-09-06
+Every Tier-0 workstream is prepared to the boundary of an Owner gate, and every measurement chain is closed:
+- **T0-A** — spec + harness (compiles green on CI) + XcodeGen spec + both CI workflows + self-tested analyzer. Needs **HG-1** ($99, condition already satisfied by the green build).
+- **T0-B** — protocol + clickable prototype + test-library manifest + facilitator script + scoring sheet + self-tested analyzer. Needs **HG-4** (n ≥ 15 participants) and the 136 real foreground images.
+- **T0-C1** — COMPLETE. **T0-C2** — three instrumented landing pages built and smoke-tested. Needs **HG-2** (~$520–720).
+- **T0-D** — protocol + 4 ledger variants + scoring sheet + self-tested analyzer. Needs **HG-4**, same cohort as T0-B.
+
+Two items of build-ahead work remain that need no approval (the 136 foreground images, and the FC-1 recommendation), so the mission is **not** blocked (S-03). Do not enter WAITING. When those two are exhausted, the S-04 condition for escalating **HG-9** is genuinely reached and should be escalated rather than filled with invented work.
 
 ## Next action for a recovering session
-Pick up the build-ahead list under "Doing now". Highest value first: the three T0-C2 landing pages (local files; publishing stays gated), because they are the only remaining item that shortens an Owner-gated critical path.
+**Curate the 136 foreground test-library images** per `20_TIER0/study_assets/TEST_LIBRARY_SPEC.md` §3 — they carry every task target and hard negative, the placeholders are stamped unusable on purpose, and they are the only remaining thing between "HG-4 granted" and "T0-B running the same afternoon". T0-B and T0-D need no Mac, no TestFlight and no $99, so this is the cheapest path to answering two of the four kill questions.
+
+Second, put **FC-1** in front of the Owner as a decision (`ARCHITECTURE_METHODOLOGY.md`): as written the harness measures the naive baseline, not the intended Minimum-Necessary-Inference design, so **A1 is pessimistic and could fail a budget the real architecture meets**.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.

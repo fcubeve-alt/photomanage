@@ -78,3 +78,22 @@ Case 3 is the worst of the three: the check existed **specifically** to catch th
 **Also:** an empty check must report **N/A**, never OK. Zero things verified is not zero things wrong.
 
 **Status.** Occurred 2026-08-23, three times. All three fixed. Negative control is now the standard before relying on any new check — the same discipline already applied to the four analyzers (self-test before real data).
+
+### PF-10 · Tooling that works only on the machine that wrote it
+**Risk.** Validation instrumentation is written on one machine and run — for the only time that matters — on another, months later, with real data on the table. Anything that silently depended on the first machine's environment surfaces at exactly the wrong moment.
+
+**Occurred 2026-09-06**, on the first session after the project moved to a new computer. Both Tier 0 analyzers crashed with `UnicodeEncodeError` — `analyze_benchmark.py --selftest` and `analyze_studies.py selftest`. The new machine is a Chinese-locale Windows install, so `sys.stdout` defaults to **cp936**, which cannot encode the `⚠️`/`✅` glyphs the reports are built from. Both died **after** completing the whole analysis and printed nothing usable.
+
+Why this one is worse than an ordinary bug:
+- These tools each meet real data **once**. The device campaign ends, the participants go home, the CSV exists — and that is the moment the tool would have failed.
+- Nothing was wrong with the analysis logic. `MASTER_PLAN` correctly claimed *"every analyzer is self-tested"* — the self-tests had genuinely passed. They passed **on the old machine**, and the claim carried no environment with it.
+- The failure was invisible to every existing check. `recovery_check.py` verifies that documents are consistent and that files resolve. It does not run anything.
+
+**Guard.** Three parts, all landed:
+1. Every Python entry point pins `sys.stdout`/`sys.stderr` to UTF-8 at start-up, rather than removing the characters from the reports. Console locale is now an input the tools ignore.
+2. `.github/workflows/tools-check.yml` runs every self-test on each `.py` change, **and runs them again under `PYTHONIOENCODING=gbk`** — the exact condition that broke them.
+3. Negative control verified per PF-09: the pre-fix code exits 1 under `PYTHONIOENCODING=gbk`, the fixed code exits 0. The check can go red.
+
+**Generalisation.** A green self-test proves the logic, never the environment. Any claim of the form *"the tooling is ready"* must name the machine it was verified on, or be re-verified where it will actually run.
+
+**Status.** Fixed and guarded (DEC-025).

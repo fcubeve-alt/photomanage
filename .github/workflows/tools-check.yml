@@ -1,0 +1,64 @@
+name: Tooling check
+
+# Every analyzer in this repo will meet real Tier 0 data exactly once, and by then
+# the participants have gone home and the devices have cooled down. So the tools are
+# tested before the data exists, not after.
+#
+# Two things are checked:
+#   1. The self-tests still pass — the logic runs end to end on synthetic input.
+#   2. They still pass with a non-UTF-8 stdout. This is not hypothetical: moving the
+#      project to a Chinese-locale Windows machine made stdout cp936, and both
+#      analyzers died with UnicodeEncodeError *after* completing the analysis,
+#      printing nothing. PYTHONIOENCODING=gbk reproduces that exactly, and is a
+#      verified negative control — it fails on the unfixed code (PF-10, DEC-025).
+#   3. The generators are deterministic — rebuilding must not change a byte.
+
+on:
+  push:
+    paths:
+      - '**.py'
+      - '.github/workflows/tools-check.yml'
+  pull_request:
+    paths:
+      - '**.py'
+  workflow_dispatch:
+
+jobs:
+  tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install generator dependencies
+        run: python -m pip install --quiet pillow
+
+      - name: Analyzer self-tests
+        run: |
+          python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
+          python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
+          python recovery_check.py --strict > /dev/null
+
+      - name: Analyzer self-tests under a non-UTF-8 console (PF-10 regression)
+        env:
+          PYTHONIOENCODING: gbk
+        run: |
+          python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
+          python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
+          python recovery_check.py --strict > /dev/null
+
+      - name: Generators are deterministic
+        run: |
+          cd 20_TIER0/study_assets && python build_prototype.py > /dev/null && cd -
+          cd 20_TIER0/landing && python build_landing.py > /dev/null && cd -
+          git diff --exit-code -- 20_TIER0/study_assets/prototype 20_TIER0/landing/site \
+            || { echo "::error::a generator produced different output from the committed one"; exit 1; }
+
+      - name: Test-library manifest is reproducible from the seed
+        run: |
+          python 20_TIER0/study_assets/generate_test_library.py --manifest-only --out "$RUNNER_TEMP/tl" > /dev/null
+          python 20_TIER0/study_assets/check_manifest_reproducible.py "$RUNNER_TEMP/tl/manifest.json"

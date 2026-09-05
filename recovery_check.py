@@ -30,6 +30,14 @@ What it verifies:
 """
 
 import os, re, subprocess, sys
+# Output is UTF-8 regardless of console locale (PF-10 — cp936 cannot encode the
+# report glyphs and the tool would die after doing all the work).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 

@@ -32,6 +32,14 @@ Honesty features that are easy to omit and expensive to lack:
 import argparse, csv, io, math, os, sys, statistics
 from collections import defaultdict
 from datetime import datetime
+# Output is UTF-8 regardless of console locale (PF-10 — cp936 cannot encode the
+# report glyphs and the tool would die after doing all the work).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 
 MIN_N = 15   # protocol §8.1: raised from 10 — at n=10 only a UNANIMOUS
              # result can clear a 70% threshold, so 10 and 70% were
