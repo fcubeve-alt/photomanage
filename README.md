@@ -3,7 +3,17 @@
 Turn the Camera Roll from an unsorted file pile into a self-cataloguing, self-maintaining personal visual library.
 
 **Current stage: P0 Kill Test — Tier 0. This is validation, not product development.**
-No app is being built. The mission right now is to prove or kill three assumptions before anyone invests in a product.
+
+> ## Nothing of the product is built. Zero lines.
+> Everything in this repository is **measuring equipment**, not the product:
+> ~1,650 lines of Swift that time how fast an iPhone can read a photo library,
+> 82 hand-authored prototype pages with fixed content and no engine behind them,
+> and ~3,100 lines of Python generators, analyzers and checkers that will never ship.
+>
+> **The classifier, the taxonomy engine, the entity resolver, the lifecycle engine
+> and the risk policy engine do not exist.** They are Tier 1 / Tier 2 work, they are
+> still LOCKED, and they are the hard part. A green test result here is evidence
+> about a *tool*. It is never evidence about the product. (`FAILURE_PATTERNS.md` PF-11)
 
 ## Start here
 | File | Purpose |

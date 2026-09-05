@@ -45,28 +45,28 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 **`NO DATA` is never a soft PASS** — a workstream not run leaves the gate INCOMPLETE, and Tier 1 may not begin on partial evidence.
 
 ## Doing now
-**Owner decision 2026-09-06 (DEC-026): T0-C and T0-D are cancelled. The product is a GO.**
-**T0-A is now the only remaining Tier 0 kill test** — it is a physics question, not a market one, and deciding to build does not decide whether an iPhone can carry a 100k-asset library.
+> ### Nothing of the product is built. Zero lines. (PF-11)
+> ~1,650 lines of Swift = a stopwatch that times photo reads. 82 prototype pages = hand-authored, no engine. ~3,100 lines of Python = generators and analyzers that never ship. **The classifier, taxonomy engine, entity resolver, lifecycle engine and risk policy engine are at zero lines and still LOCKED.** Green test results are evidence about tools, never about the product.
 
-**OPEN-2 — awaiting Owner ruling: does T0-B survive?** With the build decision made, B stops being a kill test and becomes design research that could run against a beta. Its materials are **frozen, not deleted**, and no further effort goes into the 136 foreground images until this is answered.
+**Owner decisions 2026-09-06:**
+- **T0-C and T0-D cancelled; the product is a GO** (DEC-026).
+- **T0-B stays** — OPEN-2 closed (DEC-027). No longer a kill test, still wanted work. Its materials are out of freeze.
+- **HG-1 is blocked on a payment instrument, not on willingness** (DEC-027). The Owner will pay the $99; Apple's enrolment does not accept the payment method available to them. Duration unknown. Per S-03 this blocks **T0-A's device measurement only.**
 
-Verified on this machine 2026-09-06, not inherited from the previous one (DEC-025):
-- Both analyzer self-tests pass, including under a non-UTF-8 console.
-- `build_prototype.py`, `build_landing.py` and `build_sourcing_worksheet.py` rebuild byte-identical output.
-- The test library reproduces from SEED 20260822 — 10,000 assets, 136 foreground, every path validated against `taxonomy.py`.
-- `recovery_check.py --strict`: 33 checks, 0 FAIL.
+**T0-A — everything possible at $0 is done:**
+1. ~~Compiles green~~ ✅ (DEC-018)
+2. ~~**Runs** on the iOS Simulator~~ — ✅ **17 tests, 0 failures** (run 33984153562). Covers CSV column parity and the `iPhone14,5` comma, the C-1 OCR gate decisions, `dHash` stability, index cursor persistence across restarts, and the DEC-009 rule that cleanup can only reach assets the harness created.
+3. **FC-1 + FC-1a — the one substantive engineering item left, and it is unblocked.** See `ARCHITECTURE_METHODOLOGY.md`. In plain terms: the harness computes a cheap fingerprint for every photo, stores it, and **never looks at it again**, so an identical re-downloaded image is fully re-analysed every time. **A1 is therefore measuring a naive baseline, and a real library full of duplicates would look worse than the intended design actually is.** The FC-1a precondition found on 2026-09-06: `dHash` returns 0 both for a whole class of ordinary images *and* for every hash failure, so a hash match alone must never authorise a skip.
+4. **HG-1 → device campaign.** Blocked as above. Everything downstream of it is written and green.
 
-**T0-A critical path:**
-1. ~~Harness compiles green at $0~~ — ✅ done (DEC-018).
-2. ~~Harness **runs** on the iOS Simulator at $0~~ — ✅ **GREEN 2026-09-06: 17 tests, 0 failures** (run 33984153562). The first run found 3 failures; all three were bad test images, and one of them produced **FC-1a** (below), which is worth more than the test was. `ios-build.yml` now runs a unit-test target on a booted simulator: CSV column parity and comma escaping, the C-1 OCR gate decisions, `dHash` stability, index cursor persistence across restarts, and the DEC-009 rule that cleanup can only ever reach assets the harness created. **This is logic verification, never an A1–A4 result** — the simulator runs on the runner's CPU and has no thermal state, no battery, no Neural Engine and no real photo library (P-02, PF-01).
-3. **FC-1 (MNI-1) — recommended before spending the $99, and now with a mandatory precondition.** The simulator run found that **`dHash` returns 0 for a whole class of ordinary images and also for every hash failure** — two unrelated photos share the value 0 (`ARCHITECTURE_METHODOLOGY.md` **FC-1a**). Harmless today only because nothing reads `dhash` back; a data-loss bug the moment a dHash match is allowed to skip work. The hazard is locked into a test so FC-1 cannot ship without addressing it.
-3b. **The original FC-1 point still stands:** The harness computes and indexes `dHash`, then never queries it, so it re-runs gated OCR and an embedding on exact re-downloads. **A1 is therefore measuring the naive baseline rather than the intended architecture, and could fail a budget the real design meets** (`ARCHITECTURE_METHODOLOGY.md` FC-1). Owner decision.
-4. **HG-1 — the Owner's move.** Apple Developer enrolment ($99) + 8 signing secrets. Then `ios-testflight.yml` delivers to the iPhone fleet and A1–A4 can actually be measured.
+**T0-B — unblocked work available now:**
+- Source the 136 foreground images per `20_TIER0/study_assets/FOREGROUND_SOURCING_WORKSHEET.md`. Two Owner questions at the top of it are still unanswered: the route for the 49 `people_family` assets, and confirmation of the specimen-document line.
+- Then **HG-4** — n ≥ 15 external participants. Needs no Mac, no TestFlight and no spend.
 
 ⚠️ **Spend status.** Nothing purchased.
-- **$99 Apple Developer** — approved in principle, condition met (green build at $0).
-- ~~$500–700 ad spend + domain~~ — **cancelled with T0-C2 (DEC-026).**
-- ~~$29.99 Lucent~~ — cancelled (DEC-013). ~~Scaleway EUR 2.64~~ — withdrawn (DEC-016).
+- **$99 Apple Developer** — approved by the Owner, blocked on payment method.
+- ~~$500–700 ad spend + domain~~ — cancelled with T0-C2 (DEC-026).
+- ~~$29.99 Lucent~~ (DEC-013) · ~~Scaleway EUR 2.64~~ (DEC-016) — both gone.
 
 ## Work queue
 
@@ -127,12 +127,11 @@ Every Tier-0 workstream is prepared to the boundary of an Owner gate, and every 
 Two items of build-ahead work remain that need no approval (the 136 foreground images, and the FC-1 recommendation), so the mission is **not** blocked (S-03). Do not enter WAITING. When those two are exhausted, the S-04 condition for escalating **HG-9** is genuinely reached and should be escalated rather than filled with invented work.
 
 ## Next action for a recovering session
-**T0-A, and only T0-A.** C and D are cancelled and B is OPEN-2 (DEC-026), so the queue is short and the order is fixed:
-1. Confirm the simulator test step is green (`gh run list --workflow=ios-build.yml`). It runs the harness logic on a booted iOS Simulator at $0 and catches everything that does not need hardware.
-2. Put **FC-1** to the Owner — as written, A1 measures the naive baseline instead of the intended Minimum-Necessary-Inference design and could fail a budget the real architecture meets. Cheaper to fix before the device campaign than to re-run it.
-3. **HG-1 is the Owner's move**: Apple Developer enrolment ($99) + the 8 signing secrets. Everything downstream of it is already written and green.
+**FC-1 + FC-1a.** It is the only substantive engineering item that is both unblocked and on the critical path — HG-1 is stuck on a payment instrument for an unknown time (DEC-027), and until it clears, FC-1 is the only thing that improves the T0-A result rather than just waiting for it. Read `ARCHITECTURE_METHODOLOGY.md` FC-1 and FC-1a first; the precondition is mandatory and is locked into `Layer1SignalsTests.testAWholeClassOfImagesHashesToZero`.
 
-Do **not** spend more effort on the 136 foreground test-library images until OPEN-2 is answered — that work only pays off if T0-B still runs.
+In parallel, T0-B is live again (DEC-027): the 136 foreground images can be sourced from `FOREGROUND_SOURCING_WORKSHEET.md` as soon as the Owner answers its two questions.
+
+**Do not** report any of this as product progress. See PF-11.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.

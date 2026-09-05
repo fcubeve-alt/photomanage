@@ -511,3 +511,34 @@ hole is left explicitly marked as OPEN-2 rather than guessed at, so the next ses
 finds a stated gap instead of a confident fiction.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-027 · 2026-09-06 · OPEN-2 closed — T0-B stays. HG-1 blocked on a payment instrument, not on willingness
+**Owner ruling on OPEN-2:** *"B 不用撤了，没有意义，还要做的就不撤了。"* — **T0-B survives.**
+It is no longer a kill test (the build decision is made, DEC-026) but it remains work
+the Owner wants done. Its materials come out of freeze. The 136 foreground images go
+back onto the ungated work queue.
+
+**HG-1 — the blocker is a payment instrument, not the $99.** The Owner has confirmed
+the fee will be paid and cannot pay it today: the Apple Developer Program enrolment
+does not accept the payment method available to them. Apple Pay works for their iCloud
+subscription; it is not accepted for the enrolment fee. The Owner is arranging this
+themselves.
+
+**Consequence, stated plainly so no later session misreads the queue:** T0-A's device
+measurement is blocked for an unknown duration. Per S-03 that blocks **T0-A only**. It
+does not block T0-B, FC-1, or anything else. It also means **the $0 simulator work done
+on 2026-09-06 is worth more than it looked** — it is currently the only thing
+advancing T0-A at all.
+
+**A correction the Owner was right to demand.** The Owner asked whether the project was
+"finished", having read a run of green results. It is not, and the state files were
+letting that impression form: they describe instrumentation in detail and say
+comparatively little about how much of the *product* does not exist. **Nothing of the
+product is built. The classifier, the taxonomy engine, the entity resolver, the
+lifecycle engine and the risk policy engine are all Tier 1/Tier 2, all still LOCKED,
+and all at zero lines of code.** `README.md` now says this on its first screen rather
+than implying it. Recorded as **PF-11**.
+
+**Status.** ACTIVE.

@@ -97,3 +97,21 @@ Why this one is worse than an ordinary bug:
 **Generalisation.** A green self-test proves the logic, never the environment. Any claim of the form *"the tooling is ready"* must name the machine it was verified on, or be re-verified where it will actually run.
 
 **Status.** Fixed and guarded (DEC-025).
+
+### PF-11 · A wall of green results reading as "the product is built"
+**Risk.** This project's output so far is almost entirely *instrumentation*: harnesses, generators, analyzers, protocols, CI checks. Each one finishes with a visible success — a green run, a passing test, a written report. Stack enough of them together and the honest sentence *"the validation tooling is ready"* is received as *"the app is ready"*. Nobody has to lie for it to happen; the shape of the reporting does it.
+
+**Occurred 2026-09-06.** After a session that ended with "17 tests, 0 failures", the Owner asked directly: *"你难道就做完做好了吗？我觉得没那么快吧… 整个系统要按照各种分类，应该不是那么容易就编好吧？编好了吗？项目已经做好了？"* They were right to push back, and the doubt was correct.
+
+The true accounting on that date:
+- **~1,650 lines of Swift** — a stopwatch. It reads photos, times itself, records temperature, memory and battery, writes a CSV. **It does not classify, recognise, organise or understand anything.**
+- **82 prototype HTML pages** — hand-authored, fixed content, no engine behind them. They exist to ask users whether a structure makes sense.
+- **~3,100 lines of Python** — generators, analyzers, checkers. None of it ships.
+- **The actual product — classifier, taxonomy engine, entity resolver, lifecycle engine, risk policy engine — is at ZERO lines**, is Tier 1/Tier 2 work, and is still LOCKED by the Execution Index.
+
+**Guard.**
+1. `README.md` states the "nothing of the product is built" line on the first screen, not as a footnote.
+2. Any progress report that leads with green results must carry the same sentence in the same message. A test passing is evidence about a *tool*, never about the product.
+3. When the Owner asks whether something is done, answer with the line count of what does **not** exist first.
+
+**Status.** Caught by Owner challenge on 2026-09-06, not by me — the second time that has happened (see PF-08). Recorded in DEC-027.

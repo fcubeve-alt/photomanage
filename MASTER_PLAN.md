@@ -21,8 +21,8 @@ bet be validated by real users, and the Tier 0 document contained no such test.
 
 | Workstream | Instrumentation | Blocked on | Deliverable |
 |---|---|---|---|
-| **T0-A** device & thermal | ✅ harness compiles green on CI; analyzer self-tested | **HG-1** — $99 Apple Developer + signing secrets | `DEVICE_BENCHMARK_TIER0.csv` + `.md` |
-| **T0-B** retrieval entry | ✅ protocol, clickable prototype, test library, facilitator script, scoring sheet, analyzer | **OPEN-2** — does it survive the GO decision? Frozen pending an Owner ruling (DEC-026) | `RETRIEVAL_ENTRY_USABILITY_TIER0.md` |
+| **T0-A** device & thermal | ✅ compiles green **and runs green on the iOS Simulator** (17 tests); analyzer self-tested | **HG-1** — blocked on a payment instrument, not willingness (DEC-027) | `DEVICE_BENCHMARK_TIER0.csv` + `.md` |
+| **T0-B** retrieval entry | ✅ protocol, clickable prototype, test library, facilitator script, scoring sheet, analyzer | **136 foreground images**, then **HG-4** — 15 participants. Kept by Owner ruling, DEC-027 | `RETRIEVAL_ENTRY_USABILITY_TIER0.md` |
 | **T0-C1** competitor pricing | — | — | ✅ **COMPLETE** 2026-08-22 |
 | ~~**T0-C2** real payment signal~~ | pages built and kept unpublished | — | **CANCELLED by the Owner, DEC-026.** HG-2 closed; no domain, no ad spend |
 | ~~**T0-D** autonomous mgmt~~ | materials kept | — | **CANCELLED by the Owner, DEC-026.** The Constitution §7 automation-tolerance bet is now an accepted risk carried into M4, not a validated finding |
