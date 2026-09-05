@@ -22,10 +22,10 @@ bet be validated by real users, and the Tier 0 document contained no such test.
 | Workstream | Instrumentation | Blocked on | Deliverable |
 |---|---|---|---|
 | **T0-A** device & thermal | ✅ harness compiles green on CI; analyzer self-tested | **HG-1** — $99 Apple Developer + signing secrets | `DEVICE_BENCHMARK_TIER0.csv` + `.md` |
-| **T0-B** retrieval entry | ✅ protocol, clickable prototype, test library, facilitator script, scoring sheet, analyzer | **HG-4** — 15 external participants | `RETRIEVAL_ENTRY_USABILITY_TIER0.md` |
+| **T0-B** retrieval entry | ✅ protocol, clickable prototype, test library, facilitator script, scoring sheet, analyzer | **OPEN-2** — does it survive the GO decision? Frozen pending an Owner ruling (DEC-026) | `RETRIEVAL_ENTRY_USABILITY_TIER0.md` |
 | **T0-C1** competitor pricing | — | — | ✅ **COMPLETE** 2026-08-22 |
-| **T0-C2** real payment signal | ✅ three landing pages, instrumented, smoke-tested | **HG-2** — domain + ~$500–700 ad spend | `REAL_PAYMENT_SIGNAL_TIER0.md` |
-| **T0-D** autonomous mgmt | ✅ protocol, 4 ledger variants, scoring sheet, analyzer | **HG-4** — same cohort as T0-B | `AUTONOMOUS_MGMT_VALUE_PROP_TIER0.md` |
+| ~~**T0-C2** real payment signal~~ | pages built and kept unpublished | — | **CANCELLED by the Owner, DEC-026.** HG-2 closed; no domain, no ad spend |
+| ~~**T0-D** autonomous mgmt~~ | materials kept | — | **CANCELLED by the Owner, DEC-026.** The Constitution §7 automation-tolerance bet is now an accepted risk carried into M4, not a validated finding |
 
 **Every measurement chain is closed and every analyzer is self-tested** — none will
 meet real data for the first time. What is missing is the data, not the tooling.
@@ -33,15 +33,23 @@ meet real data for the first time. What is missing is the data, not the tooling.
 **Acceptance:** `20_TIER0/TIER0_GO_NO_GO.md` completed from named artifacts.
 `NO DATA` is never a soft PASS; a workstream not run leaves the gate INCOMPLETE.
 
-**Gate (Tier 0 v1.1 §6, DEC-002 / DEC-014):**
-- A **or** B FAIL → **NO-GO / PIVOT**, stop.
-- A+B PASS, C PASS → **GO → M2**.
-- A+B PASS, C FAIL → **TECHNICAL/PRODUCT GO + COMMERCIAL MODEL PIVOT.** The product
-  survives; heavy investment waits until the commercial model is fixed.
-- D is reported alongside, never inside, the A/B/C arithmetic. **D FAIL → escalate to
-  Owner as a potential Kill result** (PF-08) — it contradicts Constitution §5–§7/§17.
-- Within A: **A3 (survivability) failure is fatal**; an A1-only failure degrades scope
-  to "recent N months" rather than killing the product.
+**Gate — rewritten 2026-09-06 for DEC-026.** The four-workstream gate no longer
+describes a programme that will run. C and D are cancelled by the Owner and B is
+frozen pending **OPEN-2**, so the gate now rests on **A alone**:
+- **A3 (survivability) failure is fatal** — an index that cannot survive being killed
+  and resumed is not a product, regardless of the build decision.
+- An **A1-only failure degrades scope** to "recent N months" rather than killing it.
+- **A1 is currently pessimistic** — `FC-1` means the harness measures the naive
+  baseline, not the intended architecture. Fix or explicitly accept before reading a
+  verdict from it.
+- **NO DATA is still never a soft PASS.** A cancelled workstream is recorded as
+  cancelled with its reason; it is never quietly counted as passed.
+- The Constitution §7 automation-tolerance bet is no longer validated in Tier 0. It is
+  carried into M4 as a **named accepted risk** (DEC-026).
+
+`20_TIER0/TIER0_GO_NO_GO.md` still contains the old four-workstream template. It is
+deliberately **not** rewritten yet — OPEN-2 decides its shape, and guessing would
+produce a confident document that has to be redone.
 
 ## M2 · Tier 1 — 核心能力可行性 — 🔒 LOCKED
 Taxonomy, Category-Specific Entity Resolver, Lifecycle Engine, multi-dimensional index

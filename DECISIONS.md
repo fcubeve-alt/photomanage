@@ -456,3 +456,58 @@ any finding, and **FC-1 (MNI-1) remains an open Owner decision** — it is still
 substantive engineering change recommended before the device campaign.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-026 · 2026-09-06 · Owner cancels T0-C and T0-D; the product is a GO
+**Owner instruction, verbatim in substance:** *"C、D 测试不用做了，我们有结论了。这个 app 一定要做。"*
+
+**Recorded as an Owner WHAT decision (E-02).** The Owner defines what gets built and
+what evidence is worth buying. This is not a technical finding and is not presented as
+one.
+
+**What is cancelled.**
+- **T0-C2** — the three landing pages, the traffic buy and the fake-door payment test.
+  **HG-2 is closed**: the domain (~$12) and the ~$500–700 ad spend will not happen.
+  The built pages stay in the repo unpublished; they cost nothing to keep and would
+  cost real time to rebuild.
+- **T0-D** — the Autonomous Management Value Proposition study. The protocol, the four
+  ledger variants, the scoring sheet and the analyzer stay in the repo.
+- Neither deliverable will be written. The gate cannot be completed as originally
+  specified, and that is a consequence of the decision, not a defect to paper over.
+
+**Concern registered once, then the decision stands.**
+- **Cancelling C costs little.** The gate logic already said a C failure triggers a
+  commercial-model pivot, never a kill (DEC-002). T0-C1 is complete and gives the
+  market picture; C2 would only have priced it. Skipping it defers a pricing question,
+  not a survival one.
+- **Cancelling D is the one with a real cost.** Constitution §7 requires the
+  automation-tolerance bet — *will users let the system act on their library, not just
+  search it* — to be validated by real users rather than assumed by the people building
+  it. DEC-014 added D precisely because Tier 0 contained no such test. Cancelling does
+  not answer that question; it moves it to beta, where the same finding costs a rebuild
+  instead of a protocol. **Recorded as an accepted, named risk carried into M4, not as
+  a closed question.**
+- The Owner was told this and reaffirmed. Proceeding.
+
+**What does NOT change: T0-A.**
+A is not a market question, it is a physics question — whether an iPhone can index a
+100k-asset library without thermal death, memory kill or an unrecoverable background
+loss. Deciding to build the product does not decide that, and if A fails the product
+has to change shape regardless of how much anyone wants it. **A is now the only
+remaining Tier 0 kill test** and moves to the top of the queue.
+
+**OPEN-2 — awaiting Owner ruling: does T0-B survive?**
+B asks whether users prefer this over Apple Photos as the place they go to find things.
+With the build decision made, B stops being a kill test and becomes design research; it
+could run against a beta instead of a prototype. Not decided unilaterally. Until the
+Owner rules, T0-B materials are frozen, not deleted, and no further sourcing effort is
+spent on the 136 foreground images.
+
+**Consequences to carry.** `MASTER_PLAN` M1, `MISSION_SPEC` success criteria and
+`20_TIER0/TIER0_GO_NO_GO.md` were all written around a four-workstream gate and now
+describe a programme that will not run. They are corrected here for A/C/D; the B-shaped
+hole is left explicitly marked as OPEN-2 rather than guessed at, so the next session
+finds a stated gap instead of a confident fiction.
+
+**Status.** ACTIVE.

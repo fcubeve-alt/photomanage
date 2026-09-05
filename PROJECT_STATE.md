@@ -45,24 +45,27 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 **`NO DATA` is never a soft PASS** — a workstream not run leaves the gate INCOMPLETE, and Tier 1 may not begin on partial evidence.
 
 ## Doing now
-**All four Tier 0 workstreams are instrumented to the boundary of an Owner gate. What is missing is data, not tooling** — see the `MASTER_PLAN` M1 table for the per-workstream status.
+**Owner decision 2026-09-06 (DEC-026): T0-C and T0-D are cancelled. The product is a GO.**
+**T0-A is now the only remaining Tier 0 kill test** — it is a physics question, not a market one, and deciding to build does not decide whether an iPhone can carry a 100k-asset library.
+
+**OPEN-2 — awaiting Owner ruling: does T0-B survive?** With the build decision made, B stops being a kill test and becomes design research that could run against a beta. Its materials are **frozen, not deleted**, and no further effort goes into the 136 foreground images until this is answered.
 
 Verified on this machine 2026-09-06, not inherited from the previous one (DEC-025):
 - Both analyzer self-tests pass, including under a non-UTF-8 console.
-- `build_prototype.py` and `build_landing.py` rebuild byte-identical output.
+- `build_prototype.py`, `build_landing.py` and `build_sourcing_worksheet.py` rebuild byte-identical output.
 - The test library reproduces from SEED 20260822 — 10,000 assets, 136 foreground, every path validated against `taxonomy.py`.
 - `recovery_check.py --strict`: 33 checks, 0 FAIL.
 
-**DEC-015's condition is MET** — the compile is proven green at $0. **HG-1 is the Owner's move: enrol in Apple Developer ($99) and add the 8 signing secrets.** Then `ios-testflight.yml` delivers to the device fleet and the real A1–A4 measurement can begin. Note `gh` must be installed here first.
+**T0-A critical path:**
+1. ~~Harness compiles green at $0~~ — ✅ done (DEC-018).
+2. ~~Harness **runs** on the iOS Simulator at $0~~ — ✅ **added 2026-09-06.** `ios-build.yml` now runs a unit-test target on a booted simulator: CSV column parity and comma escaping, the C-1 OCR gate decisions, `dHash` stability, index cursor persistence across restarts, and the DEC-009 rule that cleanup can only ever reach assets the harness created. **This is logic verification, never an A1–A4 result** — the simulator runs on the runner's CPU and has no thermal state, no battery, no Neural Engine and no real photo library (P-02, PF-01).
+3. **FC-1 (MNI-1) — recommended before spending the $99.** The harness computes and indexes `dHash`, then never queries it, so it re-runs gated OCR and an embedding on exact re-downloads. **A1 is therefore measuring the naive baseline rather than the intended architecture, and could fail a budget the real design meets** (`ARCHITECTURE_METHODOLOGY.md` FC-1). Owner decision.
+4. **HG-1 — the Owner's move.** Apple Developer enrolment ($99) + 8 signing secrets. Then `ios-testflight.yml` delivers to the iPhone fleet and A1–A4 can actually be measured.
 
-**Build-ahead work still open, needing no approval:**
-1. **Source or curate the 136 foreground test-library images** per `TEST_LIBRARY_SPEC.md` §3. This is the last thing standing between HG-4 being granted and T0-B/T0-D actually running; the placeholders are deliberately stamped so they cannot be used in a real session by accident.
-2. **FC-1 (MNI-1) — Owner decision, recommended before the device campaign.** The harness computes and indexes `dHash`, then never queries it, so it re-runs gated OCR and an embedding on exact re-downloads. **A1 is therefore measuring the naive baseline rather than the intended architecture, and could fail a budget the real design meets** (`ARCHITECTURE_METHODOLOGY.md` FC-1).
-
-⚠️ **Awaiting Owner approval of spend only.** Nothing purchased.
-- **$99 Apple Developer: approved in principle, paid only AFTER a successful cloud-Mac compile** (DEC-015) — that compile is green.
-- **$29.99 Lucent: cancelled** — Owner decided not to download or buy it (DEC-013).
-- ~~Scaleway EUR 2.64~~ — **withdrawn** (DEC-016), GitHub Actions replaced it at $0.
+⚠️ **Spend status.** Nothing purchased.
+- **$99 Apple Developer** — approved in principle, condition met (green build at $0).
+- ~~$500–700 ad spend + domain~~ — **cancelled with T0-C2 (DEC-026).**
+- ~~$29.99 Lucent~~ — cancelled (DEC-013). ~~Scaleway EUR 2.64~~ — withdrawn (DEC-016).
 
 ## Work queue
 
@@ -123,9 +126,12 @@ Every Tier-0 workstream is prepared to the boundary of an Owner gate, and every 
 Two items of build-ahead work remain that need no approval (the 136 foreground images, and the FC-1 recommendation), so the mission is **not** blocked (S-03). Do not enter WAITING. When those two are exhausted, the S-04 condition for escalating **HG-9** is genuinely reached and should be escalated rather than filled with invented work.
 
 ## Next action for a recovering session
-**Curate the 136 foreground test-library images**, working from `20_TIER0/study_assets/FOREGROUND_SOURCING_WORKSHEET.md` (generated 2026-09-06; it carries the per-asset list, the route per category and the constraints that decide whether each task is answerable). Answer its two Owner questions first — the route for the 49 `people_family` assets, and confirmation of the specimen-document line. Spec: `TEST_LIBRARY_SPEC.md` §3 — they carry every task target and hard negative, the placeholders are stamped unusable on purpose, and they are the only remaining thing between "HG-4 granted" and "T0-B running the same afternoon". T0-B and T0-D need no Mac, no TestFlight and no $99, so this is the cheapest path to answering two of the four kill questions.
+**T0-A, and only T0-A.** C and D are cancelled and B is OPEN-2 (DEC-026), so the queue is short and the order is fixed:
+1. Confirm the simulator test step is green (`gh run list --workflow=ios-build.yml`). It runs the harness logic on a booted iOS Simulator at $0 and catches everything that does not need hardware.
+2. Put **FC-1** to the Owner — as written, A1 measures the naive baseline instead of the intended Minimum-Necessary-Inference design and could fail a budget the real architecture meets. Cheaper to fix before the device campaign than to re-run it.
+3. **HG-1 is the Owner's move**: Apple Developer enrolment ($99) + the 8 signing secrets. Everything downstream of it is already written and green.
 
-Second, put **FC-1** in front of the Owner as a decision (`ARCHITECTURE_METHODOLOGY.md`): as written the harness measures the naive baseline, not the intended Minimum-Necessary-Inference design, so **A1 is pessimistic and could fail a budget the real architecture meets**.
+Do **not** spend more effort on the 136 foreground test-library images until OPEN-2 is answered — that work only pays off if T0-B still runs.
 
 ## Key findings so far (do not re-derive)
 - Cleaner rung is commoditised: 10 cleaners all free-to-install, top app 701k ratings, one competitor giving cleaning away free. Do **not** test a Cleaner-rung price.

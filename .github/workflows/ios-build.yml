@@ -69,6 +69,31 @@ jobs:
             ONLY_ACTIVE_ARCH=NO \
             | tee build.log
 
+      # Compiling is not working. This actually RUNS the harness logic on a booted
+      # iOS Simulator, still unsigned and still $0, and catches the failures that do
+      # not need hardware: CSV column drift, an OCR gate that passes everything, an
+      # index that loses its resume cursor, a cleanup list that could reach a real
+      # photo.
+      #
+      # It is NOT a device measurement and must never be reported as one. The
+      # Simulator runs on the runner's own CPU and has no thermal state, no battery,
+      # no Neural Engine and no real photo library, which is precisely what A1-A4
+      # measure (P-02, PF-01).
+      - name: Test on the iOS Simulator (logic only — NOT a device result)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          DEVICE=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for rt,v in sorted(d.items(),reverse=True) if 'iOS' in rt for x in v if x.get('isAvailable')))")
+          echo "simulator udid: $DEVICE"
+          xcodebuild test \
+            -project PVMBench.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee test.log
+
       # Full diagnostics in one pass: xcodebuild reports every error per run, so a
       # single log lets us fix them all in one batch instead of one CI round each.
       - name: Summarise errors
@@ -76,15 +101,17 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           echo "===== ERRORS ====="
-          grep -E "error:" build.log | sort -u || true
+          grep -E "error:" build.log test.log 2>/dev/null | sort -u || true
           echo "===== WARNINGS (first 40) ====="
-          grep -E "warning:" build.log | sort -u | head -40 || true
+          grep -E "warning:" build.log 2>/dev/null | sort -u | head -40 || true
 
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
-          path: ${{ env.PROJECT_DIR }}/build.log
+          path: |
+            ${{ env.PROJECT_DIR }}/build.log
+            ${{ env.PROJECT_DIR }}/test.log
           retention-days: 7
           if-no-files-found: ignore

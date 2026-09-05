@@ -66,3 +66,36 @@ targets:
       - sdk: Vision.framework
       - sdk: BackgroundTasks.framework
       - sdk: libsqlite3.tbd
+
+  # Runs on the iOS Simulator on a GitHub Actions macOS runner, unsigned, for $0.
+  # It exists to catch the failures that do NOT need a real iPhone — CSV column
+  # drift, an OCR gate that passes everything, an index that loses its cursor —
+  # before the $99 enrolment and before the device campaign.
+  #
+  # It can never produce an A1-A4 result. The Simulator runs on the Mac's CPU and
+  # has no thermal state, no battery, no Neural Engine and no real photo library
+  # (P-02, PF-01). Nothing timed here is an iPhone number.
+  PVMBenchTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PVMBenchTests
+    dependencies:
+      - target: PVMBench
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.bench.tests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
+
+schemes:
+  PVMBench:
+    build:
+      targets:
+        PVMBench: all
+        PVMBenchTests: [test]
+    test:
+      targets:
+        - PVMBenchTests
+    run:
+      config: Debug

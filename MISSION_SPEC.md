@@ -16,7 +16,7 @@ Mission-level success for this phase = a defensible `TIER0_GO_NO_GO.md` backed b
 - **A** Device: 100k-asset first index completes on real iPhones (3 tiers) without thermal death or unrecoverable background kill, and updates incrementally.
 - **B** Retrieval Entry: in blind/semi-blind task tests against native Apple Photos, a majority of **external** users prefer this product as their first stop for finding visual assets.
 - **C** Payment: a real conversion signal (not a survey) at the *Continuous Automatic Management* rung or higher.
-Gate: A or B FAIL → NO-GO/PIVOT. C FAIL → **COMMERCIAL MODEL PIVOT only** (does not kill the product). A+B+C PASS → Tier 1.
+**Superseded 2026-09-06 by DEC-026.** The Owner has decided the product is a GO and cancelled **C** and **D**; **B** is frozen pending OPEN-2. **A is the only remaining kill test** — it asks a physics question that the build decision does not answer. A3 failure is fatal; an A1-only failure degrades scope rather than killing. The Constitution §7 automation-tolerance bet is now a named accepted risk carried into M4 rather than a Tier 0 finding.
 
 ## IN SCOPE (now)
 - Tier 0 Workstreams **A, B, C and D** and their required deliverables. D was added by Owner instruction (DEC-014) to satisfy Constitution §7, which requires the automation-tolerance bet be validated by real users.
@@ -43,9 +43,9 @@ Do **not** build, even "while we're here":
 | Gate | Trigger | Status |
 |---|---|---|
 | **HG-1** | Apple Developer Program enrolment — $99, legal name, own credit card, 2FA, possibly photo ID. Then 8 signing secrets | **BLOCKING T0-A.** Precondition satisfied: the harness compiles green at $0 (DEC-018), which was the rule DEC-015 set |
-| **HG-2** | Real payment or spend | **BLOCKING T0-C2** — domain (~$12) + ~$500–700 ad spend, plus Owner approval of positioning, the $39 price and the disclosure wording. *The cloud-Mac rental was withdrawn (DEC-016) — GitHub Actions replaced it at $0* |
+| ~~**HG-2**~~ | Real payment or spend | **CLOSED 2026-09-06 (DEC-026)** — T0-C2 cancelled, no domain and no ad spend. *Formerly: BLOCKING T0-C2* — domain (~$12) + ~$500–700 ad spend, plus Owner approval of positioning, the $39 price and the disclosure wording. *The cloud-Mac rental was withdrawn (DEC-016) — GitHub Actions replaced it at $0* |
 | **HG-3** | Access to a Mac / Xcode for Tier 0-A | ✅ **RESOLVED at $0** (DEC-016) — GitHub Actions standard arm64 macOS runners |
-| **HG-4** | Recruiting real external test users | **BLOCKING T0-B and T0-D.** n ≥ 15 (raised from 10 — DEC-021). **Needs no Mac and no spend**: the cheapest path to answering two of the four kill questions |
+| **HG-4** | Recruiting real external test users | **T0-D cancelled (DEC-026); T0-B frozen pending OPEN-2.** *Formerly: BLOCKING T0-B and T0-D.* n ≥ 15 (raised from 10 — DEC-021). **Needs no Mac and no spend**: the cheapest path to answering two of the four kill questions |
 | **HG-5** | Irreversible or high-risk operations | DORMANT |
 | **HG-6** | Material product scope change | DORMANT |
 | **HG-7** | Two reasonable technical routes with major long-term architectural divergence | DORMANT |

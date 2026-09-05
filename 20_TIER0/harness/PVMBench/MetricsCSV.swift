@@ -105,6 +105,13 @@ enum MetricsCSV {
 
     private static func f(_ d: Double) -> String { String(format: "%.3f", d) }
 
+    /// One CSV record from already-ordered fields. Split out of `append` so a test can
+    /// verify the escaping without writing into the app container — the "iPhone14,5"
+    /// comma has already cost one silent column shift once.
+    static func csvLine(_ fields: [String]) -> String {
+        fields.map(escape).joined(separator: ",")
+    }
+
     private static func escape(_ s: String) -> String {
         if s.contains(",") || s.contains("\"") || s.contains("\n") {
             return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
@@ -132,7 +139,7 @@ enum MetricsCSV {
             print("[MetricsCSV] REFUSING TO WRITE: \(f.count) fields vs \(columnCount) columns")
             return
         }
-        let line = f.map(escape).joined(separator: ",") + "\n"
+        let line = csvLine(f) + "\n"
         let u = url
         if !FileManager.default.fileExists(atPath: u.path) {
             try? (header + "\n").write(to: u, atomically: true, encoding: .utf8)
