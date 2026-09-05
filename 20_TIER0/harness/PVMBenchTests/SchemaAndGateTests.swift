@@ -141,37 +141,78 @@ final class Layer1SignalsTests: XCTestCase {
         }
     }
 
+    /// dHash sets a bit only where a pixel is BRIGHTER than the one to its right, so
+    /// the test image has to contain a bright-to-dark horizontal step. The first
+    /// version of this test used dark-to-bright and hashed to 0 — see
+    /// `testAWholeClassOfImagesHashesToZero` below, which keeps that finding rather
+    /// than discarding it as a broken test.
+    private func brightToDarkStep() -> UIImage {
+        image { ctx, s in
+            ctx.setFillColor(UIColor.white.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
+            ctx.setFillColor(UIColor.black.cgColor)
+            ctx.fill(CGRect(x: s.width / 2, y: 0, width: s.width / 2, height: s.height))
+        }
+    }
+
     /// FC-1 depends on this: the same bytes must produce the same hash, or the
     /// duplicate-skip the Minimum Necessary Inference architecture calls for can
     /// never fire.
     func testIdenticalImagesHashIdentically() {
-        let a = image { ctx, s in
-            ctx.setFillColor(UIColor.white.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
-            ctx.setFillColor(UIColor.black.cgColor); ctx.fill(CGRect(x: 0, y: 0, width: s.width / 2, height: s.height))
-        }
-        let b = image { ctx, s in
-            ctx.setFillColor(UIColor.white.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
-            ctx.setFillColor(UIColor.black.cgColor); ctx.fill(CGRect(x: 0, y: 0, width: s.width / 2, height: s.height))
-        }
+        let a = brightToDarkStep()
+        let b = brightToDarkStep()
         XCTAssertEqual(Layer1.dHash(a), Layer1.dHash(b))
-        XCTAssertNotEqual(Layer1.dHash(a), 0, "a uniform-zero hash means the draw failed, not that the images matched")
+        XCTAssertNotEqual(Layer1.dHash(a), 0,
+                          "a zero hash here would mean the draw failed, not that the images matched")
     }
 
     func testVisiblyDifferentImagesHashDifferently() {
-        let leftHalf = image { ctx, s in
+        let verticalStep = brightToDarkStep()
+        let horizontalBands = image { ctx, s in
             ctx.setFillColor(UIColor.white.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
-            ctx.setFillColor(UIColor.black.cgColor); ctx.fill(CGRect(x: 0, y: 0, width: s.width / 2, height: s.height))
+            ctx.setFillColor(UIColor.black.cgColor)
+            // Bright-to-dark steps in the top half only, so both images produce a
+            // non-zero hash and the comparison is meaningful.
+            ctx.fill(CGRect(x: s.width / 2, y: 0, width: s.width / 2, height: s.height / 2))
         }
-        let topHalf = image { ctx, s in
-            ctx.setFillColor(UIColor.white.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
-            ctx.setFillColor(UIColor.black.cgColor); ctx.fill(CGRect(x: 0, y: 0, width: s.width, height: s.height / 2))
+        XCTAssertNotEqual(Layer1.dHash(verticalStep), Layer1.dHash(horizontalBands))
+    }
+
+    /// **A real property of the harness, found by the simulator run on 2026-09-06.**
+    ///
+    /// `dHash` returns 0 for any image with no bright-to-dark horizontal step — a
+    /// dark-to-bright gradient, a flat colour, a uniform-row image. It ALSO returns 0
+    /// when it cannot get a `cgImage` at all. Those two are indistinguishable.
+    ///
+    /// This is harmless today, because nothing reads `dhash` back (that is MNI-1).
+    /// It stops being harmless the moment **FC-1** lands and a dHash match authorises
+    /// skipping OCR and the embedding: every zero-hash asset would collide with every
+    /// other zero-hash asset AND with every hash failure, and unrelated photos would
+    /// be silently treated as duplicates of each other.
+    ///
+    /// Locked in as a test so FC-1 cannot be implemented without meeting it.
+    func testAWholeClassOfImagesHashesToZero() {
+        let darkToBright = image { ctx, s in
+            ctx.setFillColor(UIColor.black.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
+            ctx.setFillColor(UIColor.white.cgColor)
+            ctx.fill(CGRect(x: s.width / 2, y: 0, width: s.width / 2, height: s.height))
         }
-        XCTAssertNotEqual(Layer1.dHash(leftHalf), Layer1.dHash(topHalf))
+        let flat = image { ctx, s in
+            ctx.setFillColor(UIColor.gray.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
+        }
+        XCTAssertEqual(Layer1.dHash(darkToBright), 0)
+        XCTAssertEqual(Layer1.dHash(flat), 0)
+        XCTAssertEqual(Layer1.dHash(darkToBright), Layer1.dHash(flat),
+                       "two unrelated images share hash 0 — a dHash match alone must "
+                       + "never authorise skipping work (FC-1)")
     }
 
     /// The gate's cheap proxy must actually separate the two cases it exists to
     /// separate. If a blank wall scores as high as a page of text, the gate degrades
     /// into "OCR everything" without anyone noticing.
+    ///
+    /// Stripe width matters: `textLikelihood` reduces to 32x32, so anything finer
+    /// than ~4 source pixels averages away into flat grey. The first version of this
+    /// test used 2px stripes on a 128px image and measured its own aliasing.
     func testTextLikelihoodRanksStripesAboveFlatColour() {
         let flat = image { ctx, s in
             ctx.setFillColor(UIColor.gray.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
@@ -181,11 +222,27 @@ final class Layer1SignalsTests: XCTestCase {
             ctx.setFillColor(UIColor.black.cgColor)
             var x: CGFloat = 0
             while x < s.width {
-                ctx.fill(CGRect(x: x, y: 0, width: 2, height: s.height))
-                x += 4
+                ctx.fill(CGRect(x: x, y: 0, width: 8, height: s.height))
+                x += 16
             }
         }
-        XCTAssertGreaterThan(Layer1.textLikelihood(stripes), Layer1.textLikelihood(flat))
+        let stripeScore = Layer1.textLikelihood(stripes)
+        XCTAssertGreaterThan(stripeScore, Layer1.textLikelihood(flat))
+        XCTAssertGreaterThan(stripeScore, 0.55,
+                             "text-like content must clear the C-1 gate threshold")
+    }
+
+    /// Observed, not asserted as desirable: a perfectly flat image scores 0.50 —
+    /// entirely from the flat-background bonus — against a gate threshold of 0.55.
+    /// A blank wall therefore sits 0.05 below the line. Recorded so the margin is a
+    /// known number before the device campaign, not a surprise during it.
+    func testFlatImageScoreIsCloseToTheGateThreshold() {
+        let flat = image { ctx, s in
+            ctx.setFillColor(UIColor.gray.cgColor); ctx.fill(CGRect(origin: .zero, size: s))
+        }
+        let score = Layer1.textLikelihood(flat)
+        XCTAssertEqual(score, 0.5, accuracy: 0.02)
+        XCTAssertLessThan(score, 0.55, "a flat image must not trip the OCR gate")
     }
 }
 

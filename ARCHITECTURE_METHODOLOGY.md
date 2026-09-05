@@ -203,13 +203,33 @@ the Execution Index.
 
 | ID | Change | When | Blocking? |
 |---|---|---|---|
-| **FC-1** | Skip OCR + embedding on exact-duplicate `dHash` hits; link to the existing record instead. Record `dedup_skipped` in the CSV | **Before the T0-A device campaign** (Owner decision) | No |
+| **FC-1** | Skip OCR + embedding on exact-duplicate `dHash` hits; link to the existing record instead. Record `dedup_skipped` in the CSV. **Precondition FC-1a below is mandatory** | **Before the T0-A device campaign** (Owner decision) | No |
 | **FC-2** | State "photos only, no video" as an explicit limitation in the T0-A result and in `TIER0_GO_NO_GO.md` | When T0-A is written up | No |
 | **FC-3** | Add video to the Tier 1 test corpus and define the Video Memory Record schema | **Tier 1** | Yes, for any video claim |
 | **FC-4** | Implement `codec / metadata → scene & change detection → segments → selective understanding → Video Memory Record` | **Tier 2** | Yes |
 | **FC-5** | Video records enter the same Unified Visual Memory Graph; retrieval returns photos *and* video with timestamp jump | **Tier 2** | Yes |
 | **FC-6** | Re-scope T1-A and T2-E around candidate reduction rather than whole-library classification | **Tier 1 protocol authoring** | No |
 | **FC-7** | Make Candidate Reduction an explicit named stage in the architecture, alongside Constitution §25 | Tier 1 architecture | No |
+
+### FC-1a · `dHash == 0` is not a duplicate — measured, not theorised
+Found on 2026-09-06 by the new iOS Simulator test step, before any device existed.
+
+`Layer1.dHash` sets a bit only where a pixel is **brighter than the one to its right**.
+An image with no bright-to-dark horizontal step — a dark-to-bright gradient, a flat
+colour, a uniform-row image — therefore hashes to **0**. So does every image the
+function fails on: `guard let cg = image.cgImage else { return 0 }`.
+
+**Two unrelated photos, and every hash failure, share the value 0.** This is harmless
+today precisely *because* nothing reads `dhash` back — that is MNI-1. It becomes a data
+loss the moment FC-1 lands and a dHash match authorises skipping OCR and the embedding:
+unrelated assets would be linked as duplicates of each other, and a failed hash would
+look like a confident match.
+
+**FC-1 may not be implemented without, at minimum:** a distinct sentinel for "not
+hashed" separate from the legitimate hash 0, and a confirming comparison (byte size, or
+a second signal) before any skip is taken. Locked in as
+`Layer1SignalsTests.testAWholeClassOfImagesHashesToZero`, so FC-1 cannot ship without
+meeting it.
 
 ## What did NOT change
 Product goals · Visual Library taxonomy · risk grading R0–R6 · lifecycle management ·
