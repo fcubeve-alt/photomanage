@@ -12,14 +12,15 @@ Overwrite the CURRENT block at the end of every session. Template kept below it.
 | Branch | `main` |
 | Full SHA | see `git log -1 --format=%H` — this session starts from `5abd016` |
 | Stage | M1 / Tier 0 — 生死开关 |
-| Session did | Cold-start recovery on a **new computer** (33 checks, 0 FAIL). Found and fixed **PF-10**: both Tier 0 analyzers died with `UnicodeEncodeError` under this machine's cp936 console, *after* completing their analysis. Pinned UTF-8 stdout in all seven Python entry points; added `tools-check.yml` CI with a verified negative control; re-verified generator determinism and manifest reproducibility on this machine; corrected stale coordinates and a stale build-ahead list in `PROJECT_STATE.md`. **DEC-025.** |
-| Next action | Curate the 136 foreground test-library images (`TEST_LIBRARY_SPEC.md` §3) — the last thing between HG-4 and T0-B/T0-D running. Then put **FC-1** to the Owner as a decision. |
+| Session did | Cold-start recovery on a **new computer** (33 checks, 0 FAIL). Found and fixed **PF-10**: both Tier 0 analyzers died with `UnicodeEncodeError` under this machine's cp936 console, *after* completing their analysis. Pinned UTF-8 stdout in all seven Python entry points; added `tools-check.yml` CI with a verified negative control; re-verified generator determinism and manifest reproducibility on this machine; corrected stale coordinates and a stale build-ahead list in `PROJECT_STATE.md` (**DEC-025**). Then generated `FOREGROUND_SOURCING_WORKSHEET.md` — the 136 foreground images as an executable list, with the 8 task-constraint counts **verified against the manifest** instead of transcribed. |
+| Next action | **Two Owner questions first** (top of `FOREGROUND_SOURCING_WORKSHEET.md`): the sourcing route for the 49 `people_family` assets, and confirmation of the specimen-document line. Then source the 136 images from that worksheet. Separately, put **FC-1** to the Owner as a decision. |
 
 > ⚠️ **TOOLING — read before running anything.**
 > **The previous machine's git trap is gone.** git here is **2.50.0**, on `PATH`, and reaches GitHub unprefixed. Ignore any older instruction to prefix `C:\Users\admin\tools` — that machine no longer exists (DEC-018 is historical).
 > **`gh` is NOT installed on this machine.** Install GitHub CLI and `gh auth login` as `fcubeve-alt` (scopes `repo` + `workflow`) before adding HG-1 secrets or dispatching a workflow.
 > **The console is cp936.** Python entry points pin their own stdout to UTF-8 — copy that snippet into any new script that prints `⚠️`/`✅`, or it will die on `print` after doing all its work (PF-10).
 > Python here is **3.14.3**; `pillow` is available (needed only to render test-library pixels).
+> **Nothing has been pushed since the machine move** — `git log origin/main..main` will show the local commits. Install `gh` first, then push.
 
 **Must read (in order):** `PROJECT_STATE.md` → this file → `CONSTITUTION_UNDERSTANDING.md` → `OPERATING_RULES.md` → `VALIDATION_MATRIX.md`.
 Only if you need product-level detail: `10_SOURCE_DOCS/_extracted_text/L1_PRODUCT_CONSTITUTION_v1.3.txt`.
