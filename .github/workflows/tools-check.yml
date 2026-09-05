@@ -54,8 +54,9 @@ jobs:
       - name: Generators are deterministic
         run: |
           cd 20_TIER0/study_assets && python build_prototype.py > /dev/null && cd -
+          cd 20_TIER0/study_assets && python build_sourcing_worksheet.py > /dev/null && cd -
           cd 20_TIER0/landing && python build_landing.py > /dev/null && cd -
-          git diff --exit-code -- 20_TIER0/study_assets/prototype 20_TIER0/landing/site \
+          git diff --exit-code -- 20_TIER0/study_assets/prototype 20_TIER0/landing/site 20_TIER0/study_assets/FOREGROUND_SOURCING_WORKSHEET.md \
             || { echo "::error::a generator produced different output from the committed one"; exit 1; }
 
       - name: Test-library manifest is reproducible from the seed

@@ -77,6 +77,7 @@ Verified on this machine 2026-09-06, not inherited from the previous one (DEC-02
 6. ~~**T0-A-HARNESS** Swift benchmark harness~~ — ✅ **DONE** → `20_TIER0/harness/` (13 files, ~1,400 lines, **NEVER COMPILED** — see README known gaps)
 7. ~~**T0-B/D-ASSETS** Study materials~~ — ✅ **DONE** → `20_TIER0/study_assets/` (generator + 4 ledger variants + facilitator script + 2 scoring sheets)
 8. ~~**T0-C2-PREP** Landing-page plan + copy~~ — DONE → `20_TIER0/T0C2_LANDING_PAGE_PLAN.md`
+9. ~~**T0-B/D-SOURCING** Foreground image sourcing worksheet~~ — ✅ **DONE 2026-09-06** → `20_TIER0/study_assets/FOREGROUND_SOURCING_WORKSHEET.md`. Generated from the manifest, and it **verifies the 8 section-3 constraints against the library** rather than transcribing them — a second white-top Ben now makes the generator refuse to write. Two Owner decisions are flagged at the top of it.
 
 ### RESEARCH
 - Apple-native on-device capability survey (Vision, Core ML, Live Text/OCR, PhotoKit limits) — FACT/INTERPRETATION separated, feeds the T0-A compute budget and the P-04 route decision. **No model dependency may be added without benchmark evidence.**
@@ -122,7 +123,7 @@ Every Tier-0 workstream is prepared to the boundary of an Owner gate, and every 
 Two items of build-ahead work remain that need no approval (the 136 foreground images, and the FC-1 recommendation), so the mission is **not** blocked (S-03). Do not enter WAITING. When those two are exhausted, the S-04 condition for escalating **HG-9** is genuinely reached and should be escalated rather than filled with invented work.
 
 ## Next action for a recovering session
-**Curate the 136 foreground test-library images** per `20_TIER0/study_assets/TEST_LIBRARY_SPEC.md` §3 — they carry every task target and hard negative, the placeholders are stamped unusable on purpose, and they are the only remaining thing between "HG-4 granted" and "T0-B running the same afternoon". T0-B and T0-D need no Mac, no TestFlight and no $99, so this is the cheapest path to answering two of the four kill questions.
+**Curate the 136 foreground test-library images**, working from `20_TIER0/study_assets/FOREGROUND_SOURCING_WORKSHEET.md` (generated 2026-09-06; it carries the per-asset list, the route per category and the constraints that decide whether each task is answerable). Answer its two Owner questions first — the route for the 49 `people_family` assets, and confirmation of the specimen-document line. Spec: `TEST_LIBRARY_SPEC.md` §3 — they carry every task target and hard negative, the placeholders are stamped unusable on purpose, and they are the only remaining thing between "HG-4 granted" and "T0-B running the same afternoon". T0-B and T0-D need no Mac, no TestFlight and no $99, so this is the cheapest path to answering two of the four kill questions.
 
 Second, put **FC-1** in front of the Owner as a decision (`ARCHITECTURE_METHODOLOGY.md`): as written the harness measures the naive baseline, not the intended Minimum-Necessary-Inference design, so **A1 is pessimistic and could fail a budget the real architecture meets**.
 

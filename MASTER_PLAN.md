@@ -79,6 +79,7 @@ product** — everything to date is validation instrumentation.
 | Harness compiles | `.github/workflows/ios-build.yml` on every harness change |
 | Recovery still viable | `.github/workflows/recovery-check.yml` on every `.md` change |
 | Taxonomy ↔ test library agree | `generate_test_library.py` aborts on any path not in `taxonomy.py` |
+| Study tasks stay answerable | `build_sourcing_worksheet.py` verifies the 8 constraint counts against the manifest and aborts on any mismatch |
 | CSV schema ↔ writer agree | `analyze_benchmark.py` aborts on header mismatch |
 | Landing arms differ only as intended | `build_landing.py` aborts on drift |
 | Analyzers still run (incl. non-UTF-8 console) | `.github/workflows/tools-check.yml` on every `.py` change — PF-10 |
