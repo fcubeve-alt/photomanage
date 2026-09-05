@@ -43,7 +43,7 @@ Do **not** build, even "while we're here":
 | Gate | Trigger | Status |
 |---|---|---|
 | **HG-1** | Apple Developer Program enrolment — $99, legal name, own credit card, 2FA, possibly photo ID. Then 8 signing secrets | **BLOCKING T0-A.** Precondition satisfied: the harness compiles green at $0 (DEC-018), which was the rule DEC-015 set |
-| ~~**HG-2**~~ | Real payment or spend | **CLOSED 2026-09-06 (DEC-026)** — T0-C2 cancelled, no domain and no ad spend. *Formerly: BLOCKING T0-C2* — domain (~$12) + ~$500–700 ad spend, plus Owner approval of positioning, the $39 price and the disclosure wording. *The cloud-Mac rental was withdrawn (DEC-016) — GitHub Actions replaced it at $0* |
+| **HG-2** | Real payment or spend | **CLOSED 2026-09-06 (DEC-026)** — T0-C2 cancelled, no domain and no ad spend. *Formerly: BLOCKING T0-C2* — domain (~$12) + ~$500–700 ad spend, plus Owner approval of positioning, the $39 price and the disclosure wording. *The cloud-Mac rental was withdrawn (DEC-016) — GitHub Actions replaced it at $0* |
 | **HG-3** | Access to a Mac / Xcode for Tier 0-A | ✅ **RESOLVED at $0** (DEC-016) — GitHub Actions standard arm64 macOS runners |
 | **HG-4** | Recruiting real external test users | **T0-D cancelled (DEC-026); T0-B frozen pending OPEN-2.** *Formerly: BLOCKING T0-B and T0-D.* n ≥ 15 (raised from 10 — DEC-021). **Needs no Mac and no spend**: the cheapest path to answering two of the four kill questions |
 | **HG-5** | Irreversible or high-risk operations | DORMANT |
