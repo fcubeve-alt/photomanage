@@ -59,13 +59,43 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: xcodegen generate --spec project.yml
 
+      # `xcrun simctl list` hangs outright when CoreSimulator's service is wedged, and
+      # a hung step does not fail — it runs until the 45-minute job timeout on a runner
+      # billed at ten times the Linux rate. That happened: this step sat for sixteen
+      # minutes on a call that normally takes nine seconds, and had to be cancelled by
+      # hand. So the call gets a two-minute budget, and one retry after restarting the
+      # service, which is the standard remedy for exactly this.
       - name: Pick a simulator
         id: sim
         run: |
-          DEVICE=$(xcrun simctl list devices available --json \
-            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for rt,v in sorted(d.items(),reverse=True) if 'iOS' in rt for x in v if x.get('isAvailable')))")
-          echo "udid=$DEVICE" >> "$GITHUB_OUTPUT"
-          echo "simulator: $DEVICE"
+          python3 - <<'PICK' >> "$GITHUB_OUTPUT"
+          import json, subprocess, sys, time
+
+          def pick():
+              out = subprocess.run(["xcrun", "simctl", "list", "devices", "available",
+                                    "--json"],
+                                   capture_output=True, text=True, timeout=120)
+              devices = json.loads(out.stdout)["devices"]
+              for runtime, entries in sorted(devices.items(), reverse=True):
+                  if "iOS" not in runtime:
+                      continue
+                  for entry in entries:
+                      if entry.get("isAvailable"):
+                          return entry["udid"]
+              raise SystemExit("no available iOS simulator on this runner")
+
+          try:
+              udid = pick()
+          except subprocess.TimeoutExpired:
+              print("simctl hung; restarting CoreSimulator and retrying", file=sys.stderr)
+              subprocess.run(["killall", "-9", "com.apple.CoreSimulator.CoreSimulatorService"],
+                             capture_output=True)
+              time.sleep(5)
+              udid = pick()
+
+          print(f"udid={udid}")
+          print(f"simulator: {udid}", file=sys.stderr)
+          PICK
 
       - name: Build
         working-directory: ${{ env.PROJECT_DIR }}
