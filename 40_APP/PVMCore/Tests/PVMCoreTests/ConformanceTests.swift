@@ -25,11 +25,46 @@ final class ConformanceTests: XCTestCase {
         let action: String?
     }
 
+    /// The fixture as it is written, decoded into a type rather than cast out of
+    /// `Any`. The first version used `JSONSerialization` and `as? [[String: Any]]`,
+    /// which crashed swift-corelibs-foundation outright — "Constant strings cannot be
+    /// deallocated" — because bridging JSON strings through `Any` on Linux is not the
+    /// same code path it is on Apple platforms. Decoding into a struct avoids the
+    /// bridge entirely and is clearer about what the file is allowed to contain.
+    private struct FixtureRow: Decodable {
+        struct Scene: Decodable { let identifier: String; let confidence: Double }
+        struct Face: Decodable { let clusterID: String; let name: String? }
+
+        let assetID: String
+        let createdAt: String?
+        let pixelW: Int
+        let pixelH: Int
+        let byteSize: Int
+        let isScreenshot: Bool
+        let source: String
+        let burstID: String?
+        let lat: Double?
+        let lon: Double?
+        let country: String?
+        let city: String?
+        let contentHash: String?
+        let dhash: String?
+        let ocrRan: Bool
+        let ocrText: String
+        let sceneLabels: [Scene]
+        let faceClusters: [Face]
+    }
+
+    /// Read from the source tree rather than a resource bundle. `Bundle.module` with a
+    /// nil extension is another Linux Foundation path better left alone, and the file
+    /// is right here next to the test.
     private func resource(_ name: String) throws -> Data {
-        let url = try XCTUnwrap(
-            Bundle.module.url(forResource: "Resources/\(name)", withExtension: nil)
-                ?? Bundle.module.url(forResource: name, withExtension: nil),
-            "\(name) is missing — regenerate with: python 40_APP/generate_shared.py")
+        let directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        let url = directory.appendingPathComponent("Resources").appendingPathComponent(name)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            XCTFail("\(name) is missing — regenerate with: python 40_APP/generate_shared.py")
+            throw CocoaError(.fileNoSuchFile)
+        }
         return try Data(contentsOf: url)
     }
 
@@ -44,40 +79,34 @@ final class ConformanceTests: XCTestCase {
     }()
 
     private func loadFixture() throws -> [AssetSignals] {
-        let raw = try JSONSerialization.jsonObject(with: try resource("fixture.json"))
-        let rows = try XCTUnwrap(raw as? [[String: Any]])
+        let rows = try JSONDecoder().decode([FixtureRow].self, from: try resource("fixture.json"))
         return rows.map { row in
-            var s = AssetSignals(assetID: row["assetID"] as? String ?? "")
-            if let iso = row["createdAt"] as? String {
+            var s = AssetSignals(assetID: row.assetID)
+            if let iso = row.createdAt {
                 s.createdAt = ConformanceTests.formatter.date(from: iso)
                 s.modifiedAt = s.createdAt
             }
-            s.pixelW = row["pixelW"] as? Int ?? 0
-            s.pixelH = row["pixelH"] as? Int ?? 0
-            s.byteSize = Int64(row["byteSize"] as? Int ?? 0)
-            s.isScreenshot = row["isScreenshot"] as? Bool ?? false
-            s.source = row["source"] as? String ?? "unknown"
-            s.burstID = row["burstID"] as? String
-            if let lat = row["lat"] as? Double, let lon = row["lon"] as? Double {
+            s.pixelW = row.pixelW
+            s.pixelH = row.pixelH
+            s.byteSize = Int64(row.byteSize)
+            s.isScreenshot = row.isScreenshot
+            s.source = row.source
+            s.burstID = row.burstID
+            if let lat = row.lat, let lon = row.lon {
                 s.geo = GeoFix(lat: lat, lon: lon, source: .exif)
             }
-            let country = row["country"] as? String
-            let city = row["city"] as? String
-            if country != nil || city != nil {
-                s.place = PlaceName(country: country, city: city, confidence: 0.9)
+            if row.country != nil || row.city != nil {
+                s.place = PlaceName(country: row.country, city: row.city, confidence: 0.9)
             }
-            s.contentHash = row["contentHash"] as? String
-            if let d = row["dhash"] as? String { s.dhash = UInt64(d) }
-            s.ocrRan = row["ocrRan"] as? Bool ?? false
-            s.ocrText = row["ocrText"] as? String ?? ""
-            s.sceneLabels = (row["sceneLabels"] as? [[String: Any]] ?? []).compactMap {
-                guard let id = $0["identifier"] as? String,
-                      let c = $0["confidence"] as? Double else { return nil }
-                return SceneLabel(identifier: id, confidence: c)
+            s.contentHash = row.contentHash
+            if let d = row.dhash { s.dhash = UInt64(d) }
+            s.ocrRan = row.ocrRan
+            s.ocrText = row.ocrText
+            s.sceneLabels = row.sceneLabels.map {
+                SceneLabel(identifier: $0.identifier, confidence: $0.confidence)
             }
-            s.faceClusters = (row["faceClusters"] as? [[String: Any]] ?? []).compactMap {
-                guard let id = $0["clusterID"] as? String else { return nil }
-                return FaceCluster(clusterID: id, name: $0["name"] as? String)
+            s.faceClusters = row.faceClusters.map {
+                FaceCluster(clusterID: $0.clusterID, name: $0.name)
             }
             return s
         }
