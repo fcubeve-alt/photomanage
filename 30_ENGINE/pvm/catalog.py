@@ -33,7 +33,7 @@ import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence
 
-from .risk import Proposal, Risk
+from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
@@ -225,7 +225,7 @@ class Catalog:
                 """INSERT OR REPLACE INTO proposals
                    (asset_id,action,risk,reversible,requires_confirmation,auto_applicable,note,why)
                    VALUES(?,?,?,?,?,?,?,?)""",
-                (aid, proposal.action.value, int(proposal.risk), int(proposal.reversible),
+                (aid, proposal.action.value, int(proposal.factors.risk), int(proposal.reversible),
                  int(proposal.requires_confirmation), int(proposal.auto_applicable),
                  proposal.note, proposal.why()))
 
@@ -276,7 +276,7 @@ class Catalog:
             "assignments": one("SELECT COUNT(*) FROM assignments"),
             "needs_review": one("SELECT COUNT(*) FROM assets WHERE needs_review=1"),
             "auto_applicable": one("SELECT COUNT(*) FROM proposals WHERE auto_applicable=1"),
-            "protected": one(f"SELECT COUNT(*) FROM assets WHERE risk>={int(Risk.R4_PEOPLE)}"),
+            "protected": one(f"SELECT COUNT(*) FROM assets WHERE risk>={int(NEVER_DELETE_AT_OR_ABOVE)}"),
             "relations": one("SELECT COUNT(DISTINCT group_key) FROM relations"),
         }
 

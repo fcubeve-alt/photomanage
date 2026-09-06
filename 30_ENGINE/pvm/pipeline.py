@@ -33,10 +33,34 @@ from . import dedup, taxonomy
 from .catalog import BATCH, Catalog
 from .classifier import Classifier
 from .context import LibraryContext, build_context
-from .risk import Risk, classify_risk, propose
+from .risk import (Factors, Risk, classify_risk, lifecycle_of, propose,
+                   recoverability_of)
 from .signals import AssetSignals, Tier
 
 UNSCORED = -1
+
+# How old, relative to the library's own span, a capture has to be before it reads as
+# an old photograph rather than a recent one.
+OLD_PHOTO_YEARS = 15
+
+
+def looks_irreplaceable(asset, c) -> bool:
+    """§6 R6 — 老照片、特殊家庭影像。
+
+    PARTIAL, and deliberately conservative: what actually makes an image irreplaceable
+    is knowledge only the user has, which is §14 Personal Policy and is not built. What
+    can be derived is the signature of a *scanned* old photograph — a person in it, a
+    capture date many years back, and none of the provenance a phone camera leaves. A
+    false positive here costs one protected photo; a false negative costs the photo.
+    The asymmetry decides which way to lean."""
+    if not any(taxonomy.root_of(p) == "People" for p in c.paths):
+        return False
+    if asset.created_at is None or asset.geo is not None:
+        return False
+    if asset.source == "camera":
+        return False
+    age_years = (datetime.now() - asset.created_at).days / 365.25
+    return age_years >= OLD_PHOTO_YEARS
 
 
 @dataclass
@@ -49,6 +73,7 @@ class RunStats:
     by_tier: Counter = field(default_factory=Counter)
     by_tier_spent: Counter = field(default_factory=Counter)
     by_risk: Counter = field(default_factory=Counter)
+    by_action: Counter = field(default_factory=Counter)
     by_root: Counter = field(default_factory=Counter)
     unfiled: int = 0
     needs_review: int = 0
@@ -70,6 +95,7 @@ class RunStats:
             "paid for up to: " + ", ".join(
                 f"{Tier(t).label}={n}" for t, n in sorted(self.by_tier_spent.items())),
             "risk: " + ", ".join(f"{Risk(r).name}={n}" for r, n in sorted(self.by_risk.items())),
+            "action: " + ", ".join(f"{a}={n}" for a, n in sorted(self.by_action.items())),
             f"needs review {self.needs_review}  unfiled {self.unfiled}",
         ]
         return "\n".join(lines)
@@ -101,7 +127,7 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
             continue
         c = classifier.classify(a)
         classifications[a.asset_id] = c
-        catalog.upsert(a, c, Risk(Risk.R6_UNKNOWN), None)
+        catalog.upsert(a, c, Risk.R2_NORMAL, None)
         catalog.db.execute("UPDATE assets SET risk=? WHERE asset_id=?", (UNSCORED, a.asset_id))
         stats.classified += 1
         stats.by_tier[int(c.tier_used)] += 1
@@ -140,21 +166,30 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
             if a is None:
                 continue
             c = classifier.classify(a)
+        is_dup = aid in report.exact_duplicate_of
         risk = classify_risk(
             c,
-            is_exact_duplicate=aid in report.exact_duplicate_of,
-            is_near_duplicate_in_moment=(aid in report.near_duplicate_in_moment
-                                         and aid not in report.protected_distinct),
-            has_unnamed_person=any("unnamed person" in n for n in c.notes),
+            is_exact_duplicate=is_dup,
+            has_person=any("unnamed person" in n for n in c.notes),
+            is_irreplaceable=looks_irreplaceable(a, c),
         )
         age_days = None
         if a.created_at is not None:
             now = datetime.now(a.created_at.tzinfo) if a.created_at.tzinfo else datetime.now()
             age_days = max(0.0, (now - a.created_at).total_seconds() / 86400)
-        proposal = propose(c, risk, duplicate_of=report.exact_duplicate_of.get(aid),
-                           age_days=age_days)
+        factors = Factors(
+            risk=risk,
+            lifecycle=lifecycle_of(c, age_days),
+            confidence=c.primary.confidence if c.primary else 0.0,
+            recoverability=recoverability_of(risk),
+            in_equivalence_group=(aid in report.near_duplicate_in_moment
+                                  and aid not in report.protected_distinct),
+            is_exact_duplicate=is_dup,
+        )
+        proposal = propose(c, factors, duplicate_of=report.exact_duplicate_of.get(aid))
         catalog.upsert(a, c, risk, proposal)
         stats.by_risk[int(risk)] += 1
+        stats.by_action[proposal.action.value] += 1
         stats.scored += 1
     catalog.commit()
 

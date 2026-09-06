@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pvm import pipeline                                     # noqa: E402
 from pvm.catalog import BATCH, Catalog, signals_fingerprint  # noqa: E402
-from pvm.risk import Risk                                    # noqa: E402
+from pvm.risk import ACTING_ACTIONS, NEVER_DELETE_AT_OR_ABOVE  # noqa: E402
 from pvm.signals import AssetSignals, GeoFix, PlaceName      # noqa: E402
 
 LONDON = GeoFix(51.5074, -0.1278)
@@ -172,16 +172,25 @@ class WhatTheCatalogueOwes(CatalogTestCase):
         c.close()
         self.assertEqual(orphans, 0)
 
-    def test_nothing_protected_is_ever_written_as_removable(self):
+    def test_nothing_important_is_ever_written_as_lossy(self):
+        """§6 / Tier 2-A: 高风险类别（R4-R6）零自动删除 — checked in the rows that were
+        actually written, not only in the constructor that wrote them."""
         assets = library(40)
         assets[1].ocr_ran = True
         assets[1].ocr_text = "PASSPORT"
+        assets[2].ocr_ran = True
+        assets[2].ocr_text = "RECEIPT — TOTAL £12.00"
         c = self.open(); pipeline.run(assets, c)
+        marks = ",".join("?" * len(ACTING_ACTIONS))
         bad = c.db.execute(
-            "SELECT COUNT(*) FROM proposals WHERE risk>=? AND action='propose_remove'",
-            (int(Risk.R4_PEOPLE),)).fetchone()[0]
+            f"SELECT COUNT(*) FROM proposals WHERE risk>=? AND action IN ({marks})",
+            (int(NEVER_DELETE_AT_OR_ABOVE), *[a.value for a in ACTING_ACTIONS])).fetchone()[0]
+        stored = c.db.execute(
+            "SELECT risk FROM assets WHERE asset_id='a00002'").fetchone()[0]
         c.close()
         self.assertEqual(bad, 0)
+        self.assertEqual(stored, int(NEVER_DELETE_AT_OR_ABOVE),
+                         "a receipt must be R4 Important, which is where §6 puts it")
 
 
 if __name__ == "__main__":

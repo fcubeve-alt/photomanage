@@ -37,9 +37,11 @@ pvm/kpi.py         the Constitution §18 KPIs — the measures the product is ju
 
 ## Read CONSTRAINTS.md first
 
-`CONSTRAINTS.md` is the register of every binding clause in L1 and L1-B, quoted
-verbatim, with an honest status and the test that proves it: **34 clauses — 21 DONE,
-6 PARTIAL, 4 MISSING.** It exists because this engine was built without reading the
+`CONSTRAINTS.md` is the register of every binding clause in **L1 §1–26, L1-B, and
+L2 Tier 0/1/2**, quoted verbatim, with an honest status and the test that proves it:
+**90 clauses — 36 DONE (40%), 34 PARTIAL (38%), 11 MISSING, 6 out of scope, 3
+principles.** The PARTIAL column is the one to read hardest: a partial clause passes
+its tests and still does not do what the document asks. It exists because this engine was built without reading the
 documents that specify it, and its requirements were reported back to the Owner as
 discoveries (PF-12). `check_constraints.py` runs in CI so that cannot recur quietly: a
 clause cannot be softened by rewording it, and cannot claim completion on an intention.

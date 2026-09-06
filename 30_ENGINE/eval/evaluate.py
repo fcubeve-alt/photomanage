@@ -50,7 +50,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from eval.adapter import ground_truth, load_manifest          # noqa: E402
 from pvm import kpi, pipeline, taxonomy                       # noqa: E402
 from pvm.catalog import Catalog                               # noqa: E402
-from pvm.risk import Action, Risk                             # noqa: E402
+from pvm.risk import (ACTING_ACTIONS, Action,                 # noqa: E402
+                      NEVER_DELETE_AT_OR_ABOVE, Risk, policy_table)
 from pvm.signals import Tier                                  # noqa: E402
 
 # Roots the corpus carries a real signal for.
@@ -153,23 +154,25 @@ def score(truth, predicted) -> dict:
 def safety_audit(catalog: Catalog) -> dict:
     db = catalog.db
     one = lambda sql, *a: db.execute(sql, a).fetchone()[0]
+    marks = ",".join("?" * len(ACTING_ACTIONS))
     protected_removals = one(
-        "SELECT COUNT(*) FROM proposals WHERE risk>=? AND action='propose_remove'",
-        int(Risk.R4_PEOPLE))
+        f"SELECT COUNT(*) FROM proposals WHERE risk>=? AND action IN ({marks})",
+        int(NEVER_DELETE_AT_OR_ABOVE), *[a.value for a in ACTING_ACTIONS])
     unexplained = one(
         """SELECT COUNT(*) FROM assignments a
            WHERE NOT EXISTS (SELECT 1 FROM evidence e
                              WHERE e.asset_id=a.asset_id AND e.path=a.path)""")
     irreversible = one("SELECT COUNT(*) FROM proposals WHERE reversible=0")
     unconfirmed = one(
-        "SELECT COUNT(*) FROM proposals WHERE action='propose_remove' AND requires_confirmation=0")
+        "SELECT COUNT(*) FROM proposals WHERE action='suggest_delete' AND requires_confirmation=0")
     return {
         "protected_removals": protected_removals,
         "unexplained_assignments": unexplained,
         "irreversible_proposals": irreversible,
         "removals_without_confirmation": unconfirmed,
         "auto_applicable": one("SELECT COUNT(*) FROM proposals WHERE auto_applicable=1"),
-        "protected_assets": one("SELECT COUNT(*) FROM assets WHERE risk>=?", int(Risk.R4_PEOPLE)),
+        "protected_assets": one("SELECT COUNT(*) FROM assets WHERE risk>=?",
+                                int(NEVER_DELETE_AT_OR_ABOVE)),
     }
 
 
@@ -275,7 +278,7 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     audit = safety_audit(catalog)
     w("## Safety red lines (checked against the written catalogue, not the code)\n\n")
     checks = [
-        ("no removal proposed for a protected asset (R4+)", audit["protected_removals"] == 0,
+        ("nothing R4+ was acted on (§6, Tier 2-A: 高风险类别零自动删除)", audit["protected_removals"] == 0,
          f"{audit['protected_removals']} found"),
         ("every assignment carries evidence", audit["unexplained_assignments"] == 0,
          f"{audit['unexplained_assignments']} unexplained"),
@@ -289,6 +292,11 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w(f"\n- assets protected by risk class: {audit['protected_assets']:,}\n")
     w(f"- proposals the engine considers safe to apply without asking "
       f"(exact byte-duplicates only): {audit['auto_applicable']:,}\n\n")
+
+    # ---- the policy table Tier 2-A requires -----------------------------
+    w("## Risk policy table (§5 / §6, generated from the code it documents)\n\n")
+    w(policy_table())
+    w("\n\n")
 
     # ---- ablation -------------------------------------------------------
     if ablation:

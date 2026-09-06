@@ -22,22 +22,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from .risk import Action, Risk
+from .risk import ACTING_ACTIONS, Action, NEVER_DELETE_AT_OR_ABOVE, Risk
 from .schedule import BREADTH_MS
 
 # How much being wrong costs, by risk class. Ordinal, deliberately steep at the top:
 # losing a passport is not four times worse than losing a burst frame.
 ERROR_COST = {
-    Risk.R0_EXACT_DUPLICATE: 0.0,     # an identical copy remains
-    Risk.R1_NEAR_DUPLICATE: 1.0,
-    Risk.R2_TRANSIENT: 2.0,
-    Risk.R3_ORDINARY: 10.0,
-    Risk.R4_PEOPLE: 60.0,
-    Risk.R5_CRITICAL_DOCUMENT: 100.0,
-    Risk.R6_UNKNOWN: 40.0,            # unknown is priced high on purpose
+    Risk.R0_DISPOSABLE: 0.0,       # an identical copy remains
+    Risk.R1_LOW_VALUE: 1.0,
+    Risk.R2_NORMAL: 5.0,
+    Risk.R3_PERSONAL: 30.0,
+    Risk.R4_IMPORTANT: 60.0,
+    Risk.R5_CRITICAL: 100.0,
+    Risk.R6_IRREPLACEABLE: 200.0,  # §6 最高保护 — the top of the scale, priced like it
 }
-# Risk classes whose loss cannot be undone by the user in practice.
-IRRECOVERABLE = {Risk.R4_PEOPLE, Risk.R5_CRITICAL_DOCUMENT}
+# §7's tolerance argument only covers recoverable loss. These are where it does not hold.
+IRRECOVERABLE = {Risk.R5_CRITICAL, Risk.R6_IRREPLACEABLE}
 
 
 @dataclass
@@ -115,11 +115,11 @@ def weighted_error_cost(catalog, errors_by_asset: Optional[Dict[str, bool]] = No
     cost = 0.0
     for asset_id, risk, action in catalog.db.execute(
             "SELECT a.asset_id, a.risk, p.action FROM assets a JOIN proposals p USING(asset_id)"):
-        if action not in (Action.PROPOSE_REMOVE.value, Action.PROPOSE_ARCHIVE.value):
+        if action not in {a.value for a in ACTING_ACTIONS}:
             continue
         if errors_by_asset is not None and not errors_by_asset.get(asset_id, False):
             continue
-        r = Risk(risk) if risk in {int(x) for x in Risk} else Risk.R6_UNKNOWN
+        r = Risk(risk) if risk in {int(x) for x in Risk} else Risk.R2_NORMAL
         cost += ERROR_COST[r] * (3.0 if r in IRRECOVERABLE else 1.0)
     return cost / total * 1000
 
@@ -136,10 +136,11 @@ def catastrophic_error_rate(catalog) -> float:
     total = _one(catalog, "SELECT COUNT(*) FROM assets")
     if not total:
         return 0.0
+    marks = ",".join("?" * len(ACTING_ACTIONS))
     bad = _one(catalog,
-               "SELECT COUNT(*) FROM assets a JOIN proposals p USING(asset_id) "
-               "WHERE a.risk >= ? AND p.action = ?",
-               int(Risk.R4_PEOPLE), Action.PROPOSE_REMOVE.value)
+               f"SELECT COUNT(*) FROM assets a JOIN proposals p USING(asset_id) "
+               f"WHERE a.risk >= ? AND p.action IN ({marks})",
+               int(NEVER_DELETE_AT_OR_ABOVE), *[a.value for a in ACTING_ACTIONS])
     return bad / total
 
 

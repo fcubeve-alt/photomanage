@@ -45,9 +45,15 @@ SOURCES = {
     "L1B": "L1B_INFORMATION_CHANGE_FIRST_METHODOLOGY_v1.0.txt",
     "L0": "L0_LAUNCH_INSTRUCTION_v1.0.txt",
     "L3": "L3_ENGINEERING_PLAYBOOK_v1.1.txt",
+    "T0": "L2_TIER0_v1.1.txt",
+    "T1": "L2_TIER1_v1.1.txt",
+    "T2": "L2_TIER2_v1.1.txt",
 }
-VALID_STATUS = {"DONE", "PARTIAL", "MISSING", "OUT-OF-SCOPE"}
-SOURCE_RE = re.compile(r"^(L0|L1B|L1|L3):(\d+)$")
+# NOT-CODE is for a clause that genuinely shapes decisions but has no single
+# implementation to point at — a philosophy or a positioning statement. It still needs
+# an explanation, so it cannot be used as a place to hide work that was skipped.
+VALID_STATUS = {"DONE", "PARTIAL", "MISSING", "OUT-OF-SCOPE", "NOT-CODE"}
+SOURCE_RE = re.compile(r"^(L0|L1B|L1|L3|T0|T1|T2):(\d+)$")
 
 
 def squash(text: str) -> str:
@@ -138,16 +144,22 @@ def check(constraints_path: str, root: str, verbose: bool = True):
                     target = full if os.path.exists(full) else os.path.join(REPO, path_part)
                     with open(target, "r", encoding="utf-8") as fh:
                         body = fh.read()
-                    if not re.search(rf"^\s*(def|class)\s+{re.escape(symbol)}\b", body, re.M):
+                    # A module-level constant is legitimate evidence — MEDICAL_IS_
+                    # DOCUMENT_ONLY and REVIEW_FLOOR are load-bearing policy, not
+                    # decoration — so an assignment counts as a definition.
+                    defined = re.search(rf"^\s*(def|class)\s+{re.escape(symbol)}\b", body, re.M) \
+                        or re.search(rf"^{re.escape(symbol)}\s*[:=]", body, re.M)
+                    if not defined:
                         failures.append(
                             f"{cid} (line {ln}): DONE cites `{ref}` but {symbol} is not "
                             f"defined in {path_part}")
 
         # ---- 3. a gap must say what is absent ------------------------------
-        if status in ("PARTIAL", "MISSING") and len(evidence) < 20:
+        if status in ("PARTIAL", "MISSING", "NOT-CODE", "OUT-OF-SCOPE") and len(evidence) < 20:
             failures.append(
-                f"{cid} (line {ln}): {status} with no explanation of what is absent. "
-                "An unexplained gap is indistinguishable from one nobody noticed.")
+                f"{cid} (line {ln}): {status} with no explanation. An unexplained gap "
+                "is indistinguishable from one nobody noticed, and an unexplained "
+                "out-of-scope is where skipped work hides.")
 
     if verbose:
         for f in failures:

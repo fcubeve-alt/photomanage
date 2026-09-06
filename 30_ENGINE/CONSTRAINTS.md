@@ -1,94 +1,217 @@
-# BINDING CONSTRAINTS — L1 Constitution and L1-B Methodology, audited against the engine
+# FULL AUDIT — every authority document, clause by clause, against what is built
 
-**Why this file exists.** On 2026-09-06 the Owner had to point out, twice, that design
-requirements I was presenting as findings were already written into L1 §24 and L1-B §4
-as mandatory constraints. I had not read the source documents while building the
-product's core engine. Recorded as **PF-12**.
+**Read this first: there is no app.** What exists is a Python classification engine
+(`30_ENGINE/`) and a Swift stopwatch (`20_TIER0/harness/`). No iOS application, no user
+interface, nothing that installs on a phone. Every "DONE" below means *a clause is
+satisfied by an engine that does not ship*, never that the product does it.
 
-An apology does not prevent that. This does: every binding clause is listed here with
-its **verbatim source text**, its honest status, and the **test or metric that proves
-it**. `check_constraints.py` verifies that each quote still appears in the source file
-it cites and that every clause marked `DONE` names a test that actually exists. It runs
-in CI. A clause cannot be quietly paraphrased into something easier to satisfy, and a
-clause cannot claim to be implemented without something executable behind it.
+**Why this file exists (PF-12).** On 2026-09-06 the Owner had to point out that design
+requirements I was presenting as findings were already mandatory in L1 §24 and L1-B §4.
+I had not read the source documents while building the engine. The first version of
+this register then repeated the mistake one level up — it audited only the sections I
+had happened to read. **This version covers L1 §1–26, L1-B, and L2 Tier 0/1/2 in full.**
 
-Status values: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (later tier, with the
-tier named).
+Every clause carries its status and the code or test behind it.
+`check_constraints.py` runs in CI and fails when a quoted clause is no longer verbatim
+in the source it cites, when a clause marked DONE names code that does not exist, or
+when any non-DONE status carries no explanation. A constraint cannot be softened by
+rewording it into this file, and cannot claim completion on an intention.
+
+Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-CODE`
+(a principle with no single implementation — still requires an explanation).
 
 ---
 
-## L1 §24 — 四个生死关卡与技术战略
+## L1 §2 — 核心流程 (the ten steps the product is defined as)
+
+| id | step | status | evidence |
+|---|---|---|---|
+| S2-UNDERSTAND | Understand：理解照片/视频内容 | PARTIAL | the engine consumes OCR text, scene labels and face clusters via `pvm/signals.py`, but produces none of them — Vision lives in `20_TIER0/harness`, and video is not understood at all |
+| S2-CLASSIFY | Classify：尽可能细地归入有实际决策意义的类别 | DONE | `pvm/classifier.py`, `pvm/rules.py`, `eval/evaluate.py` |
+| S2-INDEX | Index：内容、时间、地点、人物、物品、事件、风险多维索引 | PARTIAL | content/time/place/person/risk are indexed in `pvm/catalog.py`; object-entity and event indexes exist only as relation rows, not as traversable indexes |
+| S2-RISK | Assess Risk：判断误处理的潜在损失和内容重要性 | PARTIAL | `pvm/risk.py::classify_risk` grades consequence; **importance as a separate factor from risk is not modelled** |
+| S2-DECIDE | Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作 | DONE | `pvm/risk.py::decide_action`, `pvm/risk.py::policy_table` |
+| S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
+| S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | MISSING | the Visual Memory Graph is not built. The catalogue stores assignments, not evidence about real-world entities — this is the difference between a filing system and a memory |
+| S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | Browse and Timeline/Places work (`pvm/cli.py::cmd_tree`); Intent Search and Relations traversal do not exist |
+| S2-MAINTAIN | Maintain：每一张新照片进入后自动重复以上过程 | PARTIAL | incremental re-classification works (`tests/test_catalog.py`); video does not enter the pipeline at all |
+| S2-DERIVE | Derive Services：衣橱、旅行、购物、物品、提醒 | OUT-OF-SCOPE | Tier 2 / §15 — explicitly a later value layer, not skipped work |
+
+## L1 §3 — the index dimensions
+
+| id | dimension | status | evidence |
+|---|---|---|---|
+| S3-CONTENT | Content Taxonomy | DONE | `pvm/taxonomy.py`, `pvm/classifier.py` |
+| S3-TIME | Time：Year → Month → Day → Moment | PARTIAL | only Year is indexed (`Timeline > 2025`); Month/Day/Moment are not, so "find the photos from that afternoon" cannot be served |
+| S3-PLACE | Place：Country → City → Place | PARTIAL | Country and City are indexed; the third level (a named place within a city) is not |
+| S3-PERSON | Person | DONE | `pvm/classifier.py::_faces` |
+| S3-ENTITY | Object / Entity：同一件衣服、设备、证件、商品 | PARTIAL | `pvm/dedup.py` emits same-entity *relations* between two assets; there is no persistent entity that accumulates across the library |
+| S3-EVENT | Event：旅行、生日、会议、活动 | PARTIAL | only Travel, from `pvm/context.py::_find_trips`; birthdays, meetings and other events are not derived |
+| S3-RISKDIM | Risk / Importance | PARTIAL | risk is `pvm/risk.py`; importance is not a separate axis, and §5 treats it as one |
+| S3-LIFECYCLE | Lifecycle：Temporary / Active / Expired / Long-term | DONE | `pvm/risk.py::lifecycle_of`, `tests/test_engine.py::LifecycleIsWhenNotHowMuch` |
+| S3-EQUIV | Equivalence Group | DONE | `pvm/dedup.py`, `tests/test_engine.py::DuplicatesAndTheThingsThatOnlyLookLikeThem` |
+| S3-ONEASSET | 同一视觉资产同时拥有多个索引维度…底层只保存一个 Asset | DONE | `pvm/catalog.py` stores one asset row with many assignment rows; `tests/test_engine.py::Cascade` |
+
+## L1 §4 — 精细 Visual Asset Taxonomy
+
+| id | verbatim clause | source | status | evidence |
+|---|---|---|---|---|
+| S4-DECISION | 尽可能细，但只细到足以改变用户体验或处理决策 | L1:57 | DONE | `pvm/classifier.py` returns the deepest node the evidence supports and stops; `tests/test_engine.py::Cascade` |
+| S4-CATEGORIES | 分类不是为了展示 AI 很聪明，而是为了改变整理、风险、生命周期和动作策略 | L1:55 | PARTIAL | `pvm/risk.py::RISK_BY_PATH_PREFIX` maps the 11-root navigational tree to §6 risk; the §4 taxonomy is a *different, finer* 13-category scheme with its own default risks and is not implemented as such — Tier 1-A |
+
+## L1 §5–§9 — risk, philosophy, equivalence, ordering
+
+| id | verbatim clause | source | status | evidence |
+|---|---|---|---|---|
+| S5-FORMULA | Category × Importance × Lifecycle × Confidence × Recoverability × Personal Preference → Action Policy | L1:101 | PARTIAL | `pvm/risk.py::Factors` and `decide_action` implement five of the six; **Importance is folded into Category rather than modelled separately**, and Personal Preference has no source because §14 is not built |
+| S6-SCALE | 建立 R0 Disposable / R1 Low Value / R2 Normal / R3 Personal / R4 Important / R5 Critical / R6 Irreplaceable 默认风险层 | T2:9 | DONE | `pvm/risk.py::Risk`, pinned to §6 by `tests/test_engine.py::TheRiskScaleIsTheConstitutionsNotMine` |
+| S6-R6 | 老照片、特殊家庭影像 | L1:133 | PARTIAL | the level exists and protects; **detection is a conservative heuristic** (`pvm/pipeline.py::looks_irreplaceable`) because real irreplaceability is knowledge only the user has — that is §14, which is missing |
+| S7-BALANCE | 产品不是以“零错误”作为唯一目标，而是优化 Automation Benefit 与 Weighted Error Cost 的平衡 | L1:141 | DONE | `pvm/kpi.py::automation_ratio`, `pvm/kpi.py::weighted_error_cost`, both printed by `eval/evaluate.py` |
+| S7-RECOVERABLE | 允许 AI 判断偶尔出错，但尽量避免错误成为不可恢复的重大损失 | L1:138 | DONE | `pvm/risk.py::Recoverability`, enforced in `pvm/risk.py::Proposal` |
+| S8-MARGIN | Same Moment + Same Subject + High Similarity + Low Risk → 选代表照，其余自动进入可恢复清理 | L1:144 | PARTIAL | the group is formed and `Action.SELECT_BEST` is issued, but **nothing selects the representative** — no sharpness, eyes-closed, framing or blur assessment exists (Tier 2-B) |
+| S8-HARDNEG | 人物表情明显不同、关键动作不同、文档不同页面 → 不属于等价组 | L1:145 | DONE | `pvm/dedup.py`, `tests/test_engine.py::DuplicatesAndTheThingsThatOnlyLookLikeThem` |
+| S9-ORDER | 先理解，才能正确整理；先整理，才能安全清理 | L1:153 | DONE | `pvm/pipeline.py` classifies before it relates and relates before it scores; `tests/test_catalog.py` |
+
+## L1 §10–§14 — retrieval, indexes, first use, hygiene, personal policy
+
+| id | verbatim clause | source | status | evidence |
+|---|---|---|---|---|
+| S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | PARTIAL | `pvm/cli.py::cmd_tree` browses the tree; the Person level inside Documents does not exist |
+| S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | year, city and trip work; month/day and named places do not (see S3-TIME, S3-PLACE) |
+| S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | MISSING | no natural-language retrieval of any kind — this is one of the four paths the product is defined by, and it is absent |
+| S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | MISSING | relation rows are written but nothing traverses them; there is no entry point from an entity to its assets |
+| S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/signals.py::GeoFix` carries `source` and `confidence` and the classifier refuses to use an inferred fix as if measured — but **nothing actually infers**, so assets without GPS get no place at all |
+| S11-EVENT | 时间 + 地点 + 人物 + 内容可以自动形成 Event / Trip 候选 | L1:162 | PARTIAL | Trip only (`pvm/context.py::_find_trips`); no other event type is derived |
+| S12-INDEXALL | 扫描全库并建立多维索引 | L1:166 | DONE | `pvm/pipeline.py::run` |
+| S12-CANDIDATES | 建立 Exact / Near Duplicate / Same Moment / Same Entity 候选 | L1:168 | DONE | `pvm/dedup.py::analyse` |
+| S12-SMALLQUEUE | 真正需要用户决定的内容进入极小 Review Queue | L1:170 | DONE | measured, not asserted: `pvm/kpi.py::human_review_burden` |
+| S13-HYGIENE | 每一张新拍摄、下载、截图或视频都自动经过同一管线 | L1:173 | PARTIAL | new stills re-enter automatically (`tests/test_catalog.py::Incrementality`); **video does not enter the pipeline** |
+| S14-PERSONAL | 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy | L1:182 | MISSING | not built. `decide_action` accepts a `personal_preference` and can only ever be made more careful by it, but nothing produces one — Tier 2-G |
+
+## L1 §16–§23 — boundaries, KPIs, validation, positioning
+
+| id | verbatim clause | source | status | evidence |
+|---|---|---|---|---|
+| S15-DERIVED | Wardrobe / Clothing View | L1:189 | OUT-OF-SCOPE | Tier 2 §15 — an explicit later value layer that must derive from existing data, not skipped work |
+| S16-BOUNDARY | 对性格、健康、政治、宗教、亲密关系等敏感属性作推断 | L1:204 | DONE | `pvm/rules.py::MEDICAL_IS_DOCUMENT_ONLY`, `tests/test_engine.py::RiskRedLines` |
+| S17-POSITION | 第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager | L1:206 | NOT-CODE | a positioning statement that shapes what gets built rather than a clause to implement; its executable consequence is that classification precedes cleanup, which is S9-ORDER |
+| S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | seven of eight in `pvm/kpi.py::report`; Personalization Gain requires S14-PERSONAL, and Retrieval Success requires real users (T0-B) |
+| S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | PARTIAL | coverage is reported; **no confusion matrix is produced** — Tier 1-A deliverable |
+| S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
+| S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | two of four exist; see S10-INTENT and S10-RELATIONS |
+| S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
+| S22-ENTRY | 核心指标新增 Retrieval Entry Share | L1:254 | OUT-OF-SCOPE | T0-B measures this with real users; nothing an engine can self-report |
+| S23-STRUCTURE | 首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流 | L1:259 | PARTIAL | the engine produces the counts and the tree a Structure-First home needs; **there is no home, because there is no app** |
+
+## L1 §24 — 四个生死关卡
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
 | G1-PACED | 采用分层信号、轻量模型、分块/分时、checkpoint、增量处理和后台机会执行 | L1:267 | DONE | `pvm/schedule.py`, `tests/test_schedule.py` |
-| G1-NOFULL | 30k–100k 资产的首次编目不能依赖全量重模型 | L1:267 | DONE | `tests/test_engine.py::Cost` |
-| G2-CATEGORY | 禁止寻找一个万能 Same-Entity 模型 | L1:269 | PARTIAL | `pvm/dedup.py` special-cases documents only; the per-category resolvers (证件 OCR/版式/字段, 合同 文本指纹/页码, 普通照片 时间/地点/视觉相似) are not built — Tier 1-A |
+| G2-CATEGORY | 禁止寻找一个万能 Same-Entity 模型 | L1:269 | PARTIAL | `pvm/dedup.py` special-cases documents only; the per-category resolvers (证件 OCR/版式/字段, 合同 文本指纹/页码, 普通照片 时间/地点/视觉相似) are not built — Tier 1-B |
 | G3-PROGRESSIVE | 首次使用必须 Progressive Indexing。先给 Quick Wins 和基本目录，再逐渐补全深度索引 | L1:271 | DONE | `pvm/schedule.py`, `tests/test_schedule.py::BreadthBeforeDepth` |
-| G3-TTFUV | 新增 TTFUV（Time To First Useful View）作为 P0 指标 | L1:271 | DONE | `pvm/kpi.py::time_to_first_useful_view`, reported by `eval/evaluate.py` |
+| G3-TTFUV | 新增 TTFUV（Time To First Useful View）作为 P0 指标 | L1:271 | DONE | `pvm/kpi.py::time_to_first_useful_view` |
+| G4-NOTCLEANER | 商业定位禁止退化成 Cleaner | L1:273 | NOT-CODE | a commercial-positioning constraint; the engine's executable share of it is that cleanup is one action among seven in `pvm/risk.py::Action`, not the product |
 | G5-MULTISIGNAL | 采用 Multi-Signal Classification：Metadata + Time/GPS + Hash + OCR + Vision + Embedding + Rules/Small Models；不能只问单一模型 | L1:275 | DONE | `pvm/signals.py`, `tests/test_engine.py::Cascade` |
 
-## L1 §25 — Progressive Intelligence Pipeline (8 layers)
+## L1 §25 — Progressive Intelligence Pipeline
 
 | id | layer | status | evidence |
 |---|---|---|---|
-| P25-L1 | Layer 1 Cheap Signals：metadata、time、GPS、file/source info、hash、基础 OCR | DONE | `pvm/signals.py` |
-| P25-L2 | Layer 2 Visual Understanding：Vision / Core ML / lightweight embedding | DONE | `pvm/signals.py` scene labels + embedding; Vision itself is `20_TIER0/harness` |
-| P25-L3 | Layer 3 Taxonomy：确定内容类别与置信度 | DONE | `pvm/classifier.py`, `eval/evaluate.py` |
-| P25-L4 | Layer 4 Category-Specific Entity Resolution | PARTIAL | `pvm/dedup.py` resolves duplicates, same-moment and same-entity generically with one document special case; the per-category resolvers G2-CATEGORY requires are absent — Tier 1-A |
-| P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | PARTIAL | risk is `pvm/risk.py`; **lifecycle and importance are not built** |
-| P25-L6 | Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review | PARTIAL | `pvm/risk.py::Action` has no **Select Best** |
-| P25-L7 | Layer 7 Visual Library：结构化视图 | DONE | `pvm/catalog.py::counts_by_path`, `pvm/cli.py::cmd_tree` |
-| P25-L8 | Layer 8 Personal Memory：Wardrobe / Travel / Purchase / Object / Document Memory | OUT-OF-SCOPE | Tier 2 |
-
-## L1 §12 / §13 / §14 — first use, continuous hygiene, personal policy
-
-| id | verbatim clause | source | status | evidence |
-|---|---|---|---|---|
-| S12-INDEX | 扫描全库并建立多维索引 | L1:166 | DONE | `pvm/pipeline.py` |
-| S12-CANDIDATES | 建立 Exact / Near Duplicate / Same Moment / Same Entity 候选 | L1:168 | DONE | `pvm/dedup.py`, `tests/test_engine.py::DuplicatesAndTheThingsThatOnlyLookLikeThem` |
-| S12-REVIEW | 真正需要用户决定的内容进入极小 Review Queue | L1:170 | DONE | `pvm/kpi.py::human_review_burden` measures whether it is actually small |
-| S13-HYGIENE | 每一张新拍摄、下载、截图或视频都自动经过同一管线 | L1:173 | PARTIAL | incremental re-run is `tests/test_catalog.py::Incrementality`; **video does not go through the pipeline** |
-| S14-PERSONAL | 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy | L1:182 | MISSING | not built — Tier 2, and named as such rather than forgotten |
-
-## L1 §18 — the KPIs the product is actually defined by
-
-Reported by `pvm/kpi.py` and printed by `eval/evaluate.py`. F1 and precision are *my*
-measures; these are the *product's*, and where the two disagree these win.
-
-| id | KPI | status | evidence |
-|---|---|---|---|
-| K-AUTO | Automation Ratio | DONE | `pvm/kpi.py::automation_ratio` |
-| K-BURDEN | Human Review Burden (per 1,000 assets) | DONE | `pvm/kpi.py::human_review_burden` |
-| K-WEC | Weighted Error Cost | DONE | `pvm/kpi.py::weighted_error_cost` |
-| K-CATASTROPHIC | Catastrophic Error Rate | DONE | `pvm/kpi.py::catastrophic_error_rate` |
-| K-COVERAGE | Classification Coverage | DONE | `pvm/kpi.py::classification_coverage` |
-| K-RETRIEVAL | Retrieval Success | OUT-OF-SCOPE | needs real users — T0-B |
-| K-HYGIENE | Continuous Hygiene Rate | DONE | `pvm/kpi.py::continuous_hygiene_rate` |
-| K-PERSONAL | Personalization Gain | MISSING | requires S14-PERSONAL |
+| P25-L1 | Layer 1 Cheap Signals | DONE | `pvm/signals.py` |
+| P25-L2 | Layer 2 Visual Understanding | PARTIAL | the engine consumes scene labels and embeddings; it produces none — see S2-UNDERSTAND |
+| P25-L3 | Layer 3 Taxonomy | DONE | `pvm/classifier.py` |
+| P25-L4 | Layer 4 Category-Specific Entity Resolution | PARTIAL | one generic resolver with a document special case; see G2-CATEGORY |
+| P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | PARTIAL | risk, lifecycle and recoverability are modelled; **importance is not a separate axis** |
+| P25-L6 | Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review | DONE | `pvm/risk.py::Action`, `pvm/risk.py::policy_table` |
+| P25-L7 | Layer 7 Visual Library | DONE | `pvm/catalog.py::counts_by_path`, `pvm/cli.py::cmd_tree` |
+| P25-L8 | Layer 8 Personal Memory | OUT-OF-SCOPE | Tier 2, and dependent on S2-REMEMBER which is missing |
 
 ## L1-B — Information-Change-First / Minimum Necessary Inference
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
-| B1-ORDER | Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory | L1B:13 | PARTIAL | escalation is per-asset in `pvm/classifier.py`; **Candidate Reduction as a retrieval stage is not built** |
+| B1-ORDER | Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory | L1B:13 | PARTIAL | per-asset escalation is `pvm/classifier.py`; **Candidate Reduction as a retrieval stage does not exist**, and the worked example in §1 is retrieval-shaped |
 | B1-NOHEAVY | 任何“把所有照片、所有视频帧全部交给重型模型理解”的架构，原则上都应视为错误设计 | L1B:11 | DONE | `tests/test_engine.py::Cost`, `tests/test_deltas.py::ItSavesRealWork` |
-| B2-CHANGE | 优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理 | L1B:9 | DONE | `pvm/catalog.py` fingerprints, `pvm/deltas.py` |
-| B3-PHOTOS | 系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类 | L1B:34 | DONE | `pvm/dedup.py`, `tests/test_engine.py` |
-| B4-NOFRAMES | 禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型 | L1B:37 | DONE | `pvm/deltas.py`, `tests/test_deltas.py` |
-| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | MISSING | `deltas.py` selects frames; the **Video Memory Record** (Date/Place/Person/Object/Event/segment/representative frames) is not built |
-| B6-MINMODEL | 规则 / metadata 能解决 → 不用 AI。轻模型能解决 → 不用大模型。Apple Native 能解决 → 不增加额外模型 | L1B:71 | DONE | `pvm/classifier.py` escalation; no third-party model in the engine |
+| B2-CHANGE | 优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理 | L1B:9 | DONE | `pvm/catalog.py::signals_fingerprint`, `pvm/deltas.py` |
+| B3-PHOTOS | 系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类 | L1B:34 | DONE | `pvm/dedup.py` |
+| B4-NOFRAMES | 禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型 | L1B:37 | DONE | `pvm/deltas.py::select_keyframes`, `tests/test_deltas.py` |
+| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | MISSING | `deltas.py` selects frames — the easy half. The Video Memory Record (Date / Place / Person / Object / Event / segment / representative frames) does not exist, and neither does the graph it belongs in |
+| B6-MINMODEL | 规则 / metadata 能解决 → 不用 AI。轻模型能解决 → 不用大模型。Apple Native 能解决 → 不增加额外模型 | L1B:71 | DONE | `pvm/classifier.py` escalation; the engine carries no third-party model |
+
+## L2 Tier 1 — 核心能力可行性 (the tier this engine actually belongs to)
+
+| id | requirement | status | evidence |
+|---|---|---|---|
+| T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision and recall are in `eval/evaluate.py`; **no confusion matrix**, and the taxonomy evaluated is the navigational tree rather than the §4 scheme |
+| T1A-UNKNOWN | 允许 Unknown + confidence，不强迫每个资产进入错误类别 | DONE | `pvm/verdict.py::REVIEW_FLOOR`, `pvm/classifier.py::_unfiled` |
+| T1B-RESOLVER | Tier 1-B Category-Specific Entity Resolver, per-category | MISSING | see G2-CATEGORY — the document special case is not a per-category resolver |
+| T1B-FALSEMERGE | Document 类别单独统计 False Merge / False Split | PARTIAL | the behaviour is locked by unit tests built from explicit signals; **no rate has been measured** because the corpus has no same-entity ground truth usable without leaking labels |
+| T1C-LIFECYCLE | Tier 1-C Visual Lifecycle Engine，重点是 Suggest Delete 的 False Positive | PARTIAL | `pvm/risk.py::lifecycle_of` and the policy table exist; the false-positive rate of Suggest Delete has never been measured |
+| T1C-ZEROAUTO | 高风险类别自动删除率必须为 0 | DONE | `pvm/kpi.py::catastrophic_error_rate`, audited in `eval/evaluate.py` against written rows |
+| T1D-MULTIINDEX | Tier 1-D 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引 | PARTIAL | four of six; Object and Event are relations rather than indexes |
+| T1E-PATHS | Tier 1-E 四种找回路径各挑 2-3 个真实任务测试成功率 | MISSING | two of the four paths do not exist, so the test cannot be run |
+
+## L2 Tier 2 — 完整体验与规模化
+
+| id | requirement | status | evidence |
+|---|---|---|---|
+| T2A-POLICY | Tier 2-A Policy Table：每个风险层在不同置信度/可恢复条件下的动作 | DONE | `pvm/risk.py::policy_table`, generated from the code it documents |
+| T2A-PASS | 高风险类别（R4-R6）零自动删除，低风险类别（R0-R1）能大量自动处理 | DONE | `tests/test_engine.py::ThePolicyTable`, `pvm/kpi.py::catastrophic_error_rate` |
+| T2B-SELECTBEST | Tier 2-B 代表照选择逻辑：清晰度、闭眼/表情、构图、曝光、运动模糊 | MISSING | `Action.SELECT_BEST` is issued but nothing selects — no image-quality assessment of any kind exists |
+| T2B-VALUELOSS | Significant Value Loss Rate | MISSING | cannot be measured until T2B-SELECTBEST exists |
+| T2C-TTFUV | 目标 <30 秒出现第一批价值、<2 分钟形成基本 Visual Library | DONE | measured 2.8 s at 10k and 28 s at 100k — `pvm/kpi.py::time_to_first_useful_view` |
+| T2C-INGEST | 验证新增照片能否增量处理，不需要周期性全库重扫 | DONE | `tests/test_catalog.py::Incrementality`, `pvm/kpi.py::continuous_hygiene_rate` |
+| T2D-HOME | Tier 2-D 完整 Structure First 首页原型 | OUT-OF-SCOPE | needs an app; the 82 hand-authored prototype pages in `20_TIER0/study_assets/prototype` have no engine behind them |
+| T2E-ABLATION | 输出 ablation：只 OCR、只视觉、组合信号分别表现如何 | PARTIAL | `eval/evaluate.py` ablates metadata-only against full; **the OCR-only and vision-only arms are not run** |
+| T2F-ECONOMICS | 规模化单位经济 10k / 100k / 1M | OUT-OF-SCOPE | Tier 2-F, commercial modelling rather than engine work |
+| T2G-LEARNING | Global Policy + Personal Policy 反馈学习 | MISSING | nothing records the user's Keep/Delete/Protect/Correction decisions, so there is no feedback to learn from and no way to show Review volume falling over time; see S14-PERSONAL |
 
 ---
 
-## Honest summary
+## Honest totals
 
-**DONE 21 · PARTIAL 6 · MISSING 4 · OUT-OF-SCOPE 2.**
+**90 clauses audited — counted by `check_constraints.py`, not by hand:**
 
-The four MISSING are named, not forgotten: **Video Memory Record** (B4-RECORD),
-**Personal Policy** (S14-PERSONAL) and its KPI (K-PERSONAL), and **Select Best**
-(inside P25-L6). The six PARTIAL are mostly one shape: category-specific entity
-resolution and lifecycle, which the Constitution puts in Tier 1-A.
+| status | count | share |
+|---|--:|--:|
+| DONE | 36 | 40% |
+| PARTIAL | 34 | 38% |
+| MISSING | 11 | 12% |
+| OUT-OF-SCOPE (tier named) | 6 | 7% |
+| NOT-CODE (principle, explained) | 3 | 3% |
 
-Nothing here is marked DONE on the strength of an intention. `check_constraints.py`
-will not let it be.
+**40% of the audited clauses are fully satisfied, and that is by an engine that does
+not ship.** The 38% PARTIAL is the number to look at hardest: a partial clause passes
+its tests and still does not do what the document asks, which is a more comfortable
+place to hide than a gap.
+
+**The eleven MISSING, in the order they would hurt:**
+1. **S2-REMEMBER / B4-RECORD** — the Visual Memory Graph. §2 makes "Remember" a
+   core step and §15 builds every later service on it. The catalogue files photos; it
+   does not turn them into evidence about people, objects and events. This is the
+   largest single gap and it is architectural, not a feature.
+2. **S10-INTENT** — natural-language retrieval. One of the four paths the product is
+   defined by (§10, §19).
+3. **S10-RELATIONS** — entity-to-asset traversal. Rows are written; nothing reads them.
+4. **T1B-RESOLVER** — per-category entity resolution (§24 Gate 2). The make-or-break
+   number for Tier 1.
+5. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
+   an action the engine can name and cannot perform.
+6. **S14-PERSONAL / T2G-LEARNING** — Personal Policy, and the feedback loop §14 and
+   Tier 2-G both require. Without it §5's sixth factor has no source and §18's
+   Personalization Gain cannot exist.
+7. **S19-RISKEVAL** — risk grading has never been evaluated against labels. The scale
+   is now correct against §6; whether the *assignment* to it is correct is unmeasured.
+8. **T2B-VALUELOSS** and **T1E-PATHS** — blocked by items 2, 3 and 5 above.
+
+**The two defects this audit found in code that was already written:**
+- **S6-SCALE.** The previous `risk.py` used R0–R6 — the identifiers §6 and Tier 2-A
+  define — with meanings I had invented. R6 meant "not understood" where the
+  Constitution means "irreplaceable, highest protection"; receipts sat below their §6
+  placement and people above it. Every row of the catalogue read wrong against the
+  document that defines it. Fixed, and pinned by a test that compares the enum to §6
+  clause by clause.
+- **Byte identity behind a classification gate.** An exact duplicate the classifier
+  could not identify was routed to Review, so the one action the system can genuinely
+  automate was the one it refused to take — the trade §7 exists to forbid. Fixed.

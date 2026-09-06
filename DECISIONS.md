@@ -713,3 +713,69 @@ The six PARTIAL are mostly one shape: **Category-Specific Entity Resolution** (�
 **Also corrected:** `SESSION_HANDOFF.md` listed L1 as optional reading — *"only if you need product-level detail"*. That framing is what let the engine be built without it. Engine work now requires `CONSTRAINTS.md`, which points at the source.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-031 · 2026-09-06 · Full audit against every authority document, and two defects it found in shipped code
+**Owner instruction:** *"一一对照项目内容，看你开发的程序是不是按要求来做。先自主审计一下。到时我再要求外部对你审计。"*
+
+**First, the framing that has to lead.** There is no app. There is a Python engine and
+a Swift stopwatch. Every DONE below means a clause is satisfied by code that does not
+ship (PF-11).
+
+**Second, an admission about the previous audit.** DEC-030's register covered only the
+sections I had happened to read — §12, §13, §14, §18, §24, §25 and L1-B. It missed
+twenty sections of the Constitution and all of L2 Tier 1 and Tier 2. That is PF-12
+repeated one level up: an audit of the parts I already knew about is not an audit.
+
+**This audit covers L1 §1–26, L1-B, and L2 Tier 0/1/2 in full. 90 clauses:**
+
+| status | count | share |
+|---|--:|--:|
+| DONE | 36 | 40% |
+| PARTIAL | 34 | 38% |
+| MISSING | 11 | 12% |
+| OUT-OF-SCOPE (tier named) | 6 | 7% |
+| NOT-CODE (principle, explained) | 3 | 3% |
+
+**Two defects found in code that was already written and already passing its tests.**
+
+**1 · The risk scale was not the Constitution's.** §6 and Tier 2-A both define
+R0 Disposable / R1 Low Value / R2 Normal / R3 Personal / R4 Important / R5 Critical /
+R6 Irreplaceable. The engine used the same seven identifiers with meanings I had
+invented: **R6 meant "not understood" where the Constitution means "irreplaceable,
+highest protection"**, receipts sat one level below their §6 placement and people one
+level above. Every row of the catalogue read wrong against the document that defines
+it, and no test caught it because the tests asserted my scale.
+
+Rewritten to §6 verbatim, with §5's actual formula — Category × Importance × Lifecycle
+× Confidence × Recoverability × Personal Preference — as a generated Policy Table
+(a Tier 2-A deliverable). Confidence is no longer a rung on the risk scale: conflating
+"we do not know what this is" with a level of consequence is what let an unidentified
+asset outrank a passport. Pinned by
+`tests/test_engine.py::TheRiskScaleIsTheConstitutionsNotMine`, which compares the enum
+to §6 clause by clause.
+
+**2 · Byte identity was gated behind classification confidence.** An exact duplicate
+the classifier could not identify went to Review. §6 makes 完全重复下载 the R0 case and
+激进自动处理 its default; the evidence for byte identity is a content hash and is
+certain whether or not we worked out what the picture shows. So the one action the
+system can genuinely automate was the one it refused to take — precisely the trade §7
+exists to forbid. Fixed; auto-clean now fires for exact duplicates and for nothing else.
+
+**The eleven MISSING, worst first.** The largest is **S2-REMEMBER / B4-RECORD — the
+Visual Memory Graph.** §2 makes "Remember" one of the ten steps the product *is*, and
+§15 builds every later service on it. The catalogue files photos; it does not turn them
+into evidence about people, objects and events. That is the difference between a filing
+system and a memory, and it is architectural rather than a feature. Then:
+**Intent Search** and **Relations** — two of the four retrieval paths §10 and §19 define,
+both absent; **per-category Entity Resolution** (§24 Gate 2, the Tier 1 make-or-break);
+**Select Best**, an action the engine can name and cannot perform; **Personal Policy**
+and its KPI; and **risk-grading evaluation**, never measured against labels.
+
+**On the 38% PARTIAL.** That column matters more than the MISSING one. A partial clause
+passes its tests and still does not do what the document asks — Time is indexed by year
+but not by month, day or moment; Places reaches city but not place; Object and Event
+are relation rows rather than indexes. Those read as done in a demo.
+
+**Status.** ACTIVE. `check_constraints.py` verifies all 90 clauses in CI.

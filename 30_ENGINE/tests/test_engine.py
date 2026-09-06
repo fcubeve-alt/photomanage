@@ -20,7 +20,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pvm import dedup, taxonomy                                        # noqa: E402
 from pvm.classifier import Classifier, SETTLE_AT                       # noqa: E402
 from pvm.context import LibraryContext, build_context                  # noqa: E402
-from pvm.risk import (Action, Proposal, Risk, classify_risk, propose)  # noqa: E402
+from pvm.risk import (ACTING_ACTIONS, Action, Factors, Lifecycle,      # noqa: E402
+                      NEVER_DELETE_AT_OR_ABOVE, Proposal, Recoverability, Risk,
+                      classify_risk, decide_action, lifecycle_of, propose,
+                      recoverability_of)
 from pvm.signals import (AssetSignals, FaceCluster, GeoFix, PlaceName,  # noqa: E402
                          SceneLabel, Tier)
 from pvm.verdict import Assignment, Evidence                            # noqa: E402
@@ -162,7 +165,7 @@ class People(unittest.TestCase):
     def test_an_unnamed_face_still_changes_the_risk(self):
         c = classify(asset(face_clusters=[FaceCluster("c9", None, 0.4)]))
         self.assertTrue(any("unnamed person" in n for n in c.notes))
-        self.assertEqual(classify_risk(c, has_unnamed_person=True), Risk.R4_PEOPLE)
+        self.assertEqual(classify_risk(c, has_person=True), Risk.R3_PERSONAL)
 
 
 class Cost(unittest.TestCase):
@@ -227,56 +230,213 @@ class Context(unittest.TestCase):
         self.assertIn("Places > Japan > Tokyo", c.paths)
 
 
+class TheRiskScaleIsTheConstitutionsNotMine(unittest.TestCase):
+    """The audit's worst finding. The previous version used R0–R6 — the same
+    identifiers §6 and Tier 2-A define — with meanings I had invented. R6 meant "not
+    understood" where the Constitution means "irreplaceable, highest protection";
+    receipts sat a level below §6's placement and people a level above. Every row of
+    the catalogue read wrong against the document that defines it.
+
+    These tests pin the scale to §6 so it cannot drift again."""
+
+    EXPECTED = [
+        (Risk.R0_DISPOSABLE, "几乎无长期价值", "激进自动处理"),
+        (Risk.R1_LOW_VALUE, "通常短期/低价值", "自动处理或批量处理"),
+        (Risk.R2_NORMAL, "普通生活内容", "按相似度/生命周期处理"),
+        (Risk.R3_PERSONAL, "具有个人意义", "保守精选"),
+        (Risk.R4_IMPORTANT, "可能承担交易/工作价值", "Protect/Archive 优先"),
+        (Risk.R5_CRITICAL, "法律/身份/金融价值", "默认 Protect"),
+        (Risk.R6_IRREPLACEABLE, "可能不可替代", "最高保护"),
+    ]
+
+    def test_the_scale_matches_section_6_exactly(self):
+        self.assertEqual(len(Risk), len(self.EXPECTED))
+        for level, meaning, policy in self.EXPECTED:
+            self.assertEqual(level.meaning, meaning)
+            self.assertEqual(level.default_policy, policy)
+
+    def test_r6_is_the_top_of_the_scale_not_a_place_for_confusion(self):
+        self.assertEqual(max(Risk), Risk.R6_IRREPLACEABLE)
+        self.assertNotIn("UNKNOWN", {r.name for r in Risk})
+
+    def test_an_unplaced_asset_does_not_get_a_risk_level_of_its_own(self):
+        """§5 keeps consequence and confidence on separate axes. An asset we cannot
+        file is a confidence problem; giving it its own rung let it outrank a passport."""
+        c = classify(asset())
+        self.assertEqual(classify_risk(c), Risk.R2_NORMAL)
+        self.assertEqual(decide_action(Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.2,
+                                               Recoverability.RECOVERABLE)), Action.REVIEW)
+
+    def test_receipts_are_important_and_people_are_personal(self):
+        """The two placements the old code had inverted, straight from §6's examples."""
+        receipt = classify(asset(ocr_ran=True, ocr_text="RECEIPT — HEADPHONES £129.00"))
+        self.assertEqual(classify_risk(receipt), Risk.R4_IMPORTANT)
+        person = classify(asset(face_clusters=[FaceCluster("c", "Anna")]))
+        self.assertEqual(classify_risk(person), Risk.R3_PERSONAL)
+
+    def test_identity_documents_are_critical(self):
+        c = classify(asset(ocr_ran=True, ocr_text="PASSPORT"))
+        self.assertEqual(classify_risk(c), Risk.R5_CRITICAL)
+
+    def test_a_duplicate_passport_is_still_a_passport(self):
+        """Escalations before de-escalations, or the cheapest fact about an asset would
+        decide what happens to the most expensive one."""
+        c = classify(asset(ocr_ran=True, ocr_text="PASSPORT"))
+        self.assertEqual(classify_risk(c, is_exact_duplicate=True), Risk.R5_CRITICAL)
+
+    def test_a_byte_identical_copy_of_something_ordinary_is_disposable(self):
+        c = classify(asset(is_screenshot=True, ocr_ran=True, ocr_text="SCREENSHOT"))
+        self.assertEqual(classify_risk(c, is_exact_duplicate=True), Risk.R0_DISPOSABLE)
+
+
+class ThePolicyTable(unittest.TestCase):
+    """§5: Category × Importance × Lifecycle × Confidence × Recoverability × Personal
+    Preference → Action Policy. Tier 2-A requires it as a table and sets the PASS bar:
+    R4–R6 zero automated deletion, R0–R1 largely automatic."""
+
+    def test_no_risk_level_at_or_above_r4_is_ever_acted_on(self):
+        for risk in (Risk.R4_IMPORTANT, Risk.R5_CRITICAL, Risk.R6_IRREPLACEABLE):
+            for lc in Lifecycle:
+                for conf in (0.1, 0.6, 0.99):
+                    action = decide_action(Factors(risk, lc, conf, recoverability_of(risk),
+                                                   in_equivalence_group=True,
+                                                   is_exact_duplicate=True))
+                    self.assertNotIn(action, ACTING_ACTIONS,
+                                     f"{risk.name}/{lc.value} produced {action.value}")
+
+    def test_r0_and_r1_can_actually_be_automated(self):
+        """§7: the automation benefit must not be surrendered to a tiny probability of
+        error. A policy that never acts is as much a failure as one that acts wrongly."""
+        self.assertEqual(
+            decide_action(Factors(Risk.R0_DISPOSABLE, Lifecycle.ACTIVE, 0.9,
+                                  Recoverability.RECOVERABLE, is_exact_duplicate=True)),
+            Action.AUTO_CLEAN)
+        self.assertEqual(
+            decide_action(Factors(Risk.R1_LOW_VALUE, Lifecycle.EXPIRED, 0.9,
+                                  Recoverability.RECOVERABLE)),
+            Action.SUGGEST_DELETE)
+
+    def test_low_confidence_routes_to_review_rather_than_to_action(self):
+        """With one deliberate exception, below. `confidence` is confidence in the
+        *classification*, and acting on a guess about what a picture is, is what this
+        gate prevents."""
+        for risk in (Risk.R1_LOW_VALUE, Risk.R2_NORMAL, Risk.R3_PERSONAL):
+            self.assertEqual(
+                decide_action(Factors(risk, Lifecycle.EXPIRED, 0.2,
+                                      Recoverability.RECOVERABLE, is_exact_duplicate=True)),
+                Action.REVIEW,
+                f"{risk.name} was acted on at 0.2 confidence")
+
+    def test_the_one_exception_is_byte_identity_which_is_not_a_guess(self):
+        """See ByteIdentityIsNotAClassificationGuess: a content hash is certain whether
+        or not the classifier worked out what the picture is of."""
+        self.assertEqual(
+            decide_action(Factors(Risk.R0_DISPOSABLE, Lifecycle.ACTIVE, 0.0,
+                                  Recoverability.RECOVERABLE, is_exact_duplicate=True)),
+            Action.AUTO_CLEAN)
+
+    def test_personal_preference_can_only_make_the_system_more_careful(self):
+        """§14 lets the user's corrections outrank the default. Letting them loosen a
+        protection would turn a red line into a setting."""
+        f = Factors(Risk.R0_DISPOSABLE, Lifecycle.EXPIRED, 0.99, Recoverability.RECOVERABLE,
+                    is_exact_duplicate=True, personal_preference=Action.PROTECT)
+        self.assertEqual(decide_action(f), Action.PROTECT)
+        loosened = Factors(Risk.R5_CRITICAL, Lifecycle.ACTIVE, 0.99,
+                           Recoverability.HARD_TO_REPLACE,
+                           personal_preference=Action.AUTO_CLEAN)
+        self.assertEqual(decide_action(loosened), Action.PROTECT)
+
+    def test_an_equivalence_group_is_where_select_best_applies(self):
+        """§8: Same Moment + Same Subject + High Similarity + Low Risk → 选代表照."""
+        self.assertEqual(
+            decide_action(Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.9,
+                                  Recoverability.RECOVERABLE, in_equivalence_group=True)),
+            Action.SELECT_BEST)
+
+
 class RiskRedLines(unittest.TestCase):
-    def test_there_is_no_delete_action_at_all(self):
+    def test_there_is_no_permanent_delete_action(self):
         self.assertNotIn("DELETE", {a.name for a in Action})
 
-    def test_an_identity_document_can_never_be_proposed_for_removal(self):
-        with self.assertRaises(ValueError):
-            Proposal("x", Action.PROPOSE_REMOVE, Risk.R5_CRITICAL_DOCUMENT,
-                     [Evidence("ocr_text", Tier.TEXT, 0.9, "passport")])
+    def test_an_important_asset_can_never_be_proposed_for_deletion(self):
+        for risk in (Risk.R4_IMPORTANT, Risk.R5_CRITICAL, Risk.R6_IRREPLACEABLE):
+            with self.assertRaises(ValueError):
+                Proposal("x", Action.SUGGEST_DELETE,
+                         Factors(risk, Lifecycle.EXPIRED, 0.9, recoverability_of(risk)),
+                         [Evidence("ocr_text", Tier.TEXT, 0.9, "passport")])
 
-    def test_a_person_can_never_be_proposed_for_removal(self):
-        with self.assertRaises(ValueError):
-            Proposal("x", Action.PROPOSE_REMOVE, Risk.R4_PEOPLE,
-                     [Evidence("faces", Tier.FACES, 0.9, "Anna")])
+    def test_an_irreplaceable_asset_may_not_be_acted_on_at_all(self):
+        for action in ACTING_ACTIONS:
+            with self.assertRaises(ValueError):
+                Proposal("x", action,
+                         Factors(Risk.R0_DISPOSABLE, Lifecycle.EXPIRED, 0.9,
+                                 Recoverability.IRREPLACEABLE),
+                         [Evidence("s", Tier.METADATA, 0.9, "r")])
 
-    def test_an_irreversible_removal_cannot_be_constructed(self):
+    def test_auto_clean_is_r0_and_recoverable_only(self):
         with self.assertRaises(ValueError):
-            Proposal("x", Action.PROPOSE_REMOVE, Risk.R0_EXACT_DUPLICATE,
-                     [Evidence("hash", Tier.HASH, 0.99, "identical")], reversible=False)
+            Proposal("x", Action.AUTO_CLEAN,
+                     Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.9, Recoverability.RECOVERABLE),
+                     [Evidence("s", Tier.METADATA, 0.9, "r")])
+        with self.assertRaises(ValueError):
+            Proposal("x", Action.AUTO_CLEAN,
+                     Factors(Risk.R0_DISPOSABLE, Lifecycle.ACTIVE, 0.9,
+                             Recoverability.HARD_TO_REPLACE),
+                     [Evidence("s", Tier.METADATA, 0.9, "r")])
 
     def test_a_proposal_without_evidence_cannot_be_constructed(self):
         with self.assertRaises(ValueError):
-            Proposal("x", Action.KEEP, Risk.R3_ORDINARY, [])
-
-    def test_a_duplicate_passport_is_still_a_passport(self):
-        """Escalations are checked before de-escalations, or the cheapest fact about an
-        asset would decide what happens to the most expensive one."""
-        c = classify(asset(ocr_ran=True, ocr_text="PASSPORT"))
-        self.assertEqual(classify_risk(c, is_exact_duplicate=True), Risk.R5_CRITICAL_DOCUMENT)
+            Proposal("x", Action.KEEP,
+                     Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.9, Recoverability.RECOVERABLE),
+                     [])
 
     def test_only_an_exact_byte_duplicate_may_be_applied_without_asking(self):
         c = classify(asset(is_screenshot=True, ocr_ran=True, ocr_text="SCREENSHOT"))
+        applied = []
         for risk in Risk:
-            if risk in (Risk.R4_PEOPLE, Risk.R5_CRITICAL_DOCUMENT):
-                continue
-            p = propose(c, risk, duplicate_of="other")
+            f = Factors(risk, Lifecycle.EXPIRED, 0.95, recoverability_of(risk),
+                        is_exact_duplicate=True)
+            p = propose(c, f, duplicate_of="other")
             if p.auto_applicable:
-                self.assertEqual(risk, Risk.R0_EXACT_DUPLICATE)
-
-    def test_an_asset_the_engine_does_not_understand_is_protected_not_discarded(self):
-        c = classify(asset())
-        self.assertEqual(classify_risk(c), Risk.R6_UNKNOWN)
-        self.assertEqual(propose(c, Risk.R6_UNKNOWN).action, Action.REVIEW)
+                applied.append(risk)
+        self.assertEqual(applied, [Risk.R0_DISPOSABLE])
 
     def test_a_medical_document_is_filed_without_any_claim_about_the_person(self):
         """§16: the category holds documents. It never characterises the human."""
         c = classify(asset(ocr_ran=True, ocr_text="PRESCRIPTION — COLLECT AT PHARMACY"))
         self.assertEqual(c.primary.path, "Documents > Medical")
-        self.assertEqual(classify_risk(c), Risk.R5_CRITICAL_DOCUMENT)
-        why = c.explain()["Documents > Medical"].lower()
-        self.assertIn("nothing about your health", why)
+        self.assertEqual(classify_risk(c), Risk.R5_CRITICAL)
+        self.assertIn("nothing about your health", c.explain()["Documents > Medical"].lower())
+
+
+class LifecycleIsWhenNotHowMuch(unittest.TestCase):
+    """§3 lists Lifecycle as its own index dimension: Temporary / Active / Expired /
+    Long-term. A verification code screenshotted an hour ago is the most useful photo
+    in the library; the same one in two months is clutter. The risk level is identical
+    on both days — only the lifecycle moved."""
+
+    def _otp(self):
+        return classify(asset(is_screenshot=True, ocr_ran=True,
+                              ocr_text="VERIFICATION CODE 115838"))
+
+    def test_a_fresh_code_is_temporary_and_kept(self):
+        c = self._otp()
+        self.assertEqual(lifecycle_of(c, age_days=1), Lifecycle.TEMPORARY)
+        f = Factors(Risk.R1_LOW_VALUE, Lifecycle.TEMPORARY, 0.9, Recoverability.RECOVERABLE)
+        self.assertEqual(decide_action(f), Action.KEEP)
+
+    def test_an_old_code_has_expired_and_is_offered_for_removal(self):
+        c = self._otp()
+        self.assertEqual(lifecycle_of(c, age_days=120), Lifecycle.EXPIRED)
+        f = Factors(Risk.R1_LOW_VALUE, Lifecycle.EXPIRED, 0.9, Recoverability.RECOVERABLE)
+        self.assertEqual(decide_action(f), Action.SUGGEST_DELETE)
+
+    def test_an_unknown_age_is_not_an_old_age(self):
+        self.assertEqual(lifecycle_of(self._otp(), age_days=None), Lifecycle.TEMPORARY)
+
+    def test_documents_and_people_are_long_term(self):
+        self.assertEqual(lifecycle_of(classify(asset(ocr_ran=True, ocr_text="PASSPORT")), 900),
+                         Lifecycle.LONG_TERM)
 
 
 class DuplicatesAndTheThingsThatOnlyLookLikeThem(unittest.TestCase):
@@ -342,31 +502,29 @@ if __name__ == "__main__":
     unittest.main(verbosity=2)
 
 
-class TransientAssetsExpireBeforeTheyAreTidied(unittest.TestCase):
-    """A verification code screenshot taken this morning is the most useful photo in
-    the library. The same screenshot in two months is clutter. The risk class is the
-    same on both days; what changes is whether acting on it is safe."""
+class ByteIdentityIsNotAClassificationGuess(unittest.TestCase):
+    """§6 R0 是 完全重复下载、重复 Meme · 激进自动处理.
 
-    def _otp(self):
-        return classify(asset(is_screenshot=True, ocr_ran=True,
-                              ocr_text="VERIFICATION CODE 115838"))
+    The confidence gate protects against acting on a guess about *what a picture is*.
+    An exact duplicate is not a guess: the evidence is a content hash. Running the two
+    together sent every unidentifiable re-download to Review, so the single thing the
+    system can genuinely automate became the thing it refused to do — which is the
+    trade §7 exists to forbid."""
 
-    def test_a_fresh_code_is_kept(self):
-        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=1)
-        self.assertEqual(p.action, Action.KEEP)
-        self.assertIn("still recent", p.note)
+    def test_an_unidentifiable_exact_duplicate_is_still_auto_cleanable(self):
+        c = classify(asset())                       # nothing places it: confidence 0
+        self.assertIsNone(c.primary)
+        risk = classify_risk(c, is_exact_duplicate=True)
+        self.assertEqual(risk, Risk.R0_DISPOSABLE)
+        action = decide_action(Factors(risk, Lifecycle.ACTIVE, 0.0,
+                                       Recoverability.RECOVERABLE, is_exact_duplicate=True))
+        self.assertEqual(action, Action.AUTO_CLEAN)
 
-    def test_an_expired_code_is_offered_for_archiving(self):
-        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=120)
-        self.assertEqual(p.action, Action.PROPOSE_ARCHIVE)
+    def test_but_a_low_confidence_non_duplicate_still_goes_to_review(self):
+        action = decide_action(Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.1,
+                                       Recoverability.RECOVERABLE))
+        self.assertEqual(action, Action.REVIEW)
 
-    def test_archiving_a_code_still_requires_confirmation_and_stays_reversible(self):
-        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=120)
-        self.assertTrue(p.requires_confirmation)
-        self.assertTrue(p.reversible)
-        self.assertFalse(p.auto_applicable)
-
-    def test_an_unknown_age_is_not_an_old_age(self):
-        """Absent evidence must never read as evidence for acting."""
-        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=None)
-        self.assertEqual(p.action, Action.KEEP)
+    def test_and_byte_identity_never_overrides_an_escalation(self):
+        c = classify(asset(ocr_ran=True, ocr_text="PASSPORT"))
+        self.assertEqual(classify_risk(c, is_exact_duplicate=True), Risk.R5_CRITICAL)
