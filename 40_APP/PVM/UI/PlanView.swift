@@ -33,7 +33,7 @@ struct PlanView: View {
                                             .clipShape(Capsule())
                                     }
                                 }
-                                Text("\(option.dailyAssets) a day · about \(option.days) days")
+                                Text(PlanView.pace(option))
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text(option.caveat).font(.caption2).foregroundStyle(.secondary)
                             }
@@ -56,6 +56,18 @@ struct PlanView: View {
                     Button("Not now") { dismiss() }
                 }
             }
+        }
+    }
+
+    /// "4,672 a day · about 1 days" is what the first run printed for a library of 78
+    /// photos: a plural that does not agree and a rate nobody needs. When the whole
+    /// library fits inside one grant, the honest answer is that it is done today.
+    static func pace(_ option: IngestionOption) -> String {
+        let daily = option.dailyAssets.formatted(.number.grouping(.automatic))
+        switch option.days {
+        case ..<1: return "all of it today"
+        case 1:    return "all of it today · up to \(daily) a day"
+        default:   return "\(daily) a day · about \(option.days) days"
         }
     }
 }

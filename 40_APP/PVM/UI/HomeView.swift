@@ -93,6 +93,10 @@ struct HomeView: View {
                             .monospacedDigit()
                     }
                 }
+                // A stable handle for the UI tests. Matching on the visible words means
+                // every wording change breaks a test and every test failure reads as a
+                // product failure; this says what the row *is*.
+                .accessibilityIdentifier("browse-\(entry.path)")
             }
         }
     }
@@ -109,6 +113,7 @@ struct HomeView: View {
                     Text("\(coordinator.reviewCount)").foregroundStyle(.secondary).monospacedDigit()
                 }
             }
+            .accessibilityIdentifier("review-queue")
         } header: {
             Text("Needs you")
         } footer: {

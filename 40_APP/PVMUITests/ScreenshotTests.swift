@@ -39,7 +39,13 @@ final class ScreenshotTests: XCTestCase {
         // And described in text, so the screen can be READ in the log rather than only
         // looked at. On a machine with no Mac this is the difference between verifying
         // the UI and hoping.
-        var lines = ["PVM_SCREEN \(name) >>>"]
+        // Only what is ON SCREEN. A SwiftUI List is a collection view: rows below the
+        // fold are not rendered and are not in the accessibility tree, so they are not
+        // in this dump either. That cost a run — "Timeline is missing from the home"
+        // was true of the dump and false of the product, and reading the two as the
+        // same thing is how a screenshot becomes a wrong conclusion.
+        var lines = ["PVM_SCREEN \(name) >>> (visible elements only; a List does not "
+                     + "render rows below the fold)"]
         let texts = app.staticTexts.allElementsBoundByIndex
         for element in texts where element.exists && !element.label.isEmpty {
             lines.append("  · \(element.label)")
@@ -49,6 +55,24 @@ final class ScreenshotTests: XCTestCase {
         print(described)
         try? described.write(to: dir.appendingPathComponent("pvm-\(name).txt"),
                              atomically: true, encoding: .utf8)
+    }
+
+    /// Wait for a row, scrolling the list if it has not been rendered yet.
+    ///
+    /// Two separate mistakes this replaces. `waitForExistence` on the navigation bar
+    /// returns while the list is still showing "Reading your library…", so a tap that
+    /// followed it found nothing; and a row below the fold does not exist until the
+    /// list scrolls to it, so `exists` was answering a question about the viewport
+    /// rather than about the product.
+    @discardableResult
+    private func row(_ identifier: String, swipes: Int = 6) -> XCUIElement {
+        let element = app.descendants(matching: .any)[identifier]
+        if element.waitForExistence(timeout: 20) { return element }
+        for _ in 0..<swipes {
+            app.swipeUp()
+            if element.exists { return element }
+        }
+        return element
     }
 
     /// §23 Structure First: the home must show order and a catalogue, not another
@@ -61,15 +85,22 @@ final class ScreenshotTests: XCTestCase {
         capture("01-home")
 
         // The first level §23 names. Not all will be present in every library; the ones
-        // the fixture guarantees are checked.
+        // the fixture guarantees are checked. Looked up by accessibility identifier and
+        // scrolled to, because "not on screen" is not "not in the catalogue".
         for root in ["Documents", "People", "Screenshots", "Timeline"] {
-            XCTAssertTrue(app.staticTexts[root].exists, "\(root) is missing from the home")
+            XCTAssertTrue(row("browse-\(root)").exists,
+                          "\(root) is missing from the home even after scrolling")
+        }
+        // §23 is about seeing the catalogue at a glance, so the fixture's whole first
+        // level has to be reachable — not just the shelves that happen to fit.
+        for root in ["Places", "Travel", "Purchases", "Downloads"] {
+            XCTAssertTrue(row("browse-\(root)").exists, "\(root) is not reachable")
         }
     }
 
     func testDrillDownReachesADocumentAndExplainsIt() {
         XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: 20))
-        app.staticTexts["Documents"].tap()
+        row("browse-Documents").tap()
         capture("02-documents")
 
         // Down to the leaf the tree defines for identity papers.
@@ -90,7 +121,7 @@ final class ScreenshotTests: XCTestCase {
 
     func testTheReviewQueueIsReachableAndSmall() {
         XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: 20))
-        app.staticTexts["Review queue"].tap()
+        row("review-queue").tap()
         XCTAssertTrue(app.navigationBars["Review queue"].waitForExistence(timeout: 5))
         capture("05-review-queue")
         XCTAssertTrue(app.staticTexts["Human Review Burden"].exists,
