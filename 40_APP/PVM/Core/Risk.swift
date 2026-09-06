@@ -280,7 +280,7 @@ public enum RiskEngine {
         guard !evidence.isEmpty else { return nil }
 
         let action = decide(f)
-        var note = note(for: action)
+        var note = RiskEngine.note(for: action)
         if action == .autoClean, let twin = duplicateOf {
             note = "byte-for-byte identical to \(twin), which stays; " + note
         }

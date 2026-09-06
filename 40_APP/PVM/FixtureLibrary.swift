@@ -15,6 +15,18 @@ public enum FixtureLibrary {
     private static let uk = PlaceName(country: "United Kingdom", city: "London", confidence: 0.9)
     private static let japan = PlaceName(country: "Japan", city: "Tokyo", confidence: 0.9)
 
+    /// FNV-1a over the id. `hashValue` is seeded per process, so using it here made the
+    /// fixture's hashes different on every launch — a fixture that is not deterministic
+    /// is worse than no fixture, because the flakiness looks like a dedup bug.
+    private static func stableHash(_ text: String) -> UInt64 {
+        var h: UInt64 = 0xcbf2_9ce4_8422_2325
+        for byte in text.utf8 {
+            h ^= UInt64(byte)
+            h = h &* 0x0000_0100_0000_01b3
+        }
+        return h
+    }
+
     private static func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 12) -> Date {
         var c = DateComponents()
         c.year = y; c.month = m; c.day = d; c.hour = h
@@ -28,7 +40,7 @@ public enum FixtureLibrary {
             var s = AssetSignals(assetID: id)
             s.pixelW = 4032; s.pixelH = 3024; s.byteSize = 520_000
             s.contentHash = "sha::\(id)"
-            s.dhash = UInt64(abs(id.hashValue)) | 1
+            s.dhash = stableHash(id) | 1
             build(&s)
             out.append(s)
         }

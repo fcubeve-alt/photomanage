@@ -55,7 +55,6 @@ public enum Dedup {
     public static func analyse(_ assets: [AssetSignals],
                                documentIDs: Set<String> = []) -> DedupReport {
         var report = DedupReport()
-        let byID = Dictionary(uniqueKeysWithValues: assets.map { ($0.assetID, $0) })
 
         // ---- exact: the only confident case ----------------------------
         var byHash: [String: [AssetSignals]] = [:]
@@ -104,7 +103,7 @@ public enum Dedup {
         for a in assets where !a.hasUsableDHash {
             if a.dhash != nil { report.unusableHash.insert(a.assetID) }
         }
-        lookAlikes(assets, byID: byID, documentIDs: documentIDs, into: &report)
+        lookAlikes(assets, documentIDs: documentIDs, into: &report)
         return report
     }
 
@@ -130,8 +129,8 @@ public enum Dedup {
         return distinct
     }
 
-    private static func lookAlikes(_ assets: [AssetSignals], byID: [String: AssetSignals],
-                                   documentIDs: Set<String>, into report: inout DedupReport) {
+    private static func lookAlikes(_ assets: [AssetSignals], documentIDs: Set<String>,
+                                   into report: inout DedupReport) {
         // Bucket on the high bits so comparison stays near-linear instead of comparing
         // 100k assets pairwise. The cost of a rare miss is a relation we do not draw,
         // never a deletion.
@@ -157,7 +156,6 @@ public enum Dedup {
                 }
             }
         }
-        _ = byID
     }
 
     private static func relate(_ a: AssetSignals, _ b: AssetSignals,

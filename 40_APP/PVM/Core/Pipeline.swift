@@ -100,9 +100,10 @@ public enum Pipeline {
 
         // ---- phase 3: relate and score ---------------------------------
         let byID = Dictionary(uniqueKeysWithValues: assets.map { ($0.assetID, $0) })
-        let documentIDs = Set(assets.filter { a in
-            classifications[a.assetID]?.paths.contains { $0.hasPrefix("Documents") } ?? false
-        }.map { $0.assetID })
+        let documentIDs = Set(assets.compactMap { a -> String? in
+            guard let c = classifications[a.assetID] else { return nil }
+            return c.paths.contains(where: { $0.hasPrefix("Documents") }) ? a.assetID : nil
+        })
         let report = Dedup.analyse(assets, documentIDs: documentIDs)
         catalog.writeRelations(report.relations)
 
