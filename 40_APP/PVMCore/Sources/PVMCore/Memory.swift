@@ -529,6 +529,30 @@ extension MemoryGraph {
 
 // MARK: - Video (L1-B §4)
 
+/// `mm:ss`, with a decimal when the span is short enough that whole seconds would hide
+/// it.
+///
+/// A cut lasting two thirds of a second is a real span in the data and rendered
+/// `00:10–00:10` on screen, which reads as nothing at all. Losing a distinction in the
+/// formatter after taking the trouble to keep it in the record is the same failure one
+/// layer out.
+public func formatSpan(_ start: Double, _ end: Double) -> String {
+    let decimals = (end - start) < 10 ? 1 : 0
+
+    func clock(_ seconds: Double) -> String {
+        // Rounded first, then split. Splitting first prints 59.967 as "00:60.0",
+        // because the carry happens after the minute is already fixed.
+        let scale = pow(10.0, Double(decimals))
+        let value = (seconds * scale).rounded() / scale
+        let minutes = Int(value / 60)
+        let rest = value - Double(minutes) * 60
+        let width = decimals == 0 ? 2 : 2 + 1 + decimals
+        return String(format: "%02d:%0\(width).\(decimals)f", minutes, rest)
+    }
+
+    return "\(clock(start))–\(clock(end))"
+}
+
 /// What a video must leave behind is a record, not a pile of frames: the shape L1-B §4
 /// specifies, verbatim — Date / Place / Person / Object / Event / relevant segment /
 /// representative frames.
@@ -562,14 +586,50 @@ public struct VideoMemoryRecord {
     }
 
     private func clock(_ range: ClosedRange<Double>) -> String {
-        func mmss(_ s: Double) -> String {
-            String(format: "%02d:%02d", Int(s) / 60, Int(s) % 60)
-        }
-        return "\(mmss(range.lowerBound))–\(mmss(range.upperBound))"
+        formatSpan(range.lowerBound, range.upperBound)
     }
 }
 
 public enum VideoMemory {
+
+    /// A segment runs from the change that started it to the change that ended it.
+    static func segmentsByContent(_ frames: [Int], _ newContent: Set<Int>,
+                                  _ frameRate: Double) -> [ClosedRange<Double>] {
+        guard !frames.isEmpty, frameRate > 0 else { return [] }
+        var out: [ClosedRange<Double>] = []
+        var start = frames[0]
+        for index in frames.dropFirst() where newContent.contains(index) {
+            out.append((Double(start) / frameRate)...(Double(index) / frameRate))
+            start = index
+        }
+        out.append((Double(start) / frameRate)...(Double(frames[frames.count - 1]) / frameRate))
+        // A trailing segment that opened on the final frame has nothing after it to
+        // close against. It is a moment, not a span, and is dropped rather than shown
+        // as a zero-length segment the user would have to interpret.
+        let spans = out.filter { $0.upperBound > $0.lowerBound }
+        if !spans.isEmpty { return spans }
+        return frames.count < 2 ? [] : Array(out.prefix(1))
+    }
+
+    /// For callers holding bare indices with no record of why each was taken: a run of
+    /// consecutive frames is one segment. Correct for that input and no more — the
+    /// gate's own output should go through `segmentsByContent`.
+    static func segmentsByAdjacency(_ frames: [Int],
+                                    _ frameRate: Double) -> [ClosedRange<Double>] {
+        guard !frames.isEmpty, frameRate > 0 else { return [] }
+        var out: [ClosedRange<Double>] = []
+        var start = frames[0]
+        var previous = frames[0]
+        for index in frames.dropFirst() {
+            if index - previous > 1 {
+                out.append((Double(start) / frameRate)...(Double(previous) / frameRate))
+                start = index
+            }
+            previous = index
+        }
+        out.append((Double(start) / frameRate)...(Double(max(previous, start)) / frameRate))
+        return out
+    }
 
     /// Build the record from the frames the delta gate already chose.
     ///
@@ -577,23 +637,24 @@ public enum VideoMemory {
     /// and the next one closes it, so what is stored is *when something was happening*
     /// rather than a list of timestamps. That is the difference between a record and an
     /// index of frames.
+    /// Build the record from the frames the delta gate already chose.
+    ///
+    /// `newContentAt` is the set of keyframes taken because something *changed* — a
+    /// cut, a drift, the first frame. The gate also takes a keyframe every thirty
+    /// frames in a completely static shot, as a periodic re-check, and those two kinds
+    /// mean opposite things here. Without the distinction a sixty-second video came
+    /// back as sixty-one zero-length "segments" — a list of instants, which is exactly
+    /// the pile of frames L1-B §4 says a video must not leave behind.
+    ///
+    /// So a segment opens on new content and is *extended*, not ended, by a heartbeat
+    /// sample. What gets stored is when something was happening.
     public static func record(asset: AssetSignals, keyframes: [Int], frameRate: Double,
                               classification: Classification? = nil,
-                              context: LibraryContext? = nil) -> VideoMemoryRecord {
+                              context: LibraryContext? = nil,
+                              newContentAt: Set<Int>? = nil) -> VideoMemoryRecord {
         let frames = Array(Set(keyframes)).sorted()
-        var segments: [ClosedRange<Double>] = []
-        if !frames.isEmpty, frameRate > 0 {
-            var start = frames[0]
-            var previous = frames[0]
-            for index in frames.dropFirst() {
-                if index - previous > 1 {
-                    segments.append((Double(start) / frameRate)...(Double(previous) / frameRate))
-                    start = index
-                }
-                previous = index
-            }
-            segments.append((Double(start) / frameRate)...(Double(max(previous, start)) / frameRate))
-        }
+        let segments = newContentAt.map { segmentsByContent(frames, $0, frameRate) }
+            ?? segmentsByAdjacency(frames, frameRate)
 
         var place: String?
         if let p = asset.place { place = p.city ?? p.country }

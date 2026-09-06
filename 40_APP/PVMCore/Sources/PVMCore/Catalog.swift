@@ -134,6 +134,23 @@ public final class Catalog: @unchecked Sendable {
         CREATE INDEX IF NOT EXISTS idx_obs_entity ON observations(entity_id, seen_at);
         CREATE INDEX IF NOT EXISTS idx_obs_asset ON observations(asset_id);
 
+        -- L1-B §4: what a video leaves behind is a record, not a pile of frames —
+        -- 这个视频对用户个人视觉记忆真正贡献的新信息. One row per video, holding the
+        -- shape §4 names, plus what the delta gate skipped so the saving is auditable
+        -- rather than asserted.
+        CREATE TABLE IF NOT EXISTS video_records(
+          asset_id TEXT PRIMARY KEY REFERENCES assets(asset_id) ON DELETE CASCADE,
+          date TEXT,
+          place TEXT,
+          people TEXT NOT NULL,          -- JSON array
+          objects TEXT NOT NULL,         -- JSON array
+          event TEXT,
+          segments TEXT NOT NULL,        -- JSON array of [start_s, end_s]
+          frames TEXT NOT NULL,          -- JSON array of representative frame indices
+          frames_seen INTEGER NOT NULL,
+          why TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
     }
@@ -471,6 +488,87 @@ public final class Catalog: @unchecked Sendable {
                 placeIsInferred: Catalog.text(st, 4) != "measured",
                 repeatsAsset: sqlite3_column_type(st, 5) == SQLITE_NULL
                     ? nil : Catalog.text(st, 5)))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+    public func writeVideoRecord(_ record: VideoMemoryRecord, framesSeen: Int) {
+        let encoder = JSONEncoder()
+        func json<T: Encodable>(_ value: T) -> String {
+            guard let data = try? encoder.encode(value),
+                  let text = String(data: data, encoding: .utf8) else { return "[]" }
+            return text
+        }
+        let formatter = ISO8601DateFormatter()
+
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            INSERT OR REPLACE INTO video_records(asset_id,date,place,people,objects,
+                event,segments,frames,frames_seen,why) VALUES(?,?,?,?,?,?,?,?,?,?);
+            """, -1, &st, nil)
+        sqlite3_bind_text(st, 1, record.assetID, -1, Catalog.SQLITE_TRANSIENT)
+        if let date = record.date {
+            sqlite3_bind_text(st, 2, formatter.string(from: date), -1, Catalog.SQLITE_TRANSIENT)
+        } else { sqlite3_bind_null(st, 2) }
+        if let place = record.place {
+            sqlite3_bind_text(st, 3, place, -1, Catalog.SQLITE_TRANSIENT)
+        } else { sqlite3_bind_null(st, 3) }
+        sqlite3_bind_text(st, 4, json(record.people), -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_text(st, 5, json(record.objects), -1, Catalog.SQLITE_TRANSIENT)
+        if let event = record.event {
+            sqlite3_bind_text(st, 6, event, -1, Catalog.SQLITE_TRANSIENT)
+        } else { sqlite3_bind_null(st, 6) }
+        let spans = record.segments.map { [($0.lowerBound * 1000).rounded() / 1000,
+                                           ($0.upperBound * 1000).rounded() / 1000] }
+        sqlite3_bind_text(st, 7, json(spans), -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_text(st, 8, json(record.representativeFrames), -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_int(st, 9, Int32(framesSeen))
+        sqlite3_bind_text(st, 10, record.evidence.map { $0.reason }.joined(separator: "; "),
+                          -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_step(st); sqlite3_finalize(st)
+        commit()
+    }
+
+    public struct VideoRow {
+        public let assetID: String
+        public let date: String?
+        public let place: String?
+        public let people: [String]
+        public let objects: [String]
+        public let event: String?
+        public let segments: [[Double]]
+        public let frames: [Int]
+        public let framesSeen: Int
+        public let why: String
+    }
+
+    public func videoRecords(limit: Int = 50) -> [VideoRow] {
+        let decoder = JSONDecoder()
+        func decode<T: Decodable>(_ text: String, _ fallback: T) -> T {
+            guard let data = text.data(using: .utf8),
+                  let value = try? decoder.decode(T.self, from: data) else { return fallback }
+            return value
+        }
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            SELECT asset_id,date,place,people,objects,event,segments,frames,frames_seen,why
+            FROM video_records ORDER BY date DESC LIMIT ?;
+            """, -1, &st, nil)
+        sqlite3_bind_int(st, 1, Int32(limit))
+        var out: [VideoRow] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append(VideoRow(
+                assetID: Catalog.text(st, 0),
+                date: sqlite3_column_type(st, 1) == SQLITE_NULL ? nil : Catalog.text(st, 1),
+                place: sqlite3_column_type(st, 2) == SQLITE_NULL ? nil : Catalog.text(st, 2),
+                people: decode(Catalog.text(st, 3), []),
+                objects: decode(Catalog.text(st, 4), []),
+                event: sqlite3_column_type(st, 5) == SQLITE_NULL ? nil : Catalog.text(st, 5),
+                segments: decode(Catalog.text(st, 6), []),
+                frames: decode(Catalog.text(st, 7), []),
+                framesSeen: Int(sqlite3_column_int64(st, 8)),
+                why: Catalog.text(st, 9)))
         }
         sqlite3_finalize(st)
         return out

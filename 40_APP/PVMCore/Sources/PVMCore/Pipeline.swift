@@ -24,6 +24,10 @@ public struct RunStats {
     public var entities = 0
     public var observations = 0
     public var entityReview = 0
+    public var videos = 0
+    public var videoFramesSeen = 0
+    public var videoFramesProcessed = 0
+    public var videoMillisecondsSaved = 0.0
     public var needsReview = 0
     public var unfiled = 0
     public var byTier: [Tier: Int] = [:]
@@ -59,6 +63,7 @@ public enum Pipeline {
                            budget: Tier = .text,
                            reconcileDeletions: Bool = true,
                            buildMemory: Bool = true,
+                           framesFor: ((AssetSignals) -> [Frame])? = nil,
                            progress: ((Int, Int) -> Void)? = nil) -> RunStats {
         let started = Date()
         var stats = RunStats()
@@ -145,6 +150,46 @@ public enum Pipeline {
         }
         catalog.commit()
 
+        // ---- phase 3b: video --------------------------------------------
+        //
+        // The engine has no decoder, so frames come from outside — the same shape of
+        // contract `AssetSignals` already is with the rest of the world. Without a
+        // source a video is still catalogued from its metadata; it is simply never
+        // looked inside, and `videos` stays at zero rather than the run implying
+        // otherwise.
+        //
+        // This is L1-B §4's division of labour: decide **which frames deserve deep
+        // processing** and record **what the video contributed**. Running a model on
+        // those frames is the caller's job, because that is the part needing Vision.
+        if let framesFor {
+            for asset in assets where asset.isVideo {
+                let frames = framesFor(asset)
+                // A video whose frames could not be read is not a video with no new
+                // information. Saying nothing is honest; an empty record claims the
+                // opposite.
+                guard !frames.isEmpty else { continue }
+
+                let c = classifications[asset.assetID]
+                // Documents get a stricter gate — a page of text that drifts slightly
+                // is still a different page, and §9's false merge is expensive there.
+                let isDocument = c?.paths.contains { $0.hasPrefix("Documents") } ?? false
+                let selection = Deltas.selectKeyframes(frames, isDocument: isDocument)
+                let cost = Deltas.estimateCost(selection)
+
+                let record = VideoMemory.record(
+                    asset: asset, keyframes: selection.keyframes,
+                    frameRate: Pipeline.frameRate(frames, asset),
+                    classification: c, context: context,
+                    newContentAt: selection.newContentFrames)
+                catalog.writeVideoRecord(record, framesSeen: selection.total)
+
+                stats.videos += 1
+                stats.videoFramesSeen += selection.total
+                stats.videoFramesProcessed += selection.processed
+                stats.videoMillisecondsSaved += cost.savedMilliseconds
+            }
+        }
+
         // ---- phase 4: remember -----------------------------------------
         // §2 lists Remember among the ten things the product is, and §15 builds every
         // later service on it. No new intelligence is spent: this reads the
@@ -162,6 +207,25 @@ public enum Pipeline {
 
         stats.wallSeconds = Date().timeIntervalSince(started)
         return stats
+    }
+
+    /// Derived from the frames themselves where they carry timestamps, because the
+    /// sampling rate is a property of what the caller handed us and not of the file.
+    ///
+    /// A caller sampling every tenth frame of a 30 fps video is giving us 3 fps, and
+    /// using the file's rate would put every segment boundary in the wrong place — the
+    /// record would name the wrong seconds of the user's own video.
+    static func frameRate(_ frames: [Frame], _ asset: AssetSignals) -> Double {
+        let stamped = frames.filter { $0.timestampSeconds != 0 }
+        if let first = stamped.first, let last = stamped.last, stamped.count >= 2 {
+            let span = last.timestampSeconds - first.timestampSeconds
+            let steps = last.index - first.index
+            if span > 0, steps > 0 { return Double(steps) / span }
+        }
+        if asset.durationSeconds > 0, frames.count > 1 {
+            return Double(frames.count - 1) / asset.durationSeconds
+        }
+        return 1.0
     }
 
     private static func escape(_ s: String) -> String {
