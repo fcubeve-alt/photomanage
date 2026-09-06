@@ -112,13 +112,33 @@ final class ConformanceTests: XCTestCase {
         }
     }
 
+    /// The number of assets the fixture is known to contain. A conformance test that
+    /// silently compares nothing and passes is the exact failure this file exists to
+    /// prevent, so it is guarded against itself.
+    private static let expectedFixtureSize = 78
+
+    func testTheFixtureAndTheExpectationsAreActuallyThere() throws {
+        let assets = try loadFixture()
+        let expected = try JSONDecoder().decode([String: ExpectedRow].self,
+                                                from: try resource("expected.json"))
+        XCTAssertEqual(assets.count, Self.expectedFixtureSize,
+                       "the fixture changed size — regenerate and review the diff, do not "
+                       + "just update this number")
+        XCTAssertGreaterThan(expected.count, Self.expectedFixtureSize / 2,
+                             "expected.json covers almost nothing; a comparison against it "
+                             + "would pass by having nothing to compare")
+        XCTAssertTrue(expected.values.allSatisfy { !$0.paths.isEmpty },
+                      "an expectation with no paths cannot fail, whatever the app does")
+    }
+
     func testTheAppAgreesWithTheReferenceImplementation() throws {
         TaxonomyRuntime.resetMinted()
         let assets = try loadFixture()
-        XCTAssertFalse(assets.isEmpty, "the fixture is empty")
+        XCTAssertEqual(assets.count, Self.expectedFixtureSize)
 
         let expected = try JSONDecoder().decode([String: ExpectedRow].self,
                                                 from: try resource("expected.json"))
+        XCTAssertFalse(expected.isEmpty, "there is nothing to compare against")
 
         let directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent(UUID().uuidString)
@@ -127,13 +147,17 @@ final class ConformanceTests: XCTestCase {
             Catalog(path: directory.appendingPathComponent("conformance.sqlite").path))
         _ = Pipeline.run(assets: assets, catalog: catalog, reconcileDeletions: false)
 
-        var actual: [String: (paths: [String], risk: Int?, action: String?)] = [:]
+        var actual: [String: [String]] = [:]
         for asset in assets {
-            let paths = catalog.why(asset.assetID).map { $0.path }.sorted()
+            let paths = catalog.paths(for: asset.assetID)
             guard !paths.isEmpty else { continue }
-            actual[asset.assetID] = (paths: paths, risk: nil, action: nil)
+            actual[asset.assetID] = paths.sorted()
         }
+        XCTAssertGreaterThan(actual.count, Self.expectedFixtureSize / 2,
+                             "the app filed almost nothing — the comparison below would "
+                             + "otherwise report agreement it has not established")
 
+        var compared = 0
         var mismatches: [String] = []
         for (assetID, want) in expected.sorted(by: { $0.key < $1.key }) {
             guard let got = actual[assetID] else {
@@ -141,11 +165,12 @@ final class ConformanceTests: XCTestCase {
                                   + "under \(want.paths.joined(separator: ", "))")
                 continue
             }
-            if got.paths != want.paths.sorted() {
+            compared += 1
+            if got != want.paths.sorted() {
                 mismatches.append("""
                     \(assetID) is filed differently:
                         engine: \(want.paths.sorted().joined(separator: ", "))
-                        app:    \(got.paths.joined(separator: ", "))
+                        app:    \(got.joined(separator: ", "))
                     """)
             }
         }
@@ -153,6 +178,8 @@ final class ConformanceTests: XCTestCase {
             mismatches.append("\(assetID): the app filed it somewhere; the engine did not")
         }
 
+        XCTAssertGreaterThan(compared, Self.expectedFixtureSize / 2,
+                             "only \(compared) assets were actually compared")
         XCTAssertTrue(mismatches.isEmpty, """
             The app and the reference implementation disagree on \(mismatches.count) \
             of \(expected.count) assets. Whichever side moved is the side to fix — do not \
@@ -182,20 +209,25 @@ final class ConformanceTests: XCTestCase {
 
         var riskMismatches: [String] = []
         var actionMismatches: [String] = []
+        var compared = 0
         for (assetID, want) in expected.sorted(by: { $0.key < $1.key }) {
-            let rows = catalog.assets(under: "Timeline").filter { $0.assetID == assetID }
-            if let wantRisk = want.risk, let got = rows.first {
-                if got.risk.rawValue != wantRisk {
-                    riskMismatches.append("\(assetID): engine R\(wantRisk), app R\(got.risk.rawValue)")
-                }
+            guard let got = catalog.decision(for: assetID) else {
+                riskMismatches.append("\(assetID): the app recorded no decision at all")
+                continue
             }
-            if let wantAction = want.action {
-                let got = catalog.reviewQueue(limit: 10_000).first { $0.assetID == assetID }?.action
-                if wantAction == "review", got != "review" {
-                    actionMismatches.append("\(assetID): engine says review, app does not")
-                }
+            compared += 1
+            if let wantRisk = want.risk, got.risk.rawValue != wantRisk {
+                riskMismatches.append(
+                    "\(assetID): engine R\(wantRisk) (\(Risk(rawValue: wantRisk)?.meaning ?? "?")), "
+                    + "app R\(got.risk.rawValue) (\(got.risk.meaning))")
+            }
+            if let wantAction = want.action, got.action != wantAction {
+                actionMismatches.append(
+                    "\(assetID): engine would \(wantAction), app would \(got.action ?? "nothing")")
             }
         }
+        XCTAssertGreaterThan(compared, Self.expectedFixtureSize / 2,
+                             "only \(compared) decisions were compared")
         XCTAssertTrue(riskMismatches.isEmpty,
                       "risk levels disagree:\n" + riskMismatches.prefix(10).joined(separator: "\n"))
         XCTAssertTrue(actionMismatches.isEmpty,

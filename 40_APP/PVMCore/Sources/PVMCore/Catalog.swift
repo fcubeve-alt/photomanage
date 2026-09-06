@@ -442,6 +442,37 @@ public final class Catalog: @unchecked Sendable {
         return out
     }
 
+    /// The stored decisions for one asset. Used by the conformance test, which needs
+    /// the exact row rather than whatever a browse query happens to return first.
+    public func decision(for assetID: String) -> (risk: Risk, action: String?)? {
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            SELECT a.risk, p.action FROM assets a
+            LEFT JOIN proposals p ON p.asset_id = a.asset_id
+            WHERE a.asset_id = ?;
+            """, -1, &st, nil)
+        sqlite3_bind_text(st, 1, assetID, -1, Catalog.SQLITE_TRANSIENT)
+        defer { sqlite3_finalize(st) }
+        guard sqlite3_step(st) == SQLITE_ROW else { return nil }
+        let risk = Risk(rawValue: Int(sqlite3_column_int(st, 0))) ?? .r2Normal
+        var action: String?
+        if let c = sqlite3_column_text(st, 1) { action = String(cString: c) }
+        return (risk: risk, action: action)
+    }
+
+    public func paths(for assetID: String) -> [String] {
+        var out: [String] = []
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db,
+            "SELECT path FROM assignments WHERE asset_id=? ORDER BY path;", -1, &st, nil)
+        sqlite3_bind_text(st, 1, assetID, -1, Catalog.SQLITE_TRANSIENT)
+        while sqlite3_step(st) == SQLITE_ROW {
+            if let c = sqlite3_column_text(st, 0) { out.append(String(cString: c)) }
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
     public func sizeOnDisk() -> Int64 {
         var total: Int64 = 0
         for suffix in ["", "-wal", "-shm"] {
