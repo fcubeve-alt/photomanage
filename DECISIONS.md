@@ -542,3 +542,68 @@ and all at zero lines of code.** `README.md` now says this on its first screen r
 than implying it. Recorded as **PF-11**.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-028 · 2026-09-06 · Owner directs the classification engine to be built now, whatever T0-A says
+**Owner instruction, verbatim in substance:** run T0-A once so we have a number, ignore
+what the documents have locked, and then build the real classification program —
+*"无论这个测试过不过，我都要做"*. B, C and D are not to be touched. Highest authority.
+
+**What was locked, and is now overridden.** `MISSION_SPEC` OUT OF SCOPE listed the
+Visual Asset Taxonomy, Multi-Signal Classification and the Risk Policy Engine as Tier 1
+/ Tier 2. `MASTER_PLAN` M2/M3/M4 are marked LOCKED, and the Execution Index rule is one
+tier at a time. The Owner has lifted that sequencing for the classifier specifically.
+Recorded here rather than silently — a rule that gets ignored without a record stops
+being a rule for everything else too.
+
+**The Owner's reasoning, which is sound.** The Tier 0 gate exists to stop the project
+building something physics forbids. The Owner has already decided to build (DEC-026),
+HG-1 blocks the device measurement for an unknown duration (DEC-027), and T0-A's own
+kill question is about *library size*, not about whether classification works. A1
+failing degrades scope to "recent N months" — it does not make a classifier pointless.
+So the classifier is not downstream of A in the way the tier ordering assumed.
+
+**A stated by the Owner and confirmed by measurement:** 100k assets is far above what
+most libraries hold. The measured ceiling (`20_TIER0/evidence/T0A_SCALE_SIMULATOR_2026-09-06.md`)
+puts ~50k inside both budgets on the optimistic ceiling and ~10k–26k inside the
+90-minute foreground budget on the predicted device band. Designing for 10k–50k rather
+than for 100k is consistent with the data.
+
+**What was built.** `30_ENGINE/` — signal contract, escalating classifier, R0–R6 risk
+policy, duplicate and same-entity handling, SQLite catalogue with checkpoint/resume and
+incremental update, CLI, 55 behavioural tests, and an evaluation harness run against
+the 10,000-asset labelled library. Root-level macro F1 **0.998**, leaf exact **99.8%**
+where the label is derivable, **0** wrong roots, all four safety red lines audited
+against the written catalogue rather than asserted from the code.
+
+**Three things kept honest rather than flattered:**
+
+1. **4,155 of the 10,000 labels are coin flips.** `generate_test_library.py` assigns
+   filler assets a leaf with `random.choice`, and no signal on the asset records which
+   one it picked. Those are counted and **not scored**; scoring them would report the
+   generator's randomness as classifier error permanently, however good the classifier
+   became. The corpus was built for T0-B retrieval navigation, not for classifier
+   evaluation, and it is used only for what it can actually answer.
+2. **The corpus carries no provenance and no scene labels**, so `Downloads`, `Objects`
+   and `Clothing` are unreachable in evaluation. Their rules exist and are unit-tested
+   from explicit signals. Faking either from the label would have measured the adapter.
+3. **The adapter refuses to read ground truth.** `_Row` raises on `category`,
+   `category_path`, `paths`, `same_entity_group`, `source_query` and the rest. A leak
+   crashes the run instead of producing a perfect score.
+
+**A real defect the work exposed, worth more than the score.** With the location rule
+running before the text tier, a GPS fix filed every photographed document as
+`Places > … > London` at 0.91 confidence; the escalation policy saw a settled answer and
+the OCR pass that would have recognised the passport never ran. **Nine of nine identity
+documents lost, silently, each with a plausible wrong answer in its place.** Location is
+context, not identity. Locked into `LocationIsContextNotIdentity` in the test suite.
+
+**A corpus defect found on the way.** Assets A00126–A00132 carry `place: "home"` — which
+the manifest's own table resolves to London, 51.5074/-0.1278 — while their labelled path
+is `Places > United Kingdom > Brighton`. The coordinates and the label disagree. That
+matters to **T0-B**, not just here: a facilitator task that asks a participant to find
+those beach photos by location is not answerable from the asset's own data. Left as a
+finding for whoever next touches the test library; not silently patched.
+
+**Status.** ACTIVE.

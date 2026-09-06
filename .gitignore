@@ -14,3 +14,8 @@ logs/
 20_TIER0/landing/emails.jsonl
 20_TIER0/study_assets/library/
 20_TIER0/study_assets/_smoke*/
+
+# engine working files
+30_ENGINE/**/*.sqlite
+30_ENGINE/**/*.sqlite-wal
+30_ENGINE/**/*.sqlite-shm

@@ -33,6 +33,12 @@ from .signals import AssetSignals, GeoFix
 AWAY_KM = 120.0
 # Below this many days away, it is a day out, not a trip worth its own entry.
 MIN_TRIP_DAYS = 2
+# ...and below this many assets it is not worth a browse entry either. Without this
+# floor the detector produced 53 "trips" of two photos each from a scatter of
+# single Tokyo captures, burying the one real nine-day trip in noise. A folder the
+# user has to read past costs more attention than it saves, so the bar for minting
+# one is that it holds enough to be a destination.
+MIN_TRIP_ASSETS = 8
 # Coordinates are rounded to a grid before clustering. ~1 km is coarse enough that a
 # phone's GPS jitter does not split one home into four, and fine enough that the next
 # town does not merge into it.
@@ -70,8 +76,8 @@ class LibraryContext:
 
     @property
     def home_confidence(self) -> float:
-        """Thin evidence must not read as a confident home. 20 captures is a guess;
-        several hundred is a residence."""
+        """`home_sample_size` counts DAYS, not captures. Twenty days somewhere is a
+        guess; a few hundred is a residence, and no amount of it is certainty."""
         if not self.home_sample_size:
             return 0.0
         return min(0.95, 0.4 + self.home_sample_size / 400.0)
@@ -96,7 +102,12 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
 
     cells: Counter = Counter()
     cell_names: Dict[Tuple[float, float], Counter] = defaultdict(Counter)
-    home_candidates: Counter = Counter()
+    # Home is measured in DISTINCT DAYS, not in captures. Counting captures makes home
+    # wherever the camera was busiest, so one weekend of 500 beach photos outvotes two
+    # years of living somewhere. Days are the honest unit: home is where this person
+    # keeps turning up.
+    home_days: Dict[Tuple[float, float], set] = defaultdict(set)
+    cell_days: Dict[Tuple[float, float], set] = defaultdict(set)
     people: Counter = Counter()
     years: List[int] = []
     located: List[Tuple[datetime, GeoFix, Optional[str], Optional[str]]] = []
@@ -120,8 +131,9 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
         if a.created_at:
             off_hours = a.created_at.hour >= 19 or a.created_at.hour <= 7
             weekend = a.created_at.weekday() >= 5
+            cell_days[cell].add(a.created_at.date())
             if off_hours or weekend:
-                home_candidates[cell] += 1
+                home_days[cell].add(a.created_at.date())
             located.append((a.created_at, a.geo, a.place.country if a.place else None,
                             a.place.city if a.place else None))
 
@@ -129,11 +141,11 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
         ctx.year_range = (min(years), max(years))
     ctx.known_people = [n for n, _ in people.most_common()]
 
-    pool = home_candidates or cells
+    pool = home_days or cell_days
     if pool:
-        cell, count = pool.most_common(1)[0]
+        cell = max(pool, key=lambda k: (len(pool[k]), cells[k]))
         ctx.home = GeoFix(lat=cell[0], lon=cell[1], source="inferred")
-        ctx.home_sample_size = count
+        ctx.home_sample_size = len(pool[cell])
         if cell_names[cell]:
             (country, city), _ = cell_names[cell].most_common(1)[0]
             ctx.home_country, ctx.home_city = country, city
@@ -166,6 +178,8 @@ def _find_trips(located, ctx: LibraryContext) -> List[Trip]:
         for d in run_days:
             names.update(away_days[d])
             total += sum(away_days[d].values())
+        if total < MIN_TRIP_ASSETS:
+            return
         (country, city), _ = names.most_common(1)[0]
         trips.append(Trip(city=city, country=country, start=run_days[0],
                           end=run_days[-1], asset_count=total))

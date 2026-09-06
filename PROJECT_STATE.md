@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-09-06 · Session 002 — machine migration; tooling repaired and guarded (DEC-025)
+Last updated: 2026-09-06 · Session 003 — first measured T0-A data (simulator ceiling) and the classification engine built on Owner instruction (DEC-028)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -29,6 +29,8 @@ L1 Product Constitution **v1.3** → **L1-B Architecture Methodology v1.0** → 
 Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_RULES.md`.
 
 ## Done
+- **First measured Tier 0-A data exists** (2026-09-06). Scale sweep on the iOS Simulator, $0, HG-1 not required: **104.7 ms/asset**, linear from n=200 to n=3000. Ceiling **51,567** assets in the 90-min foreground budget, **275,026** in the 8-h background budget; predicted device band **10,313–25,783** foreground (PREDICTION, no device has run this). Evidence: `20_TIER0/evidence/T0A_SCALE_SIMULATOR_2026-09-06.md`. **Still not an A1–A4 verdict** — no thermal, no jetsam, no battery, no Neural Engine, no real library.
+- **The classification engine is built** (DEC-028, Owner instruction). `30_ENGINE/` — signal contract, escalating classifier, R0–R6 risk policy, duplicate / same-entity handling, SQLite catalogue with checkpoint-resume and incremental update, CLI, 55 tests, evaluation harness. Measured on the 10,000-asset labelled library: root macro **F1 0.998**, leaf exact **99.8%** where derivable, **0** wrong roots, 4/4 safety red lines audited. **PF-11 still applies to everything else** — this is one engine, not a product.
 - **M0 Bootstrap complete.** 11 source documents audited, authority levels assigned, 4 superseded/duplicate files archived, 5 conflicts resolved (C-1…C-5), Money OS package sealed out of scope.
 - Persistent state established: MISSION_SPEC, MASTER_PLAN, PROJECT_STATE, OPERATING_RULES, DECISIONS, FAILURE_PATTERNS, SESSION_HANDOFF, DOCUMENTATION_MAP, VALIDATION_MATRIX. No pre-existing equivalents were duplicated — the folder contained zero markdown files.
 - Validation matrix built for all three tiers with measurable pass criteria.

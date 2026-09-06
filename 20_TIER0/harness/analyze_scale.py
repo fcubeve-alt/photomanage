@@ -147,9 +147,21 @@ def report(rows, host, out):
       f"OCR is {ocr_share:.0f}% of per-asset cost and embedding is {embed_share:.0f}%. ")
     if best["ocr_ms_per_ocr_asset"] > 0 and best["embed_ms_per_asset"] > 0:
         ratio = best["ocr_ms_per_ocr_asset"] / best["embed_ms_per_asset"]
-        w(f"Per asset actually OCR'd, OCR costs {ratio:.1f}x an embedding. ")
-        w("Prediction holds.\n\n" if ratio >= 5 else
-          "Prediction does NOT hold at this magnitude — the gate matters less than the spec assumed.\n\n")
+        w(f"Per asset actually OCR'd, OCR costs {ratio:.1f}x an embedding.\n\n")
+        if ratio >= 5:
+            w("Prediction holds on this host.\n\n")
+        else:
+            w("**On this host the prediction is inverted — and this is the one number in "
+              "the table that the Simulator is least entitled to decide.** "
+              "`VNGenerateImageFeaturePrintRequest` is precisely the stage that runs on "
+              "the Neural Engine on a device and on the CPU here, so the embedding cost "
+              "measured above is inflated by an unknown factor that Vision's text "
+              "recognition does not pay in the same proportion. The honest reading is "
+              "that C-1 is **now in doubt and no longer safe to design around**, not "
+              "that it is refuted: refuting it needs a device. What follows either way "
+              "is that the embedding — not the OCR gate — is where the next optimisation "
+              "belongs unless a device says otherwise, because the gate can at best "
+              "remove a stage that costs a fraction of the one nothing gates.\n\n")
     else:
         w("\n\n")
 
@@ -191,14 +203,26 @@ def report(rows, host, out):
     w("## Supporting budgets\n\n")
     bpa = best["index_bytes_per_asset"]
     ok_idx = bpa <= BUDGET["index_bytes_per_asset"]
+    emb = best["embedding_bytes_per_asset"]
     w(f"- Index size: **{bpa:.0f} B/asset** vs budget {BUDGET['index_bytes_per_asset']} — "
       f"{'within budget' if ok_idx else 'OVER BUDGET'}. "
       f"At 100k that is {bpa*100_000/1e9:.2f} GB.\n")
-    w(f"  Of that, the embedding alone is {best['embedding_bytes_per_asset']:.0f} B/asset.\n")
+    w(f"  The embedding blob alone is {emb:.0f} B/asset")
+    if not ok_idx and emb > 0:
+        w(f", i.e. the whole overage and then some: everything else comes to "
+          f"{bpa - emb:.0f} B/asset, which is inside the budget on its own.\n")
+        w("  So this is a design choice to make, not a bug to fix — store the feature "
+          "print and pay the bytes, quantise it, or recompute it on demand and pay the "
+          "time again. The budget was written before anyone knew what a feature print "
+          "weighed.\n")
+    else:
+        w(".\n")
     growth = best["peak_footprint_mb"] - best["start_footprint_mb"]
-    w(f"- Memory: peak footprint {best['peak_footprint_mb']:.0f} MB, "
-      f"{growth:+.0f} MB over the run. Flat growth is the thing to want; the Simulator "
-      "has no jetsam, so this is a leak check, not a survivability result.\n")
+    w(f"- Memory: **{growth:+.0f} MB of growth** across the run (absolute footprint "
+      f"{best['peak_footprint_mb']:.0f} MB). Read the growth, not the absolute: the "
+      "absolute includes the whole test host inside a Simulator and is not a phone "
+      "number, while growth that tracks n is a leak wherever it runs. The Simulator has "
+      "no jetsam, so neither figure is an A3 result.\n")
     w(f"- Failed assets: {best['failed']} of {best['n']}.\n\n")
 
     # ---- what this cannot say ---------------------------------------------
@@ -208,6 +232,10 @@ def report(rows, host, out):
     w("- **A4 incrementality** — needs a real `PHPhotoLibraryChangeObserver` on a real library. Untested.\n")
     w("- **iCloud** — no optimised-storage library exists here, so the §6 variable is untouched.\n")
     w("- **Video** — MNI-2 / FC-2: images only. A mixed library is worse than this.\n")
+    w("- **The stage mix itself** — the Simulator has no Neural Engine, so the split "
+      "between the embedding and OCR above is the least transferable row in the report. "
+      "The total is an optimistic ceiling; the *proportions* may not survive contact "
+      "with an ANE at all.\n")
     w("- **FC-1** — the dHash is computed and never used to skip work, so every duplicate "
       "pays full price. The number above measures the naive pipeline, and is pessimistic "
       "by exactly the duplicate rate.\n")

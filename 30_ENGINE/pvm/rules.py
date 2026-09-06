@@ -50,6 +50,15 @@ def _rx(p: str) -> Pattern:
     return re.compile(p, re.IGNORECASE)
 
 
+# A note that cost a real miss: a trailing \b after a PREFIX never matches. The
+# original rule for order confirmations was `\border\s+(number|no|confirm)\b`, and
+# on the text "ORDER CONFIRMATION" the group matched "CONFIRM" while the \b that
+# followed it landed between M and A — both word characters — so the whole rule
+# failed. One screenshot was filed as a plain screenshot instead of a purchase, which
+# is exactly the kind of miss nobody notices until they go looking for the order.
+# Rules that key on a word STEM use `\w*` before the boundary.
+
+
 # --------------------------------------------------------------------------------
 # Identity, contracts, finance, health — the Protect-by-default classes.
 # Weights are high because these phrases are not ambiguous, and being *sure* is what
@@ -83,7 +92,7 @@ DOCUMENT_RULES: List[TextRule] = [
 
     # §16: recognises the DOCUMENT. Says nothing about the person, and nothing
     # downstream may extract health content from it.
-    TextRule(_rx(r"\b(prescription|nhs\b|test\s+results?|referral\s+letter|clinic\b|surgery\s+appointment)\b"),
+    TextRule(_rx(r"\b(prescription\w*|nhs\b|test\s+results?|referral\s+letter|clinic\w*|surgery\s+appointment)\b"),
              "Documents > Medical", 0.80,
              "this looks like a medical document — filed as a document, and nothing "
              "about your health is inferred, stored or shown from it"),
@@ -101,11 +110,11 @@ DOCUMENT_RULES: List[TextRule] = [
 PURCHASE_RULES: List[TextRule] = [
     TextRule(_rx(r"\breceipt\b|\b(vat|subtotal)\b|\btotal\s*[:£$€]"), "Purchases > Receipts", 0.85,
              "receipt wording and a total were read on the image"),
-    TextRule(_rx(r"\b(warranty|guarantee\s+card)\b"), "Purchases > Warranty", 0.85,
+    TextRule(_rx(r"\b(warrant\w*|guarantee\w*)\b"), "Purchases > Warranty", 0.85,
              "warranty wording was read on the image"),
-    TextRule(_rx(r"\b(order\s+(number|no\.?|confirm)|your\s+order|order\s+placed)\b"), "Purchases > Orders", 0.80,
+    TextRule(_rx(r"\border\s+(number|no\.?|confirm\w*)\b|\byour\s+order\b|\border\s+placed\b"), "Purchases > Orders", 0.80,
              "an order confirmation was read on the image"),
-    TextRule(_rx(r"\b(out\s+for\s+delivery|tracking\s+(number|no\.?)|dispatch|delivered\s+on|courier)\b"),
+    TextRule(_rx(r"\b(out\s+for\s+delivery|tracking\s+(number|no\.?)|dispatch\w*|delivered\s+on|courier)\b"),
              "Purchases > Delivery", 0.80, "delivery-tracking wording was read on the image"),
     TextRule(_rx(r"\bpurchase\b"), "Purchases", 0.55,
              "the image reads as purchase paperwork, but not which kind"),
@@ -132,7 +141,7 @@ SCREENSHOT_RULES: List[TextRule] = [
              "Screenshots > Shopping", 0.75, "shop wording was read in the screenshot", "Screenshots"),
     TextRule(_rx(r"\b(typing|delivered|read\s+\d{1,2}:\d{2}|whatsapp|imessage|telegram)\b"),
              "Screenshots > Chat", 0.72, "chat wording was read in the screenshot", "Screenshots"),
-    TextRule(_rx(r"\b(error|failed|unable\s+to|something\s+went\s+wrong|exception|crash)\b"),
+    TextRule(_rx(r"\b(error\w*|fail\w*|unable\s+to|something\s+went\s+wrong|exception|crash\w*)\b"),
              "Screenshots > Errors", 0.74, "an error message was read in the screenshot", "Screenshots"),
     TextRule(_rx(r"\b(sprint|stand-?up|jira|confluence|agenda|slide\s+\d+|action\s+items?)\b"),
              "Screenshots > Work", 0.72, "work wording was read in the screenshot", "Screenshots"),

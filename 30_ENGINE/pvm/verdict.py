@@ -90,11 +90,19 @@ class Assignment:
 class Classification:
     asset_id: str
     assignments: List[Assignment] = field(default_factory=list)
-    # The most expensive signal the engine actually needed. L1-B: if this is
-    # METADATA for most of the library, the engine is cheap to run; if it is FACES
-    # for everything, the design has failed regardless of its accuracy.
+    # The most expensive signal that ended up in the ANSWER.
     tier_used: Tier = Tier.METADATA
+    # The tiers the engine actually CONSULTED. These are different numbers and
+    # conflating them flatters the design: a photo whose answer came from its GPS fix
+    # still cost a face pass if the engine ran one to find out. `tier_used` says how
+    # deep the evidence went; `tiers_spent` says what the run actually cost, and only
+    # the second one shows up in a battery graph.
+    tiers_spent: set = field(default_factory=set)
     notes: List[str] = field(default_factory=list)
+
+    @property
+    def tier_spent(self) -> Tier:
+        return max(self.tiers_spent) if self.tiers_spent else Tier.METADATA
 
     def add(self, assignment: Assignment) -> "Classification":
         for existing in self.assignments:

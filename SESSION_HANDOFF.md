@@ -3,38 +3,38 @@ Overwrite the CURRENT block at the end of every session. Template kept below it.
 
 ---
 
-## CURRENT — Session 002 · 2026-09-06
+## CURRENT — Session 003 · 2026-09-06
 
 | Field | Value |
 |---|---|
-| Repository | `D:\Documents\GitHub\photomanage` (**moved** — was `D:\photomanage` on the previous machine) |
+| Repository | `photomanage` |
 | Remote | `github.com/fcubeve-alt/photomanage` (**PRIVATE**) |
-| Branch | `main` |
-| Full SHA | see `git log -1 --format=%H` — this session starts from `5abd016` |
-| Stage | M1 / Tier 0 — 生死开关 |
-| Session did | Cold-start recovery on a **new computer** (33 checks, 0 FAIL). Found and fixed **PF-10**: both Tier 0 analyzers died with `UnicodeEncodeError` under this machine's cp936 console, *after* completing their analysis. Pinned UTF-8 stdout in all seven Python entry points; added `tools-check.yml` CI with a verified negative control; re-verified generator determinism and manifest reproducibility on this machine; corrected stale coordinates and a stale build-ahead list in `PROJECT_STATE.md` (**DEC-025**). Then generated `FOREGROUND_SOURCING_WORKSHEET.md` (136 images as an executable list, constraint counts verified against the manifest). Owner then cancelled **T0-C and T0-D** and declared the product a GO (**DEC-026**) — T0-A is now the only kill test, B is **OPEN-2**. Added the $0 half of the T0-A path: `ios-build.yml` now **runs** the harness on an iOS Simulator, not just compiles it — **17 tests green**, and it immediately found **FC-1a** (`dHash` returns 0 for a whole class of ordinary images *and* for every hash failure, so FC-1 cannot skip work on a hash match alone). |
-| Next action | **T0-A only.** Awaiting three Owner calls: (1) **OPEN-2** — does T0-B survive the GO decision? (2) **FC-1 + its FC-1a precondition** — fix before the device campaign? (3) **HG-1** — $99 Apple Developer + the 8 signing secrets. Everything downstream of HG-1 is written and green. |
+| Branch | `claude/classification-program-dev-yk88jj` |
+| Full SHA | see `git log -1 --format=%H` |
+| Stage | M1 / Tier 0 — 生死开关, **plus the classification engine by Owner instruction (DEC-028)** |
+| Session did | **Two things, both on Owner instruction.** (1) **T0-A now has real measured data at $0** — a scale sweep of the full indexing pipeline on the iOS Simulator: 104.7 ms/asset, linear across n=200..3000, ceiling **51,567** assets in the 90-min foreground budget and **275,026** in the 8-h background budget, predicted device band **10,313–25,783** foreground. Three findings: C-1's "OCR dominates" prediction is **inverted on this host** (embedding 84%, OCR 6%) and is now *in doubt* rather than refuted, because the Simulator has no Neural Engine and the embedding is exactly the stage that would use it; index size is **2× over its §8 budget**, all of it the 3,072-byte feature print; cost is linear. Evidence: `20_TIER0/evidence/T0A_SCALE_SIMULATOR_2026-09-06.md`. The first attempt came back **green having measured nothing** — the guard is the only reason that was caught. (2) **Built the classification engine** (`30_ENGINE/`, DEC-028): signal contract, escalating classifier, R0–R6 risk policy, duplicate / same-entity handling, SQLite catalogue with checkpoint-resume and incrementality, CLI, 55 tests, evaluation harness. On the 10,000-asset labelled library: root macro **F1 0.998**, leaf exact **99.8%** where the label is derivable, **0** wrong roots, 4/4 safety red lines audited against the written catalogue. Found and fixed a silent defect that lost 9 of 9 identity documents (location was settling the answer before OCR ran) and a corpus defect in A00126–A00132 whose GPS and label disagree. |
+| Next action | **Owner calls, in this order.** (1) **HG-1** — the $99 payment instrument; everything downstream of it is written and green, and only a device can answer A2/A3/A4. (2) **FC-1 + its FC-1a precondition** — and note the scale sweep changes the argument: the dedup skip now looks worth more than the OCR gate, since the embedding is what dominates. (3) **The index-size overrun** — store the feature print, quantise it, or recompute on demand. (4) **T0-B** stays live (DEC-027): 136 foreground images, then HG-4. |
 
 > ⚠️ **TOOLING — read before running anything.**
-> **The previous machine's git trap is gone.** git here is **2.50.0**, on `PATH`, and reaches GitHub unprefixed. Ignore any older instruction to prefix `C:\Users\admin\tools` — that machine no longer exists (DEC-018 is historical).
-> **`gh` is NOT installed on this machine.** Install GitHub CLI and `gh auth login` as `fcubeve-alt` (scopes `repo` + `workflow`) before adding HG-1 secrets or dispatching a workflow.
-> **The console is cp936.** Python entry points pin their own stdout to UTF-8 — copy that snippet into any new script that prints `⚠️`/`✅`, or it will die on `print` after doing all its work (PF-10).
-> Python here is **3.14.3**; `pillow` is available (needed only to render test-library pixels).
-> **Nothing has been pushed since the machine move** — `git log origin/main..main` will show the local commits. Install `gh` first, then push.
+> **The console is cp936.** Every Python entry point pins its own stdout to UTF-8 — copy that snippet into any new script that prints `⚠️`/`✅`, or it dies on `print` after doing all its work (PF-10). `tools-check.yml` runs every self-test under `PYTHONIOENCODING=gbk` as a verified negative control.
+> **`gh` may not be installed.** Install GitHub CLI and `gh auth login` as `fcubeve-alt` (scopes `repo` + `workflow`) before adding HG-1 secrets or dispatching a workflow.
+> **The engine needs no dependencies.** `cd 30_ENGINE && python -m unittest discover -s tests` and `python eval/evaluate.py --library ../20_TIER0/study_assets/library/manifest.json`. Python 3.11+, nothing to install.
+> **Do not use `%-d` in a date format.** It is a glibc extension and raises on Windows.
 
 **Must read (in order):** `PROJECT_STATE.md` → this file → `CONSTITUTION_UNDERSTANDING.md` → `OPERATING_RULES.md` → `VALIDATION_MATRIX.md`.
 Only if you need product-level detail: `10_SOURCE_DOCS/_extracted_text/L1_PRODUCT_CONSTITUTION_v1.3.txt`.
+For the engine: `30_ENGINE/README.md` — its "five decisions worth arguing with" is the part to disagree with, not the file list.
 
 **Do NOT repeat:**
 - Do not re-audit the documents. `DOCUMENTATION_MAP.md` is the finished result.
 - Do not re-parse the .docx files. Use `10_SOURCE_DOCS/_extracted_text/*.txt`.
 - Do not extract or read the Money OS zip. DEC-005 sealed it.
-- Do not rebuild the governance files. They exist.
-- **Do not rebuild the landing pages, the prototype, the test-library generator or the analyzers.** All four are finished, committed and re-verified on this machine (DEC-025). An older revision of `PROJECT_STATE.md` listed them as pending; it was wrong.
-- Do not start Tier 1 or Tier 2 work. `TIER0_GO_NO_GO.md` is still an empty template.
-- Do not report any device performance number as tested. No Mac, no iPhone benchmark (PF-01).
+- Do not rebuild the governance files, the landing pages, the prototype, the test-library generator or the analyzers. All finished and re-verified.
+- **Do not score the classifier on all 10,000 leaf labels.** 4,155 of them were chosen by `random.choice` and no signal records which. `eval/evaluate.py` explains this in its own first section and refuses to score them; making that number look better is not possible and not the point.
+- **Do not feed ground truth to the classifier.** `eval/adapter.py` raises on every label field. If a new signal is needed, add it to the allow-list deliberately or not at all.
+- Do not report any device performance number as tested. The scale sweep is a Simulator ceiling, not an iPhone (PF-01).
 
-**Open Human Gates:** HG-1 (Apple Developer $99 + 8 signing secrets — critical path, precondition already met), HG-2 (domain + ad spend for T0-C2), HG-4 (n ≥ 15 external test users for T0-B **and** T0-D — needs no Mac and no spend, the cheapest way to answer two kill questions).
+**Open Human Gates:** HG-1 (Apple Developer $99 — blocked on a payment instrument, not willingness, DEC-027; critical path), HG-4 (n ≥ 15 external test users for T0-B — needs no Mac and no spend).
 
 ---
 

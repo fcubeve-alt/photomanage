@@ -42,6 +42,7 @@ jobs:
           python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
           python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
+          python 30_ENGINE/eval/evaluate.py --selftest > /dev/null
           python recovery_check.py --strict > /dev/null
 
       - name: Analyzer self-tests under a non-UTF-8 console (PF-10 regression)
@@ -51,7 +52,27 @@ jobs:
           python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
           python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
+          python 30_ENGINE/eval/evaluate.py --selftest > /dev/null
           python recovery_check.py --strict > /dev/null
+
+      # The classification engine (DEC-028). Its safety red lines are checked against
+      # the catalogue it actually writes, not against the code that writes it, so a
+      # regression that only shows up in persisted rows still fails the build.
+      - name: Classification engine — behaviour and safety tests
+        working-directory: 30_ENGINE
+        run: python -m unittest discover -s tests -q
+
+      - name: Classifier evaluation against the labelled library
+        working-directory: 30_ENGINE
+        run: |
+          python eval/evaluate.py --selftest > /dev/null
+          python eval/evaluate.py \
+            --library ../20_TIER0/study_assets/library/manifest.json \
+            --catalog "$RUNNER_TEMP/eval.sqlite" --no-ablation > "$RUNNER_TEMP/eval.md"
+          grep -q "^- PASS" "$RUNNER_TEMP/eval.md" || { echo "::error::safety audit missing"; exit 1; }
+          grep -c "^- FAIL" "$RUNNER_TEMP/eval.md" > /dev/null && \
+            { echo "::error::a safety red line failed"; grep "^- FAIL" "$RUNNER_TEMP/eval.md"; exit 1; } || true
+          sed -n '/^## Root-level/,/^\*\*Macro/p' "$RUNNER_TEMP/eval.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generators are deterministic
         run: |

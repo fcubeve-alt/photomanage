@@ -53,18 +53,33 @@ class Classifier:
     # -- public ------------------------------------------------------------
     def classify(self, a: AssetSignals) -> Classification:
         c = Classification(a.asset_id)
+        c.tiers_spent.add(Tier.METADATA)
 
         self._timeline(a, c)
         self._metadata_root(a, c)
-        self._places(a, c)
 
-        if not self._settled(c) and self.budget >= Tier.VISUAL:
+        # Screenshots are exempt from the visual tiers. Face clustering and scene
+        # classification on a chat window produce noise at full price — the only
+        # signal that tells you anything about a screenshot is its text.
+        visual_worth_it = not (a.is_screenshot or a.is_screen_recording)
+
+        if visual_worth_it and not self._settled(c) and self.budget >= Tier.VISUAL:
+            c.tiers_spent.add(Tier.VISUAL)
             self._scenes(a, c)
-        if not self._settled(c) and self.budget >= Tier.FACES:
+        if visual_worth_it and not self._settled(c) and self.budget >= Tier.FACES:
+            c.tiers_spent.add(Tier.FACES)
             self._faces(a, c)
         if self.budget >= Tier.TEXT and self._wants_text(a, c):
+            c.tiers_spent.add(Tier.TEXT)
             self._text(a, c)
 
+        # Places runs LAST among the content roots, and that ordering is load-bearing.
+        # Run first, a GPS fix settled every photographed document as `Places > … >
+        # London` at 0.91 confidence, the escalation policy saw a settled leaf, and the
+        # OCR pass that would have recognised the passport never happened. Nine of nine
+        # foreground documents were lost that way, silently, with a plausible answer in
+        # their place. Location is context; it is not what the thing IS.
+        self._places(a, c)
         self._travel(a, c)
         self._prune_implied_ancestors(c)
         self._cross_list(c)
@@ -80,12 +95,14 @@ class Classifier:
         return bool(p and taxonomy.is_leaf(p.path) and p.confidence >= SETTLE_AT)
 
     def _wants_text(self, a: AssetSignals, c: Classification) -> bool:
-        """The same gate the Swift harness applies (C-1), plus one addition the
-        harness does not need: even a gate-passing asset is not worth an OCR pass if
-        the answer is already settled. Screenshots are the exception — the subtype
-        settles the root and only the text can ever open the leaf, so a screenshot
-        always earns its OCR."""
-        if not a.ocr_text and not a.ocr_ran:
+        """Whether to READ text that exists. Whether to SPEND an OCR pass in the first
+        place is the C-1 gate, and it lives upstream in the indexer where the pixels
+        are — `OCRGate.swift`. Duplicating that decision here on metadata the engine
+        cannot verify would be two gates disagreeing about one photo.
+
+        Screenshots always read their text: the subtype settles the root, and only the
+        text can ever open the leaf."""
+        if not a.ocr_ran or not a.ocr_text:
             return False
         root = taxonomy.root_of(c.primary.path) if c.primary else None
         if root == "Screenshots":
@@ -100,9 +117,13 @@ class Classifier:
             c.notes.append("no capture date — this asset cannot be placed on the timeline")
             return
         path = taxonomy.ensure_node(f"Timeline > {a.created_at.year}")
+        # Built without %-d / %e: those are glibc extensions and this project's own
+        # machine is Windows, where they raise. A date format is not worth a
+        # platform-specific crash.
+        when = a.created_at
         c.add(Assignment(path, [Evidence(
             "created_at", Tier.METADATA, 0.98,
-            f"taken on {a.created_at.strftime('%-d %B %Y')}" if hasattr(a.created_at, "strftime") else "capture date",
+            f"taken on {when.day} {when:%B %Y}",
         )]))
 
     def _metadata_root(self, a: AssetSignals, c: Classification) -> None:
@@ -124,12 +145,19 @@ class Classifier:
                 "saved from another app rather than taken with the camera")], is_primary=True))
             return
 
+    # Paperwork is not a place memory. A receipt photographed at the kitchen table
+    # does not belong in `Places > United Kingdom > London` alongside the photos of
+    # London — the shelf would stop meaning anything.
+    _NOT_PLACES = frozenset({"Documents", "Purchases", "Screenshots", "Downloads"})
+
     def _places(self, a: AssetSignals, c: Classification) -> None:
         """A measured GPS fix is the single strongest cheap signal in a camera roll,
         and it is already in the metadata row. §11: an inferred fix is not this."""
         if a.geo is None or a.geo.source != "exif":
             return
         if a.place is None or not a.place.country:
+            return
+        if any(taxonomy.root_of(x.path) in self._NOT_PLACES for x in c.assignments):
             return
 
         parts = ["Places", a.place.country]
