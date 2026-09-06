@@ -108,7 +108,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
 | G1-PACED | 采用分层信号、轻量模型、分块/分时、checkpoint、增量处理和后台机会执行 | L1:267 | DONE | `pvm/schedule.py`, `tests/test_schedule.py` |
-| G2-CATEGORY | 禁止寻找一个万能 Same-Entity 模型 | L1:269 | PARTIAL | `pvm/dedup.py` special-cases documents only; the per-category resolvers (证件 OCR/版式/字段, 合同 文本指纹/页码, 普通照片 时间/地点/视觉相似) are not built — Tier 1-B |
+| G2-CATEGORY | 禁止寻找一个万能 Same-Entity 模型 | L1:269 | DONE | `pvm/resolver.py` dispatches on category: 证件/文件 on OCR fields (identifier, holder, page), 截图 on the order reference, 物品 on appearance plus labels plus time, 普通照片 on 时间/地点/视觉相似. `pvm/dedup.py::_relate` no longer decides this itself — it delegates, and `tests/test_resolver.py::TheGateForbidsAUniversalModel` fails if one ladder ever answers every category again |
 | G3-PROGRESSIVE | 首次使用必须 Progressive Indexing。先给 Quick Wins 和基本目录，再逐渐补全深度索引 | L1:271 | DONE | `pvm/schedule.py`, `tests/test_schedule.py::BreadthBeforeDepth` |
 | G3-TTFUV | 新增 TTFUV（Time To First Useful View）作为 P0 指标 | L1:271 | DONE | `pvm/kpi.py::time_to_first_useful_view` |
 | G4-NOTCLEANER | 商业定位禁止退化成 Cleaner | L1:273 | NOT-CODE | a commercial-positioning constraint; the engine's executable share of it is that cleanup is one action among seven in `pvm/risk.py::Action`, not the product |
@@ -121,7 +121,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | P25-L1 | Layer 1 Cheap Signals | DONE | `pvm/signals.py` |
 | P25-L2 | Layer 2 Visual Understanding | PARTIAL | the engine consumes scene labels and embeddings; it produces none — see S2-UNDERSTAND |
 | P25-L3 | Layer 3 Taxonomy | DONE | `pvm/classifier.py` |
-| P25-L4 | Layer 4 Category-Specific Entity Resolution | PARTIAL | one generic resolver with a document special case; see G2-CATEGORY |
+| P25-L4 | Layer 4 Category-Specific Entity Resolution | PARTIAL | `pvm/resolver.py` decides 现实实体 / 版本 / 页面 / Same Moment as four distinct relations (`Relation.SAME_INSTANCE`, `OTHER_VERSION`, `OTHER_PAGE`, and the review case). PARTIAL only for objects, where no embedding exists — T1B-EMBEDDING |
 | P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | PARTIAL | risk, lifecycle and recoverability are modelled; **importance is not a separate axis** |
 | P25-L6 | Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review | DONE | `pvm/risk.py::Action`, `pvm/risk.py::policy_table` |
 | P25-L7 | Layer 7 Visual Library | DONE | `pvm/catalog.py::counts_by_path`, `pvm/cli.py::cmd_tree` |
@@ -145,8 +145,9 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 |---|---|---|---|
 | T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision and recall are in `eval/evaluate.py`; **no confusion matrix**, and the taxonomy evaluated is the navigational tree rather than the §4 scheme |
 | T1A-UNKNOWN | 允许 Unknown + confidence，不强迫每个资产进入错误类别 | DONE | `pvm/verdict.py::REVIEW_FLOOR`, `pvm/classifier.py::_unfiled` |
-| T1B-RESOLVER | Tier 1-B Category-Specific Entity Resolver, per-category | MISSING | see G2-CATEGORY — the document special case is not a per-category resolver |
-| T1B-FALSEMERGE | Document 类别单独统计 False Merge / False Split | PARTIAL | the behaviour is locked by unit tests built from explicit signals; **no rate has been measured** because the corpus has no same-entity ground truth usable without leaking labels |
+| T1B-RESOLVER | Tier 1-B Category-Specific Entity Resolver, per-category | DONE | `pvm/resolver.py`, `tests/test_resolver.py` (26 tests), measured by `eval/evaluate_entities.py` — 24 hand-built pairs, 9 hard negatives, 0 false merges, 0 false splits, 12.5% to review. Objects across occasions are deliberately downgraded to Review rather than guessed; see T1B-EMBEDDING |
+| T1B-FALSEMERGE | Document 类别单独统计 False Merge / False Split | PARTIAL | measured and reported separately: **Document False Merge 0 of 6, False Split 0 of 5** (`20_TIER0/evidence/GATE2_ENTITY_RESOLVER_2026-09-06.md`), across four hard negatives — two passports on one template, two ID cards on one template, page 1 of two contracts sharing boilerplate, two receipts from one shop. PARTIAL because **the pairs are hand-built**: the 10k corpus has no same-entity labels, so this is evidence about the hard cases and not a population rate |
+| T1B-EMBEDDING | Product/Object：同一设备、商品、家中物品的不同角度…视觉 embedding + attribute + temporal evidence | MISSING | there is no visual embedding, so two views of one chair cannot be joined and one chair on two days cannot be told from two identical chairs. `pvm/resolver.py::_resolve_object` answers UNCERTAIN in both cases rather than guessing, which is Tier 1's 「Review Queue 优先」 downgrade taken deliberately: object recall is 33% and object false merges are 0 |
 | T1C-LIFECYCLE | Tier 1-C Visual Lifecycle Engine，重点是 Suggest Delete 的 False Positive | PARTIAL | `pvm/risk.py::lifecycle_of` and the policy table exist; the false-positive rate of Suggest Delete has never been measured |
 | T1C-ZEROAUTO | 高风险类别自动删除率必须为 0 | DONE | `pvm/kpi.py::catastrophic_error_rate`, audited in `eval/evaluate.py` against written rows |
 | T1D-MULTIINDEX | Tier 1-D 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引 | PARTIAL | four of six; Object and Event are relations rather than indexes |
@@ -187,10 +188,11 @@ its tests and still does not do what the document asks, which is a more comforta
 place to hide than a gap.
 
 **The eleven MISSING, in the order they would hurt:**
-1. **T1B-RESOLVER** — per-category entity resolution (§24 Gate 2). Now the largest
-   gap, and the one the memory graph runs into immediately: it can list every sighting
-   of *a* suitcase and cannot say which one is yours. The make-or-break number for
-   Tier 1, and the ceiling on S3-ENTITY, S10-RELATIONS and S2-REMEMBER alike.
+1. **T1B-EMBEDDING** — a visual embedding for objects. The resolver now separates
+   documents, screenshots and photographs cleanly; objects are the one category where
+   it can only refuse to answer, because nothing joins two views of one chair or
+   separates one chair on two days from two identical chairs. It is the ceiling on
+   S3-ENTITY and on Object Memory, and it is now the largest gap.
 2. **S10-INTENT** — natural-language retrieval. One of the four paths the product is
    defined by (§10, §19). `cmd_remember --where` answers one fixed question shape;
    that is not intent search.

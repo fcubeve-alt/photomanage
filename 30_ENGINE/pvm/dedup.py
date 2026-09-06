@@ -71,6 +71,9 @@ class DedupReport:
     near_duplicate_in_moment: Set[str] = field(default_factory=set)
     protected_distinct: Set[str] = field(default_factory=set)
     unusable_hash: Set[str] = field(default_factory=set)
+    #: Pairs the Category-Specific Entity Resolver would not decide. §24 Gate 2:
+    #: 低置信度只能进入 Review Queue，不自动合并/删除.
+    needs_entity_review: List[Tuple[str, str, str]] = field(default_factory=list)
 
     @property
     def removable_count(self) -> int:
@@ -79,7 +82,8 @@ class DedupReport:
 
 def analyse(assets: Sequence[AssetSignals],
             document_ids: Optional[Set[str]] = None,
-            ocr_by_id: Optional[Dict[str, str]] = None) -> DedupReport:
+            ocr_by_id: Optional[Dict[str, str]] = None,
+            classifications: Optional[Dict[str, object]] = None) -> DedupReport:
     """`document_ids` are assets classified under Documents. They get the stricter
     rule, because that is where a false merge is unrecoverable."""
     document_ids = document_ids or set()
@@ -129,7 +133,7 @@ def analyse(assets: Sequence[AssetSignals],
         if not a.has_usable_dhash:
             if a.dhash is not None:
                 report.unusable_hash.add(a.asset_id)
-    _look_alikes(assets, by_id, document_ids, ocr_by_id, report)
+    _look_alikes(assets, by_id, document_ids, ocr_by_id, report, classifications)
     return report
 
 
@@ -154,7 +158,8 @@ def _distinct_frames(group: Sequence[AssetSignals], report: DedupReport) -> List
     return distinct
 
 
-def _look_alikes(assets, by_id, document_ids, ocr_by_id, report: DedupReport) -> None:
+def _look_alikes(assets, by_id, document_ids, ocr_by_id, report: DedupReport,
+                 classifications=None) -> None:
     buckets: Dict[int, List[AssetSignals]] = defaultdict(list)
     for a in assets:
         if a.has_usable_dhash:
@@ -181,19 +186,51 @@ def _look_alikes(assets, by_id, document_ids, ocr_by_id, report: DedupReport) ->
                 if key in seen:
                     continue
                 seen.add(key)
-                report.relations.append(_relate(a, b, document_ids, ocr_by_id))
+                report.relations.append(
+                    _relate(a, b, document_ids, ocr_by_id, classifications, report))
 
 
 def _relate(a: AssetSignals, b: AssetSignals, document_ids: Set[str],
-            ocr_by_id: Dict[str, str]) -> RelationGroup:
-    members = [a.asset_id, b.asset_id]
-    gap = _gap(a, b)
+            ocr_by_id: Dict[str, str],
+            classifications: Optional[Dict[str, object]] = None,
+            report: Optional[DedupReport] = None) -> RelationGroup:
+    """What the relation between two look-alikes actually is.
 
+    When classifications are available this delegates to the Category-Specific Entity
+    Resolver, and that delegation is the point. §24 Gate 2 forbids a universal
+    same-entity model — 禁止寻找一个万能 Same-Entity 模型 — and the code that used to
+    live here was one: a single ladder of text-then-time rules applied to ID cards,
+    chairs and holiday snaps alike. `resolver.py` asks a different question per
+    category instead, which is what the Gate requires.
+
+    The fallback below runs only when nothing has been classified yet — the breadth
+    pass, before any content is known. It is deliberately timid: with no category it
+    can say *these look alike* and must not say *these are the same thing*.
+    """
+    members = [a.asset_id, b.asset_id]
+
+    if classifications is not None:
+        from . import resolver as _resolver          # local: keeps the import graph flat
+        r = _resolver.resolve(a, b, classifications.get(a.asset_id),
+                              classifications.get(b.asset_id))
+        if r.needs_review:
+            if report is not None:
+                report.needs_entity_review.append((a.asset_id, b.asset_id, r.why()))
+            # Undecided is not permission to fold: both stay protected as distinct.
+            return RelationGroup("looks_alike", members, members, r.why())
+        if r.verdict is _resolver.Verdict.DIFFERENT:
+            return RelationGroup("looks_alike", members, members, r.why())
+        if r.relation in (_resolver.Relation.OTHER_PAGE, _resolver.Relation.OTHER_VERSION):
+            # One thing, more than one asset — every one of which must survive. Pages
+            # of a contract and stages of an order are related, never redundant.
+            return RelationGroup("same_entity", members, members, r.why())
+        return RelationGroup("same_moment", members, [], r.why())
+
+    # ---- breadth pass: no classification yet -------------------------------
     if a.asset_id in document_ids or b.asset_id in document_ids:
         ta = (ocr_by_id.get(a.asset_id) or a.ocr_text or "").strip().lower()
         tb = (ocr_by_id.get(b.asset_id) or b.ocr_text or "").strip().lower()
         if ta and tb and ta != tb:
-            # Pages 1 and 2 of a contract. This is the false merge that matters.
             return RelationGroup("looks_alike", members, members,
                                  "these two pages look alike but their text differs — "
                                  "kept as separate documents")
@@ -202,22 +239,6 @@ def _relate(a: AssetSignals, b: AssetSignals, document_ids: Set[str],
                                  "these look alike, but there is not enough text to be "
                                  "sure they are the same document — both kept")
 
-    if gap is not None and gap > SEPARATE_OCCASION:
-        # §9 Same Entity: one thing, two occasions. A relation the user wants, and a
-        # deletion they would not forgive.
-        return RelationGroup("same_entity", members, members,
-                             "the same subject photographed on two different occasions — "
-                             "related, and both kept")
-
-    return RelationGroup("looks_alike", members, [],
-                         "these look nearly identical")
-
-
-def _gap(a: AssetSignals, b: AssetSignals):
-    if a.created_at is None or b.created_at is None:
-        return None
-    return abs(a.created_at - b.created_at)
-
-
-from datetime import datetime as _dt
-_EPOCH = _dt(1970, 1, 1)
+    return RelationGroup("looks_alike", members, members,
+                         "these look alike; nothing has been classified yet, so what "
+                         "they are to each other is not yet known")

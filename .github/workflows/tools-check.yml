@@ -86,6 +86,21 @@ jobs:
             { echo "::error::a safety red line failed"; grep "^- FAIL" "$RUNNER_TEMP/eval.md"; exit 1; } || true
           sed -n '/^## Root-level/,/^\*\*Macro/p' "$RUNNER_TEMP/eval.md" >> "$GITHUB_STEP_SUMMARY"
 
+      # §24 Gate 2. Document False Merge is the number Tier 1-B passes or fails on, so
+      # the build fails if it stops being zero — a resolver that starts merging two
+      # people's ID cards must not reach anyone quietly.
+      - name: Gate 2 — entity resolver, and the Document False Merge rate
+        working-directory: 30_ENGINE
+        run: |
+          python eval/evaluate_entities.py --selftest > /dev/null
+          python eval/evaluate_entities.py > "$RUNNER_TEMP/gate2.md"
+          grep -q "Document False Merge: 0 of" "$RUNNER_TEMP/gate2.md" || {
+            echo "::error::a document false merge appeared — Tier 1-B's PASS criterion"
+            grep -n "WRONG" "$RUNNER_TEMP/gate2.md" || true
+            exit 1
+          }
+          sed -n '/^## Per category/,/^## The number/p' "$RUNNER_TEMP/gate2.md" >> "$GITHUB_STEP_SUMMARY"
+
       # The app's taxonomy and rules are generated from the engine. This is the guard
       # that stops the shipping product and the reference implementation drifting apart.
       - name: The app's shared Swift still matches the engine

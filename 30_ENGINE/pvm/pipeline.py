@@ -79,6 +79,7 @@ class RunStats:
     needs_review: int = 0
     entities: int = 0
     observations: int = 0
+    entity_review: int = 0
     wall_s: float = 0.0
     context: Optional[LibraryContext] = None
 
@@ -100,6 +101,7 @@ class RunStats:
             "action: " + ", ".join(f"{a}={n}" for a, n in sorted(self.by_action.items())),
             f"needs review {self.needs_review}  unfiled {self.unfiled}",
             f"remembered: {self.entities} things, {self.observations} sightings",
+            f"same-entity pairs the resolver would not decide: {self.entity_review}",
         ]
         return "\n".join(lines)
 
@@ -158,8 +160,13 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
 
     document_ids = {r[0] for r in catalog.db.execute(
         "SELECT DISTINCT asset_id FROM assignments WHERE path LIKE 'Documents%'")}
-    report = dedup.analyse(assets, document_ids=document_ids)
+    # The relation between two look-alikes is a question about what they are, so the
+    # classifications go in with them: §24 Gate 2 puts that answer in the
+    # Category-Specific Entity Resolver rather than in one universal rule ladder.
+    report = dedup.analyse(assets, document_ids=document_ids,
+                           classifications=classifications)
     catalog.write_relations(report.relations)
+    stats.entity_review = len(report.needs_entity_review)
 
     for aid in unscored:
         a = by_id.get(aid)

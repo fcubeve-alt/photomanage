@@ -447,14 +447,34 @@ class DuplicatesAndTheThingsThatOnlyLookLikeThem(unittest.TestCase):
         self.assertEqual(r.exact_duplicate_of, {"copy": "orig"})
 
     def test_the_same_card_photographed_months_later_is_not_a_duplicate(self):
-        """§9 Same Entity. One object, two occasions; deleting either loses a record."""
-        a = asset("id1", content_hash="h1", dhash=0x1122334455667788, ocr_text="ID CARD")
+        """§9 Same Entity. One object, two occasions; deleting either loses a record.
+
+        Also the dividing line §24 Gate 2 draws. Naming the relation is a question
+        about *what these are*, so it belongs to the Category-Specific Entity Resolver
+        and needs the classification. The breadth pass, which has none, must protect
+        both and decline to name it — the one thing it may never do is guess.
+        """
+        a = asset("id1", content_hash="h1", dhash=0x1122334455667788,
+                  ocr_ran=True, ocr_text="IDENTITY CARD NAME: JANE DOE")
         b = asset("id2", created_at=WHEN + timedelta(days=180),
-                  content_hash="h2", dhash=0x1122334455667789, ocr_text="ID CARD")
-        r = dedup.analyse([a, b])
-        self.assertEqual(r.exact_duplicate_of, {})
-        kinds = {g.kind for g in r.relations}
-        self.assertIn("same_entity", kinds)
+                  content_hash="h2", dhash=0x1122334455667789,
+                  ocr_ran=True, ocr_text="IDENTITY CARD NAME: JANE DOE")
+
+        breadth = dedup.analyse([a, b])
+        self.assertEqual(breadth.exact_duplicate_of, {})
+        for group in breadth.relations:
+            self.assertEqual(sorted(group.members), sorted(group.distinct_members),
+                             "with nothing classified, neither asset may be folded")
+
+        ctx = build_context([a, b])
+        clf = Classifier(ctx)
+        cs = {x.asset_id: clf.classify(x) for x in (a, b)}
+        resolved = dedup.analyse([a, b], classifications=cs)
+        self.assertEqual(resolved.exact_duplicate_of, {})
+        self.assertIn("same_entity", {g.kind for g in resolved.relations})
+        for group in resolved.relations:
+            self.assertEqual(sorted(group.members), sorted(group.distinct_members),
+                             "one card, two occasions — both records survive")
 
     def test_two_contract_pages_that_look_alike_are_never_merged(self):
         """The Document-class False Merge — the make-or-break number for Tier 1."""

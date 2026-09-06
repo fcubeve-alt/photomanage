@@ -108,8 +108,8 @@ DOCUMENT_RULES: List[TextRule] = [
 # so the cross-listing is taken from the tree rather than restated here.
 # --------------------------------------------------------------------------------
 PURCHASE_RULES: List[TextRule] = [
-    TextRule(_rx(r"\breceipt\b|\b(vat|subtotal)\b|\btotal\s*[:£$€]"), "Purchases > Receipts", 0.85,
-             "receipt wording and a total were read on the image"),
+    TextRule(_rx(r"\b(receipt|invoice)\b|\b(vat|subtotal)\b|\btotal\s*[:£$€]"), "Purchases > Receipts", 0.85,
+             "receipt or invoice wording was read on the image"),
     TextRule(_rx(r"\b(warrant\w*|guarantee\w*)\b"), "Purchases > Warranty", 0.85,
              "warranty wording was read on the image"),
     TextRule(_rx(r"\border\s+(number|no\.?|confirm\w*)\b|\byour\s+order\b|\border\s+placed\b"), "Purchases > Orders", 0.80,
