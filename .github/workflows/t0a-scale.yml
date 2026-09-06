@@ -63,9 +63,11 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: xcodegen generate --spec project.yml
 
-      # TEST_RUNNER_<VAR> is how xcodebuild puts <VAR> into the test process's
-      # environment. The test prints PVM_SCALE_ENV_CHECK either way, so a sweep that
-      # silently skipped is one grep away rather than a mystery green run.
+      # Selection is by -only-testing, not by an environment flag: the first attempt
+      # gated the sweep on TEST_RUNNER_PVM_SCALE_BENCH and came back green having
+      # measured nothing. TEST_RUNNER_ is still used for the knobs, but every knob has
+      # a working default, so a knob that fails to arrive costs a different corpus
+      # size and never costs the measurement itself.
       - name: Run the scale sweep
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -80,25 +82,34 @@ jobs:
             -configuration Debug \
             -only-testing:PVMBenchTests/ScaleBenchmarkTests \
             CODE_SIGNING_ALLOWED=NO \
-            TEST_RUNNER_PVM_SCALE_BENCH=1 \
             TEST_RUNNER_PVM_SCALE_SIZES="$SIZES" \
             TEST_RUNNER_PVM_SCALE_TEXT_RATIO="$TEXT_RATIO" \
             | tee scale.log
+          echo "SIMULATOR_UDID=$DEVICE" >> "$GITHUB_ENV"
 
-      - name: Confirm the sweep actually ran
+      # stdout from inside the Simulator does not reach xcodebuild's log, so the
+      # results are collected from the app container on the runner's own disk.
+      - name: Collect results from the simulator container
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          grep -c "PVM_SCALE_RESULT " scale.log > /dev/null || {
-            echo "::error::no PVM_SCALE_RESULT lines — the sweep was skipped, not measured."
-            grep "PVM_SCALE_ENV_CHECK" scale.log || true
+          FOUND=$(find "$HOME/Library/Developer/CoreSimulator/Devices" \
+                    -name pvm_scale_results.txt -newermt '-2 hours' 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            echo "::error::pvm_scale_results.txt was never written — the sweep did not run."
+            exit 1
+          fi
+          echo "results file: $FOUND"
+          cp "$FOUND" scale_results.txt
+          cat scale_results.txt
+          grep -q "PVM_SCALE_RESULT " scale_results.txt || {
+            echo "::error::the file exists but holds no measurements."
             exit 1
           }
-          grep "PVM_SCALE_RESULT " scale.log
 
       - name: Analyze
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          python3 analyze_scale.py --log scale.log --out T0A_SCALE_SIMULATOR.md
+          python3 analyze_scale.py --log scale_results.txt --out T0A_SCALE_SIMULATOR.md
           cat T0A_SCALE_SIMULATOR.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarise errors
@@ -115,6 +126,7 @@ jobs:
           name: t0a-scale
           path: |
             ${{ env.PROJECT_DIR }}/scale.log
+            ${{ env.PROJECT_DIR }}/scale_results.txt
             ${{ env.PROJECT_DIR }}/T0A_SCALE_SIMULATOR.md
           retention-days: 30
           if-no-files-found: warn

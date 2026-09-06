@@ -26,8 +26,18 @@ import Vision
 ///   - It is still the only A-shaped measurement available at $0 while HG-1 is open,
 ///     and a ceiling that is already too low would be decisive on its own.
 ///
-/// Skipped unless PVM_SCALE_BENCH=1 is in the environment, so the ordinary
-/// build-and-test CI run stays fast. `t0a-scale.yml` sets it via TEST_RUNNER_.
+/// HOW IT IS SELECTED, and why not an environment flag: the first attempt gated the
+/// sweep on PVM_SCALE_BENCH=1 passed through TEST_RUNNER_. The run came back green
+/// having measured nothing, because neither the gate nor the diagnostic `print` that
+/// was supposed to explain it reached the log — stdout from a process inside the
+/// Simulator does not appear in xcodebuild's output. So selection is now done with
+/// flags xcodebuild is unambiguous about: `ios-build.yml` passes -skip-testing for
+/// this class, `t0a-scale.yml` passes -only-testing. No environment variable decides
+/// whether the measurement happens.
+///
+/// And the results are written to a FILE in the app container, which CI finds on the
+/// runner's own disk, rather than printed. A measurement that cannot be read back is
+/// not a measurement.
 final class ScaleBenchmarkTests: XCTestCase {
 
     // MARK: - knobs
@@ -58,20 +68,23 @@ final class ScaleBenchmarkTests: XCTestCase {
     // MARK: - the sweep
 
     func testScaleSweep() throws {
-        let enabled = Self.env("PVM_SCALE_BENCH") == "1"
-        print("PVM_SCALE_ENV_CHECK PVM_SCALE_BENCH=\(Self.env("PVM_SCALE_BENCH") ?? "<unset>")")
-        try XCTSkipUnless(enabled, "scale sweep runs only when PVM_SCALE_BENCH=1")
+        var lines: [String] = []
+        lines.append("PVM_SCALE_HOST \(hostDescription())")
+        lines.append("PVM_SCALE_CONFIG sizes=\(sizes.map(String.init).joined(separator: "+")) "
+                     + "pool=\(poolSize) text_ratio=\(screenshotRatio) batch=\(batchSize)")
+        defer { writeResults(lines) }
 
         let pool = makePool()
         XCTAssertEqual(pool.count, poolSize, "corpus pool did not build")
 
-        print("PVM_SCALE_HOST \(hostDescription())")
-
         for n in sizes {
             let r = runPass(n: n, pool: pool)
-            // One machine-readable line per size. CI greps for the marker; nothing
-            // downstream has to parse xcodebuild's prose.
-            print("PVM_SCALE_RESULT \(r.json)")
+            // One machine-readable line per size, appended as we go. The `defer`
+            // above flushes whatever exists, so a sweep that dies at n=3000 still
+            // leaves the n=200 and n=1000 measurements on disk. That is the whole
+            // reason the sizes ascend.
+            lines.append("PVM_SCALE_RESULT \(r.json)")
+            writeResults(lines)
 
             // Guard rails, not budgets: these catch a broken measurement (a gate that
             // passes everything, an index that wrote nothing), never a slow phone.
@@ -238,6 +251,15 @@ final class ScaleBenchmarkTests: XCTestCase {
             }
         }
         return kr == KERN_SUCCESS ? Double(info.phys_footprint) / (1024 * 1024) : 0
+    }
+
+    /// Written into the host app's Documents directory inside the Simulator, which
+    /// lives on the runner's real filesystem under
+    /// ~/Library/Developer/CoreSimulator/Devices/<udid>/data/... — CI finds it there.
+    private func writeResults(_ lines: [String]) {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = dir.appendingPathComponent("pvm_scale_results.txt")
+        try? (lines.joined(separator: "\n") + "\n").write(to: url, atomically: true, encoding: .utf8)
     }
 
     private func hostDescription() -> String {
