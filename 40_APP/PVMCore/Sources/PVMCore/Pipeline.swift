@@ -104,7 +104,11 @@ public enum Pipeline {
             guard let c = classifications[a.assetID] else { return nil }
             return c.paths.contains(where: { $0.hasPrefix("Documents") }) ? a.assetID : nil
         })
-        let report = Dedup.analyse(assets, documentIDs: documentIDs)
+        // The relation between two look-alikes is a question about what they are, so
+        // the classifications go in with them: §24 Gate 2 puts that answer in the
+        // Category-Specific Entity Resolver rather than in one universal rule ladder.
+        let report = Dedup.analyse(assets, documentIDs: documentIDs,
+                                   classifications: classifications)
         catalog.writeRelations(report.relations)
 
         catalog.begin()

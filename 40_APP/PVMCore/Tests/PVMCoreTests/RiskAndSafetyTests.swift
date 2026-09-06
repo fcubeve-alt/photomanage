@@ -226,17 +226,40 @@ final class DedupGuardTests: XCTestCase {
     }
 
     /// §9 Same Entity: one object, two occasions. Deleting either loses a record.
+    ///
+    /// Also the line §24 Gate 2 draws. Naming the relation is a question about *what
+    /// these are*, so it belongs to the Category-Specific Entity Resolver and needs the
+    /// classification. The breadth pass, which has none, must protect both and decline
+    /// to name it — the one thing it may never do is guess.
     func testTheSameCardPhotographedMonthsLaterIsNotADuplicate() {
         let a = asset("id1") { s in
-            s.contentHash = "h1"; s.dhash = 0x1122_3344_5566_7788; s.ocrText = "ID CARD"
+            s.contentHash = "h1"; s.dhash = 0x1122_3344_5566_7788
+            s.ocrRan = true; s.ocrText = "IDENTITY CARD NAME: JANE DOE"
         }
         let b = asset("id2") { s in
             s.createdAt = makeDate(2025, 12, 18)
-            s.contentHash = "h2"; s.dhash = 0x1122_3344_5566_7789; s.ocrText = "ID CARD"
+            s.contentHash = "h2"; s.dhash = 0x1122_3344_5566_7789
+            s.ocrRan = true; s.ocrText = "IDENTITY CARD NAME: JANE DOE"
         }
-        let report = Dedup.analyse([a, b])
-        XCTAssertTrue(report.exactDuplicateOf.isEmpty)
-        XCTAssertTrue(report.relations.contains { $0.kind == "same_entity" })
+
+        let breadth = Dedup.analyse([a, b])
+        XCTAssertTrue(breadth.exactDuplicateOf.isEmpty)
+        for group in breadth.relations {
+            XCTAssertEqual(group.members.sorted(), group.distinctMembers.sorted(),
+                           "with nothing classified, neither asset may be folded")
+        }
+
+        let context = LibraryContextBuilder.build([a, b])
+        let classifier = Classifier(context: context, budget: .text)
+        let classifications = [a.assetID: classifier.classify(a),
+                               b.assetID: classifier.classify(b)]
+        let resolved = Dedup.analyse([a, b], classifications: classifications)
+        XCTAssertTrue(resolved.exactDuplicateOf.isEmpty)
+        XCTAssertTrue(resolved.relations.contains { $0.kind == "same_entity" })
+        for group in resolved.relations {
+            XCTAssertEqual(group.members.sorted(), group.distinctMembers.sorted(),
+                           "one card, two occasions — both records survive")
+        }
     }
 
     /// The Document-class False Merge — the make-or-break number for Tier 1.

@@ -40,6 +40,9 @@ public struct DedupReport {
     public var nearDuplicateInMoment: Set<String> = []
     public var protectedDistinct: Set<String> = []
     public var unusableHash: Set<String> = []
+    /// Pairs the Category-Specific Entity Resolver would not decide. §24 Gate 2:
+    /// 低置信度只能进入 Review Queue，不自动合并/删除.
+    public var needsEntityReview: [(String, String, String)] = []
 }
 
 public enum Dedup {
@@ -53,7 +56,8 @@ public enum Dedup {
     public static let separateOccasionHours = 12.0
 
     public static func analyse(_ assets: [AssetSignals],
-                               documentIDs: Set<String> = []) -> DedupReport {
+                               documentIDs: Set<String> = [],
+                               classifications: [String: Classification]? = nil) -> DedupReport {
         var report = DedupReport()
 
         // ---- exact: the only confident case ----------------------------
@@ -103,7 +107,8 @@ public enum Dedup {
         for a in assets where !a.hasUsableDHash {
             if a.dhash != nil { report.unusableHash.insert(a.assetID) }
         }
-        lookAlikes(assets, documentIDs: documentIDs, into: &report)
+        lookAlikes(assets, documentIDs: documentIDs,
+                   classifications: classifications, into: &report)
         return report
     }
 
@@ -130,6 +135,7 @@ public enum Dedup {
     }
 
     private static func lookAlikes(_ assets: [AssetSignals], documentIDs: Set<String>,
+                                   classifications: [String: Classification]?,
                                    into report: inout DedupReport) {
         // Bucket on the high bits so comparison stays near-linear instead of comparing
         // 100k assets pairwise. The cost of a rare miss is a relation we do not draw,
@@ -152,25 +158,58 @@ public enum Dedup {
                     let key = [a.assetID, b.assetID].sorted().joined(separator: "|")
                     if seen.contains(key) { continue }
                     seen.insert(key)
-                    report.relations.append(relate(a, b, documentIDs: documentIDs))
+                    report.relations.append(
+                        relate(a, b, documentIDs: documentIDs,
+                               classifications: classifications, into: &report))
                 }
             }
         }
     }
 
+    /// What the relation between two look-alikes actually is.
+    ///
+    /// With classifications this delegates to the Category-Specific Entity Resolver,
+    /// and the delegation is the point. §24 Gate 2 forbids a universal same-entity
+    /// model — 禁止寻找一个万能 Same-Entity 模型 — and the code that used to live here
+    /// was one: a single ladder of text-then-time rules applied to ID cards, chairs and
+    /// holiday snaps alike.
+    ///
+    /// The fallback runs only before anything has been classified — the breadth pass.
+    /// It is deliberately timid: with no category it can say *these look alike* and
+    /// must not say *these are the same thing*.
     private static func relate(_ a: AssetSignals, _ b: AssetSignals,
-                               documentIDs: Set<String>) -> RelationGroup {
+                               documentIDs: Set<String>,
+                               classifications: [String: Classification]?,
+                               into report: inout DedupReport) -> RelationGroup {
         let members = [a.assetID, b.assetID]
-        var gapHours: Double?
-        if let x = a.createdAt, let y = b.createdAt {
-            gapHours = abs(x.timeIntervalSince(y)) / 3600
+
+        if let classifications {
+            let r = EntityResolver.resolve(a, b, classifications[a.assetID],
+                                           classifications[b.assetID])
+            if r.needsReview {
+                report.needsEntityReview.append((a.assetID, b.assetID, r.why))
+                // Undecided is not permission to fold: both stay protected as distinct.
+                return RelationGroup(kind: "looks_alike", members: members,
+                                     distinctMembers: members, reason: r.why)
+            }
+            if r.verdict == .different {
+                return RelationGroup(kind: "looks_alike", members: members,
+                                     distinctMembers: members, reason: r.why)
+            }
+            if r.relation == .otherPage || r.relation == .otherVersion {
+                // One thing, more than one asset — every one of which must survive.
+                return RelationGroup(kind: "same_entity", members: members,
+                                     distinctMembers: members, reason: r.why)
+            }
+            return RelationGroup(kind: "same_moment", members: members,
+                                 distinctMembers: [], reason: r.why)
         }
 
+        // ---- breadth pass: nothing classified yet --------------------------
         if documentIDs.contains(a.assetID) || documentIDs.contains(b.assetID) {
             let ta = a.ocrText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             let tb = b.ocrText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             if !ta.isEmpty, !tb.isEmpty, ta != tb {
-                // Pages 1 and 2 of a contract. This is the false merge that matters.
                 return RelationGroup(kind: "looks_alike", members: members,
                                      distinctMembers: members,
                                      reason: "these two pages look alike but their text differs — "
@@ -183,16 +222,9 @@ public enum Dedup {
                                              + "sure they are the same document — both kept")
             }
         }
-
-        if let gap = gapHours, gap > separateOccasionHours {
-            // §9 Same Entity: one thing, two occasions. A relation the user wants, and a
-            // deletion they would not forgive.
-            return RelationGroup(kind: "same_entity", members: members,
-                                 distinctMembers: members,
-                                 reason: "the same subject photographed on two different occasions — "
-                                         + "related, and both kept")
-        }
-        return RelationGroup(kind: "looks_alike", members: members, distinctMembers: [],
-                             reason: "these look nearly identical")
+        return RelationGroup(kind: "looks_alike", members: members,
+                             distinctMembers: members,
+                             reason: "these look alike; nothing has been classified yet, so what "
+                                     + "they are to each other is not yet known")
     }
 }
