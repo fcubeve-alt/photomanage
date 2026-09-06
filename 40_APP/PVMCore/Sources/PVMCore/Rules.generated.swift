@@ -37,7 +37,7 @@ public enum Rules {
     ]
 
     public static let purchaseRules: [TextRule] = [
-        TextRule(pattern: "\\breceipt\\b|\\b(vat|subtotal)\\b|\\btotal\\s*[:£$€]", path: "Purchases > Receipts", weight: 0.85, reason: "receipt wording and a total were read on the image", requiresRoot: nil),
+        TextRule(pattern: "\\b(receipt|invoice)\\b|\\b(vat|subtotal)\\b|\\btotal\\s*[:£$€]", path: "Purchases > Receipts", weight: 0.85, reason: "receipt or invoice wording was read on the image", requiresRoot: nil),
         TextRule(pattern: "\\b(warrant\\w*|guarantee\\w*)\\b", path: "Purchases > Warranty", weight: 0.85, reason: "warranty wording was read on the image", requiresRoot: nil),
         TextRule(pattern: "\\border\\s+(number|no\\.?|confirm\\w*)\\b|\\byour\\s+order\\b|\\border\\s+placed\\b", path: "Purchases > Orders", weight: 0.8, reason: "an order confirmation was read on the image", requiresRoot: nil),
         TextRule(pattern: "\\b(out\\s+for\\s+delivery|tracking\\s+(number|no\\.?)|dispatch\\w*|delivered\\s+on|courier)\\b", path: "Purchases > Delivery", weight: 0.8, reason: "delivery-tracking wording was read on the image", requiresRoot: nil),
