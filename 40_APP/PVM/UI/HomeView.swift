@@ -97,7 +97,7 @@ struct HomeView: View {
     }
 
     private var maintenanceSection: some View {
-        Section("Needs you") {
+        Section {
             NavigationLink {
                 ReviewQueueView(coordinator: coordinator)
             } label: {
@@ -108,6 +108,8 @@ struct HomeView: View {
                     Text("\(coordinator.reviewCount)").foregroundStyle(.secondary).monospacedDigit()
                 }
             }
+        } header: {
+            Text("Needs you")
         } footer: {
             Text("Only what the system could not decide on its own. §12 says this queue "
                  + "should stay very small — if it is large, that is a defect, not a to-do list.")

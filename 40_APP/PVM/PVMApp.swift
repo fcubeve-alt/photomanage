@@ -20,6 +20,7 @@ struct PVMApp: App {
 /// contains this code and simply never runs it, so the screenshotted app is the same
 /// binary as the real one.
 enum LaunchFixture {
+    @MainActor
     static func applyIfRequested(to coordinator: IngestionCoordinator) {
         guard ProcessInfo.processInfo.arguments.contains("-PVMFixture") else { return }
         coordinator.loadFixture(FixtureLibrary.make())

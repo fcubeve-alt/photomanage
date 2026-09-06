@@ -36,7 +36,9 @@ public final class IngestionCoordinator: ObservableObject {
         self.catalog = catalog
     }
 
-    public static func defaultCatalog() -> Catalog? {
+    /// `nonisolated` because it is used as a default argument, and a default argument
+    /// expression cannot call into the main actor.
+    public nonisolated static func defaultCatalog() -> Catalog? {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory,
                                            in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -58,11 +60,14 @@ public final class IngestionCoordinator: ObservableObject {
 
     public func requestPermission() {
         PhotoLibrarySource.requestAuthorization { [weak self] status in
-            guard let self else { return }
-            if status == .authorized || status == .limited {
-                self.runBreadthPass()
-            } else {
-                self.phase = .failed("Without access to your photos there is nothing to catalogue.")
+            Task { @MainActor in
+                guard let self else { return }
+                if status == .authorized || status == .limited {
+                    self.runBreadthPass()
+                } else {
+                    self.phase = .failed(
+                        "Without access to your photos there is nothing to catalogue.")
+                }
             }
         }
     }
@@ -85,11 +90,12 @@ public final class IngestionCoordinator: ObservableObject {
         let fetch = PhotoLibrarySource.fetchAll()
         var collected: [AssetSignals] = []
         collected.reserveCapacity(fetch.count)
-        phAssets.removeAll()
+        var index: [String: PHAsset] = [:]
         fetch.enumerateObjects { asset, _, _ in
             collected.append(PhotoLibrarySource.breadthSignals(from: asset))
-            self.phAssets[asset.localIdentifier] = asset
+            index[asset.localIdentifier] = asset
         }
+        phAssets = index
         assets = collected
         phase = .breadth(done: 0, total: collected.count)
 
