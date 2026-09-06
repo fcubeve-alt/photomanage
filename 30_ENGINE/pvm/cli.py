@@ -6,6 +6,8 @@ CLI for the classification engine.
     python -m pvm.cli tree     --catalog out.sqlite
     python -m pvm.cli why      --catalog out.sqlite --asset A00001
     python -m pvm.cli review   --catalog out.sqlite
+    python -m pvm.cli remember --catalog out.sqlite
+    python -m pvm.cli remember --catalog out.sqlite --where "my red suitcase"
 
 The `--library` reader is deliberately pluggable. On a phone the source is PhotoKit;
 here it is whatever adapter can produce `AssetSignals`, which is the only contract the
@@ -134,6 +136,71 @@ def cmd_review(args) -> int:
     return 0
 
 
+def cmd_remember(args) -> int:
+    """§2 Remember, at the command line.
+
+    Two shapes. Without `--where` it lists what the library knows exists — the memory
+    itself. With `--where` it answers a question about one of them, which is the only
+    output that ever needs hedging, so the hedging lives in `MemoryGraph` and is
+    printed verbatim rather than reassembled here.
+    """
+    catalog = Catalog(args.catalog)
+    if args.where:
+        graph = _graph_from(catalog)
+        print(graph.answer_where_last_seen(args.where))
+        catalog.close()
+        return 0 if graph.find(args.where) else 1
+
+    rows = catalog.entities(kind=args.kind, limit=args.limit)
+    if not rows:
+        print("the library remembers nothing yet — run `classify` first")
+        catalog.close()
+        return 1
+    kind = None
+    for entity_id, entity_kind, name, category_path, confidence, why in rows:
+        if entity_kind != kind:
+            kind = entity_kind
+            print(f"\n{kind.upper()}")
+        shelf = f"   filed under {category_path}" if category_path else ""
+        print(f"  {name}  ({confidence:.2f}){shelf}")
+        print(f"      because {why}")
+        for asset_id, seen_at, place, _conf, reason, _src, place_source, repeats in \
+                catalog.sightings(entity_id, limit=args.sightings):
+            when = (seen_at or "undated")[:10]
+            where = place or "no recorded location"
+            hedge = " (inferred)" if place_source != "measured" else ""
+            again = f"  — same moment as {repeats}" if repeats else ""
+            print(f"      · {when}  {where}{hedge}  [{asset_id}]  {reason}{again}")
+    catalog.close()
+    return 0
+
+
+def _graph_from(catalog) -> "MemoryGraph":
+    """Read the stored memory back into a graph so questions are answered by the same
+    code that built it. Rebuilding the answer logic against SQL would be a second
+    implementation of the hedging rules, and the two would drift."""
+    from datetime import datetime
+
+    from pvm.memory import Entity, EntityKind, MemoryGraph, Observation
+    from pvm.signals import Tier as _Tier
+    from pvm.verdict import Evidence
+
+    graph = MemoryGraph()
+    for entity_id, kind, name, category_path, confidence, why in catalog.entities(limit=100000):
+        entity = Entity(entity_id, EntityKind(kind), name,
+                        [Evidence("catalog", _Tier.METADATA, float(confidence), why)])
+        entity.category_path = category_path
+        graph.entities[entity_id] = entity
+        for asset_id, seen_at, place, conf, reason, source, place_source, repeats in \
+                catalog.sightings(entity_id, limit=100000):
+            graph.observe(Observation(
+                entity_id, asset_id,
+                datetime.fromisoformat(seen_at) if seen_at else None,
+                place, float(conf), reason, source=source, place_source=place_source,
+                repeats=repeats))
+    return graph
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="pvm", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -170,6 +237,17 @@ def main(argv=None) -> int:
     p.add_argument("--catalog", default="pvm_catalog.sqlite")
     p.add_argument("--limit", type=int, default=25)
     p.set_defaults(fn=cmd_review)
+
+    p = sub.add_parser("remember",
+                       help="what the library knows exists, and where it last saw it")
+    p.add_argument("--catalog", default="pvm_catalog.sqlite")
+    p.add_argument("--kind", choices=["person", "place", "object", "document",
+                                      "purchase", "event"])
+    p.add_argument("--where", metavar="THING",
+                   help='answer "where did I last see X" for one thing')
+    p.add_argument("--limit", type=int, default=40)
+    p.add_argument("--sightings", type=int, default=3)
+    p.set_defaults(fn=cmd_remember)
 
     args = ap.parse_args(argv)
     return args.fn(args)

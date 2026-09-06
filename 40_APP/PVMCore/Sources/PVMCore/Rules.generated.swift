@@ -61,6 +61,7 @@ public enum Rules {
     ]
 
     public static let sceneMap: [String: String] = [
+        "backpack": "Objects > Other",
         "bed": "Objects > Furniture",
         "bicycle": "Objects > Bicycle",
         "bike": "Objects > Bicycle",
@@ -74,9 +75,12 @@ public enum Rules {
         "computer": "Objects > Devices",
         "conference_room": "Work > Meetings",
         "desk": "Objects > Furniture",
+        "handbag": "Objects > Other",
         "headphones": "Objects > Devices",
         "jacket": "Clothing > Outerwear",
+        "keys": "Objects > Other",
         "laptop": "Objects > Devices",
+        "luggage": "Objects > Other",
         "meme": "Downloads > Memes",
         "microwave": "Objects > Appliances",
         "mobile_phone": "Objects > Devices",
@@ -88,13 +92,17 @@ public enum Rules {
         "shoe": "Clothing > Shoes",
         "sneaker": "Clothing > Shoes",
         "sofa": "Objects > Furniture",
+        "suitcase": "Objects > Other",
+        "sunglasses": "Objects > Other",
         "sweater": "Clothing > Tops",
         "t_shirt": "Clothing > Tops",
         "table": "Objects > Furniture",
         "television": "Objects > Devices",
+        "umbrella": "Objects > Other",
         "wallpaper": "Downloads > Wallpapers",
         "washing_machine": "Objects > Appliances",
         "whiteboard": "Work > Whiteboards",
+        "wristwatch": "Objects > Other",
     ]
 
     public static let sceneFloor: Double = 0.35

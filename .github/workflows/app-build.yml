@@ -77,16 +77,22 @@ jobs:
             -configuration Debug CODE_SIGNING_ALLOWED=NO \
             | tee build.log
 
-      - name: Behaviour and safety tests
+      # PVMCoreTests belongs to the SwiftPM package, not to the Xcode project, so
+      # `-only-testing:PVMCoreTests` cannot reach it — the scheme has never contained
+      # it. Run it the way it is actually built, with `swift test`.
+      #
+      # This is not a repeat of the Linux job. The same sources run here against
+      # Apple's Foundation instead of swift-corelibs-foundation, which is exactly where
+      # the two have already diverged once in this project: the string-deallocation
+      # crash in JSONSerialization was a Linux-only fault, and a Darwin-only fault
+      # would be just as invisible from the other side.
+      - name: Behaviour and safety tests (Apple Foundation)
         working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          TZ: UTC
         run: |
           set -o pipefail
-          xcodebuild test \
-            -project PVM.xcodeproj -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
-            -configuration Debug CODE_SIGNING_ALLOWED=NO \
-            -only-testing:PVMCoreTests \
-            | tee unit.log
+          swift test --package-path PVMCore | tee unit.log
 
       - name: Screenshots and screen descriptions
         working-directory: ${{ env.PROJECT_DIR }}

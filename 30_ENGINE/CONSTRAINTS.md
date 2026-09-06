@@ -32,8 +32,8 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S2-RISK | Assess Risk：判断误处理的潜在损失和内容重要性 | PARTIAL | `pvm/risk.py::classify_risk` grades consequence; **importance as a separate factor from risk is not modelled** |
 | S2-DECIDE | Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作 | DONE | `pvm/risk.py::decide_action`, `pvm/risk.py::policy_table` |
 | S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
-| S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | MISSING | the Visual Memory Graph is not built. The catalogue stores assignments, not evidence about real-world entities — this is the difference between a filing system and a memory |
-| S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | Browse and Timeline/Places work (`pvm/cli.py::cmd_tree`); Intent Search and Relations traversal do not exist |
+| S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | DONE | `pvm/memory.py` builds entities of all six kinds with evidence, `pvm/catalog.py::write_memory` persists them, `tests/test_memory.py` locks the claims it may not make, `pvm/cli.py::cmd_remember` answers L1-B's worked example. Objects and documents are **category-level** entities — see S3-ENTITY and T1B-RESOLVER, which track that limit rather than double-counting it here |
+| S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | Browse and Timeline/Places work (`pvm/cli.py::cmd_tree`), and the relation network is now traversable from an entity (`pvm/memory.py::MemoryGraph.history`, `co_occurring`); Intent Search does not exist |
 | S2-MAINTAIN | Maintain：每一张新照片进入后自动重复以上过程 | PARTIAL | incremental re-classification works (`tests/test_catalog.py`); video does not enter the pipeline at all |
 | S2-DERIVE | Derive Services：衣橱、旅行、购物、物品、提醒 | OUT-OF-SCOPE | Tier 2 / §15 — explicitly a later value layer, not skipped work |
 
@@ -45,8 +45,8 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S3-TIME | Time：Year → Month → Day → Moment | PARTIAL | only Year is indexed (`Timeline > 2025`); Month/Day/Moment are not, so "find the photos from that afternoon" cannot be served |
 | S3-PLACE | Place：Country → City → Place | PARTIAL | Country and City are indexed; the third level (a named place within a city) is not |
 | S3-PERSON | Person | DONE | `pvm/classifier.py::_faces` |
-| S3-ENTITY | Object / Entity：同一件衣服、设备、证件、商品 | PARTIAL | `pvm/dedup.py` emits same-entity *relations* between two assets; there is no persistent entity that accumulates across the library |
-| S3-EVENT | Event：旅行、生日、会议、活动 | PARTIAL | only Travel, from `pvm/context.py::_find_trips`; birthdays, meetings and other events are not derived |
+| S3-ENTITY | Object / Entity：同一件衣服、设备、证件、商品 | PARTIAL | entities now persist and accumulate across the library (`pvm/memory.py::Entity`), so "every sighting of a suitcase" is answerable. **同一件** is not: telling one suitcase from another is per-category entity resolution (T1B-RESOLVER), so object and document entities stay category-level — and the answer says so out loud rather than implying an instance |
+| S3-EVENT | Event：旅行、生日、会议、活动 | PARTIAL | Travel becomes a first-class event entity with its photos attached (`pvm/memory.py::_events`); birthdays, meetings and other events are still not derived |
 | S3-RISKDIM | Risk / Importance | PARTIAL | risk is `pvm/risk.py`; importance is not a separate axis, and §5 treats it as one |
 | S3-LIFECYCLE | Lifecycle：Temporary / Active / Expired / Long-term | DONE | `pvm/risk.py::lifecycle_of`, `tests/test_engine.py::LifecycleIsWhenNotHowMuch` |
 | S3-EQUIV | Equivalence Group | DONE | `pvm/dedup.py`, `tests/test_engine.py::DuplicatesAndTheThingsThatOnlyLookLikeThem` |
@@ -79,7 +79,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | PARTIAL | `pvm/cli.py::cmd_tree` browses the tree; the Person level inside Documents does not exist |
 | S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | year, city and trip work; month/day and named places do not (see S3-TIME, S3-PLACE) |
 | S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | MISSING | no natural-language retrieval of any kind — this is one of the four paths the product is defined by, and it is absent |
-| S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | MISSING | relation rows are written but nothing traverses them; there is no entry point from an entity to its assets |
+| S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | PARTIAL | `pvm/memory.py::MemoryGraph.history` goes from a person, object, purchase or trip to its assets and `pvm/cli.py::cmd_remember` exposes it. What is missing is the join: from a receipt to the warranty document, or from an order screenshot to the delivery photo — that needs the entity resolution T1B-RESOLVER tracks |
 | S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/signals.py::GeoFix` carries `source` and `confidence` and the classifier refuses to use an inferred fix as if measured — but **nothing actually infers**, so assets without GPS get no place at all |
 | S11-EVENT | 时间 + 地点 + 人物 + 内容可以自动形成 Event / Trip 候选 | L1:162 | PARTIAL | Trip only (`pvm/context.py::_find_trips`); no other event type is derived |
 | S12-INDEXALL | 扫描全库并建立多维索引 | L1:166 | DONE | `pvm/pipeline.py::run` |
@@ -92,13 +92,13 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
-| S15-DERIVED | Wardrobe / Clothing View | L1:189 | OUT-OF-SCOPE | Tier 2 §15 — an explicit later value layer that must derive from existing data, not skipped work |
+| S15-DERIVED | Wardrobe / Clothing View | L1:189 | OUT-OF-SCOPE | Tier 2 §15 — an explicit later value layer that must derive from existing data, not skipped work. The data it has to derive from now exists: clothing and purchase entities with their sightings (`pvm/memory.py`) |
 | S16-BOUNDARY | 对性格、健康、政治、宗教、亲密关系等敏感属性作推断 | L1:204 | DONE | `pvm/rules.py::MEDICAL_IS_DOCUMENT_ONLY`, `tests/test_engine.py::RiskRedLines` |
 | S17-POSITION | 第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager | L1:206 | NOT-CODE | a positioning statement that shapes what gets built rather than a clause to implement; its executable consequence is that classification precedes cleanup, which is S9-ORDER |
 | S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | seven of eight in `pvm/kpi.py::report`; Personalization Gain requires S14-PERSONAL, and Retrieval Success requires real users (T0-B) |
 | S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | PARTIAL | coverage is reported; **no confusion matrix is produced** — Tier 1-A deliverable |
 | S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
-| S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | two of four exist; see S10-INTENT and S10-RELATIONS |
+| S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | three of four exist; Intent Search does not — see S10-INTENT |
 | S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
 | S22-ENTRY | 核心指标新增 Retrieval Entry Share | L1:254 | OUT-OF-SCOPE | T0-B measures this with real users; nothing an engine can self-report |
 | S23-STRUCTURE | 首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流 | L1:259 | PARTIAL | the engine produces the counts and the tree a Structure-First home needs; **there is no home, because there is no app** |
@@ -125,7 +125,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | PARTIAL | risk, lifecycle and recoverability are modelled; **importance is not a separate axis** |
 | P25-L6 | Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review | DONE | `pvm/risk.py::Action`, `pvm/risk.py::policy_table` |
 | P25-L7 | Layer 7 Visual Library | DONE | `pvm/catalog.py::counts_by_path`, `pvm/cli.py::cmd_tree` |
-| P25-L8 | Layer 8 Personal Memory | OUT-OF-SCOPE | Tier 2, and dependent on S2-REMEMBER which is missing |
+| P25-L8 | Layer 8 Personal Memory | OUT-OF-SCOPE | Tier 2. Its substrate now exists (S2-REMEMBER); what stays out of scope is the personal layer on top, which is S14-PERSONAL and separately tracked |
 
 ## L1-B — Information-Change-First / Minimum Necessary Inference
 
@@ -136,7 +136,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | B2-CHANGE | 优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理 | L1B:9 | DONE | `pvm/catalog.py::signals_fingerprint`, `pvm/deltas.py` |
 | B3-PHOTOS | 系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类 | L1B:34 | DONE | `pvm/dedup.py` |
 | B4-NOFRAMES | 禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型 | L1B:37 | DONE | `pvm/deltas.py::select_keyframes`, `tests/test_deltas.py` |
-| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | MISSING | `deltas.py` selects frames — the easy half. The Video Memory Record (Date / Place / Person / Object / Event / segment / representative frames) does not exist, and neither does the graph it belongs in |
+| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | PARTIAL | the record exists and is exercised: `pvm/memory.py::VideoMemoryRecord` and `video_record` build Date / Place / Person / Object / Event / segments / representative frames from the frames `deltas.py` chose, tested in `tests/test_memory.py`. It is still **not reached in production**: video does not enter `pvm/pipeline.py` at all (S2-MAINTAIN), so nothing calls it outside the tests |
 | B6-MINMODEL | 规则 / metadata 能解决 → 不用 AI。轻模型能解决 → 不用大模型。Apple Native 能解决 → 不增加额外模型 | L1B:71 | DONE | `pvm/classifier.py` escalation; the engine carries no third-party model |
 
 ## L2 Tier 1 — 核心能力可行性 (the tier this engine actually belongs to)
@@ -187,15 +187,15 @@ its tests and still does not do what the document asks, which is a more comforta
 place to hide than a gap.
 
 **The eleven MISSING, in the order they would hurt:**
-1. **S2-REMEMBER / B4-RECORD** — the Visual Memory Graph. §2 makes "Remember" a
-   core step and §15 builds every later service on it. The catalogue files photos; it
-   does not turn them into evidence about people, objects and events. This is the
-   largest single gap and it is architectural, not a feature.
+1. **T1B-RESOLVER** — per-category entity resolution (§24 Gate 2). Now the largest
+   gap, and the one the memory graph runs into immediately: it can list every sighting
+   of *a* suitcase and cannot say which one is yours. The make-or-break number for
+   Tier 1, and the ceiling on S3-ENTITY, S10-RELATIONS and S2-REMEMBER alike.
 2. **S10-INTENT** — natural-language retrieval. One of the four paths the product is
-   defined by (§10, §19).
-3. **S10-RELATIONS** — entity-to-asset traversal. Rows are written; nothing reads them.
-4. **T1B-RESOLVER** — per-category entity resolution (§24 Gate 2). The make-or-break
-   number for Tier 1.
+   defined by (§10, §19). `cmd_remember --where` answers one fixed question shape;
+   that is not intent search.
+3. **B4-RECORD, the production half** — the Video Memory Record is built and tested,
+   but video never enters the pipeline (S2-MAINTAIN), so nothing calls it for real.
 5. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
    an action the engine can name and cannot perform.
 6. **S14-PERSONAL / T2G-LEARNING** — Personal Policy, and the feedback loop §14 and

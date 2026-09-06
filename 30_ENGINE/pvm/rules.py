@@ -179,6 +179,17 @@ SCENE_MAP = {
     "coat": "Clothing > Outerwear", "jacket": "Clothing > Outerwear",
     "shoe": "Clothing > Shoes", "sneaker": "Clothing > Shoes", "boot": "Clothing > Shoes",
 
+    # §15 Home / Object Memory: the things people actually go looking for. `Objects`
+    # is not an extensible root and has no shelf for any of them, so they file under
+    # `Objects > Other` — a deliberately coarse answer. The specific word survives in
+    # the memory graph, where the entity is named by what was recognised rather than
+    # by the shelf it landed on, so "where did I last see my suitcase" stays
+    # answerable even though the catalogue only knows it as an object.
+    "suitcase": "Objects > Other", "luggage": "Objects > Other",
+    "backpack": "Objects > Other", "handbag": "Objects > Other",
+    "umbrella": "Objects > Other", "wristwatch": "Objects > Other",
+    "sunglasses": "Objects > Other", "keys": "Objects > Other",
+
     "whiteboard": "Work > Whiteboards", "blackboard": "Work > Whiteboards",
     "projection_screen": "Work > Meetings", "conference_room": "Work > Meetings",
     "presentation": "Work > Meetings",

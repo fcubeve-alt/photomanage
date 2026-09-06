@@ -37,7 +37,7 @@ from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _sqlite_int64(value):
@@ -156,6 +156,39 @@ class Catalog:
           why TEXT NOT NULL
         );
 
+        -- The visual memory (§2 Remember, §15). Entities are things in the world;
+        -- observations are sightings of them. Kept beside the catalogue rather than
+        -- inside it because they answer different questions: `assignments` says which
+        -- shelf a photo is on, `observations` says where a thing was and when.
+        CREATE TABLE IF NOT EXISTS entities(
+          entity_id TEXT PRIMARY KEY,
+          kind TEXT NOT NULL,
+          name TEXT NOT NULL,
+          category_path TEXT,
+          confidence REAL NOT NULL,
+          why TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_entities_kind ON entities(kind);
+
+        CREATE TABLE IF NOT EXISTS observations(
+          entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
+          asset_id TEXT NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
+          seen_at TEXT,
+          place TEXT,
+          confidence REAL NOT NULL,
+          reason TEXT NOT NULL,
+          -- §11 travels with the row. A place column with no provenance column is a
+          -- guess that has been promoted to a fact by storage.
+          source TEXT NOT NULL,
+          place_source TEXT NOT NULL,
+          -- The anchor asset when this sighting repeats another from the same moment.
+          -- A flag, not a deletion: the row stays and a view may fold it.
+          repeats TEXT,
+          PRIMARY KEY(entity_id, asset_id, reason)
+        );
+        CREATE INDEX IF NOT EXISTS idx_obs_entity ON observations(entity_id, seen_at);
+        CREATE INDEX IF NOT EXISTS idx_obs_asset ON observations(asset_id);
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
         self.db.commit()
@@ -239,6 +272,54 @@ class Catalog:
                        VALUES(?,?,?,?,?)""",
                     (g.kind, key, member, int(member in g.distinct_members), g.reason))
         self.db.commit()
+
+    def write_memory(self, graph) -> None:
+        """Replace the stored memory with this one.
+
+        Rebuilt wholesale rather than merged. An entity is a conclusion drawn from the
+        whole library — who appears often enough to be a person, which runs of days are
+        a trip — so a partial update would leave conclusions standing on assets that
+        have since been deleted. The catalogue rows are the durable thing; the memory
+        is derived from them and is cheap to derive again.
+        """
+        self.db.execute("DELETE FROM observations")
+        self.db.execute("DELETE FROM entities")
+        for e in graph.entities.values():
+            self.db.execute(
+                """INSERT OR REPLACE INTO entities(entity_id,kind,name,category_path,
+                                                   confidence,why) VALUES(?,?,?,?,?,?)""",
+                (e.entity_id, e.kind.value, e.name, e.category_path,
+                 float(e.confidence), e.why()))
+        known = set(graph.entities)
+        for o in graph.observations:
+            if o.entity_id not in known:
+                continue
+            self.db.execute(
+                """INSERT OR REPLACE INTO observations(entity_id,asset_id,seen_at,place,
+                       confidence,reason,source,place_source,repeats)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",
+                (o.entity_id, o.asset_id, o.when.isoformat() if o.when else None,
+                 o.place, float(o.confidence), o.reason, o.source, o.place_source,
+                 o.repeats))
+        self.db.commit()
+
+    def entities(self, kind: Optional[str] = None, limit: int = 200):
+        sql = "SELECT entity_id,kind,name,category_path,confidence,why FROM entities"
+        args: tuple = ()
+        if kind:
+            sql += " WHERE kind=?"
+            args = (kind,)
+        sql += " ORDER BY kind, confidence DESC, name LIMIT ?"
+        return self.db.execute(sql, args + (limit,)).fetchall()
+
+    def sightings(self, entity_id: str, limit: int = 200):
+        """Oldest first, undated last — the same order `MemoryGraph.history` gives, so
+        the two cannot disagree about what "last seen" means."""
+        return self.db.execute(
+            """SELECT asset_id,seen_at,place,confidence,reason,source,place_source,repeats
+               FROM observations WHERE entity_id=?
+               ORDER BY seen_at IS NULL, seen_at LIMIT ?""",
+            (entity_id, limit)).fetchall()
 
     def checkpoint(self, cursor_value: str) -> None:
         """Cursor and work commit together. Separately would mean a cursor that points

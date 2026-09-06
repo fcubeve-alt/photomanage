@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence
 
-from . import dedup, taxonomy
+from . import dedup, memory, taxonomy
 from .catalog import BATCH, Catalog
 from .classifier import Classifier
 from .context import LibraryContext, build_context
@@ -77,6 +77,8 @@ class RunStats:
     by_root: Counter = field(default_factory=Counter)
     unfiled: int = 0
     needs_review: int = 0
+    entities: int = 0
+    observations: int = 0
     wall_s: float = 0.0
     context: Optional[LibraryContext] = None
 
@@ -97,6 +99,7 @@ class RunStats:
             "risk: " + ", ".join(f"{Risk(r).name}={n}" for r, n in sorted(self.by_risk.items())),
             "action: " + ", ".join(f"{a}={n}" for a, n in sorted(self.by_action.items())),
             f"needs review {self.needs_review}  unfiled {self.unfiled}",
+            f"remembered: {self.entities} things, {self.observations} sightings",
         ]
         return "\n".join(lines)
 
@@ -104,6 +107,7 @@ class RunStats:
 def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
         budget: Tier = Tier.TEXT,
         reconcile_deletions: bool = True,
+        build_memory: bool = True,
         progress: Optional[Callable[[int, int], None]] = None) -> RunStats:
     t0 = time.time()
     stats = RunStats(seen=len(assets))
@@ -192,6 +196,22 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
         stats.by_action[proposal.action.value] += 1
         stats.scored += 1
     catalog.commit()
+
+    # ---- phase 4: remember ---------------------------------------------
+    # §2 lists Remember among the ten things the product is, and §15 builds every later
+    # service on it. This spends no new intelligence: it reads the classifications and
+    # the signals already computed above and turns them into entities and sightings.
+    #
+    # It is skipped when the run classified nothing, because the graph is derived from
+    # the whole library and rebuilding it from an incremental slice would produce a
+    # memory of only the newest photos.
+    if build_memory and classifications:
+        graph = memory.build(assets, classifications, ctx,
+                             moment_groups=[g.members for g in report.relations
+                                            if g.kind == "same_moment"])
+        catalog.write_memory(graph)
+        stats.entities = len(graph.entities)
+        stats.observations = len(graph.observations)
 
     stats.wall_s = time.time() - t0
     return stats
