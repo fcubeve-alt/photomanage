@@ -14,6 +14,7 @@ user's own life, which is the failure §11 and §16 exist to prevent.
     python -m unittest discover -s tests -v
 """
 
+import json
 import os
 import sys
 import unittest
@@ -372,6 +373,144 @@ class TheStoredMemoryAnswersTheSameWayTheBuiltOneDoes(unittest.TestCase):
                   geo=GeoFix(LONDON.lat, LONDON.lon, source="inferred"), place=UK_LONDON)
         ])
         self.assertIn("inferred", reloaded.answer_where_last_seen("Anna"))
+
+
+class SegmentsAreSpansNotInstants(unittest.TestCase):
+    """The bug this locks out. The delta gate takes a keyframe every thirty frames even
+    inside a completely static shot, so its keyframes are almost never consecutive — and
+    the first version, which opened a segment per run of adjacent frames, turned a
+    sixty-second video into sixty-one zero-length "segments". A list of instants is
+    exactly the pile of frames L1-B §4 says a video must not leave behind."""
+
+    def test_a_heartbeat_sample_extends_a_segment_rather_than_ending_it(self):
+        # Frames 0, 30, 60 are periodic re-checks of one unchanged shot; 90 is a cut.
+        record = memory.video_record(
+            self.asset(), [0, 30, 60, 90, 120], frame_rate=30.0,
+            new_content_at={0, 90})
+        self.assertEqual([(0.0, 3.0), (3.0, 4.0)], record.segments,
+                         "one shot then a cut — two spans, not five instants")
+
+    def test_no_segment_is_zero_length(self):
+        record = memory.video_record(
+            self.asset(), [0, 30, 60, 90], frame_rate=30.0, new_content_at={0})
+        for start, end in record.segments:
+            self.assertGreater(end, start, "a span the user cannot scrub to is not a span")
+
+    def test_the_bare_index_form_still_groups_by_adjacency(self):
+        """Callers holding only indices, with no record of why each was taken, get the
+        honest reading of that input: a run of consecutive frames is one segment."""
+        record = memory.video_record(self.asset(), [0, 1, 2, 90, 91], frame_rate=30.0)
+        self.assertEqual(2, len(record.segments))
+
+    def asset(self):
+        a = asset("v", when=datetime(2025, 4, 12, 9), geo=TOKYO, place=JP_TOKYO,
+                  media_type="video", duration_s=60.0)
+        a.face_clusters = [FaceCluster("c-anna", "Anna")]
+        return a
+
+
+class TimestampsMustNotHideWhatTheRecordKept(unittest.TestCase):
+    """Losing a distinction in the formatter, after taking the trouble to keep it in
+    the record, is the same failure one layer out."""
+
+    def test_a_sub_second_span_does_not_render_as_nothing(self):
+        self.assertEqual("00:10.0\u201300:10.7", memory.format_span(10.0, 10.667),
+                         "a cut lasting two thirds of a second printed as 00:10–00:10, "
+                         "which reads as no span at all")
+
+    def test_a_long_span_stays_in_whole_seconds(self):
+        self.assertEqual("02:05\u201303:10", memory.format_span(125.0, 190.5))
+
+    def test_the_minute_carries_after_rounding_not_before(self):
+        self.assertEqual("00:50.0\u201301:00.0", memory.format_span(50.0, 59.967),
+                         "splitting before rounding prints 00:60.0")
+
+
+class VideoReachesThePipeline(unittest.TestCase):
+    """B4-RECORD's production half. `deltas.py` selected frames and
+    `VideoMemoryRecord` was built and tested, but nothing called either outside the
+    tests, because video never entered `pipeline.run`."""
+
+    def library(self):
+        a = asset("vid", when=datetime(2025, 4, 12, 9), geo=TOKYO, place=JP_TOKYO,
+                  media_type="video", duration_s=60.0)
+        a.face_clusters = [FaceCluster("c-anna", "Anna")]
+        return [a]
+
+    def frames(self):
+        from pvm import deltas
+        out = []
+        for i in range(1800):
+            if i < 300:
+                h = 0x1111_1111_1111_1111
+            elif i < 320:
+                h = 0xFFFF_0000_FFFF_0000
+            elif i < 1500:
+                h = 0x1111_1111_1111_1111
+            else:
+                h = 0x0F0F_F0F0_0F0F_F0F0
+            out.append(deltas.Frame(index=i, dhash=h, timestamp_s=i / 30.0))
+        return out
+
+    def _run(self, frames_for):
+        import os
+        import tempfile
+
+        from pvm import pipeline
+        from pvm.catalog import Catalog
+
+        catalog = Catalog(os.path.join(tempfile.mkdtemp(), "c.sqlite"))
+        stats = pipeline.run(self.library(), catalog, frames_for=frames_for)
+        rows = catalog.video_records()
+        catalog.close()
+        return stats, rows
+
+    def test_a_video_leaves_a_record_and_most_frames_are_never_processed(self):
+        frames = self.frames()
+        stats, rows = self._run(lambda a: frames)
+
+        self.assertEqual(1, stats.videos)
+        self.assertEqual(1800, stats.video_frames_seen)
+        self.assertLess(stats.video_frames_processed, 100,
+                        "B1-NOHEAVY: running a model on every frame is the design "
+                        "L1-B calls wrong on principle")
+        self.assertGreater(stats.video_ms_saved, 0)
+
+        self.assertEqual(1, len(rows))
+        segments = json.loads(rows[0][6])
+        self.assertEqual(4, len(segments), f"expected four spans, got {segments}")
+        # The cut is twenty frames at 30 fps, starting at ten seconds.
+        self.assertAlmostEqual(10.0, segments[1][0], places=2)
+        self.assertAlmostEqual(10.667, segments[1][1], places=2)
+
+    def test_the_record_carries_who_and_where_not_just_frames(self):
+        frames = self.frames()
+        _, rows = self._run(lambda a: frames)
+        self.assertEqual("Tokyo", rows[0][2])
+        self.assertEqual(["Anna"], json.loads(rows[0][3]))
+
+    def test_a_video_whose_frames_cannot_be_read_leaves_no_record(self):
+        """Not the same as a video with no new information. Writing an empty record
+        would claim the opposite of what happened."""
+        stats, rows = self._run(lambda a: [])
+        self.assertEqual(0, stats.videos)
+        self.assertEqual([], rows)
+
+    def test_without_a_frame_source_the_run_does_not_imply_it_looked(self):
+        import os
+        import tempfile
+
+        from pvm import pipeline
+        from pvm.catalog import Catalog
+
+        catalog = Catalog(os.path.join(tempfile.mkdtemp(), "c.sqlite"))
+        try:
+            stats = pipeline.run(self.library(), catalog)
+            self.assertEqual(0, stats.videos)
+            self.assertEqual([], catalog.video_records())
+            self.assertIn("video: none", stats.summary())
+        finally:
+            catalog.close()
 
 
 class Determinism(unittest.TestCase):

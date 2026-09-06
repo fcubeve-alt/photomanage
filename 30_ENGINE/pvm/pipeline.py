@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence
 
-from . import dedup, memory, taxonomy
+from . import dedup, deltas, memory, taxonomy
 from .catalog import BATCH, Catalog
 from .classifier import Classifier
 from .context import LibraryContext, build_context
@@ -80,6 +80,14 @@ class RunStats:
     entities: int = 0
     observations: int = 0
     entity_review: int = 0
+    videos: int = 0
+    video_frames_seen: int = 0
+    video_frames_processed: int = 0
+    video_ms_saved: float = 0.0
+
+    @property
+    def video_frames_skipped(self) -> int:
+        return self.video_frames_seen - self.video_frames_processed
     wall_s: float = 0.0
     context: Optional[LibraryContext] = None
 
@@ -102,6 +110,10 @@ class RunStats:
             f"needs review {self.needs_review}  unfiled {self.unfiled}",
             f"remembered: {self.entities} things, {self.observations} sightings",
             f"same-entity pairs the resolver would not decide: {self.entity_review}",
+            (f"video: {self.videos} looked inside, "
+             f"{self.video_frames_processed:,}/{self.video_frames_seen:,} frames carried "
+             f"new information ({self.video_ms_saved/1000:.1f}s of deep work skipped)"
+             if self.videos else "video: none in this library"),
         ]
         return "\n".join(lines)
 
@@ -110,6 +122,7 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
         budget: Tier = Tier.TEXT,
         reconcile_deletions: bool = True,
         build_memory: bool = True,
+        frames_for: Optional[Callable[[AssetSignals], Sequence[deltas.Frame]]] = None,
         progress: Optional[Callable[[int, int], None]] = None) -> RunStats:
     t0 = time.time()
     stats = RunStats(seen=len(assets))
@@ -212,6 +225,20 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
     catalog.write_entity_review(report.needs_entity_review)
     catalog.commit()
 
+    # ---- phase 3b: video ------------------------------------------------
+    #
+    # The engine has no decoder, so frames come from outside — the same shape of
+    # contract `AssetSignals` already is with the rest of the world. Without a source
+    # a video is still catalogued from its metadata; it is simply never looked inside,
+    # and `stats.videos` stays at zero rather than the run implying otherwise.
+    #
+    # What happens here is L1-B §4's division of labour: this decides **which frames
+    # deserve deep processing** and records **what the video contributed**. Actually
+    # running a model on those frames is the caller's job, because that is the part
+    # that needs Vision and a device.
+    if frames_for is not None:
+        _video_pass(assets, classifications, ctx, catalog, stats, frames_for)
+
     # ---- phase 4: remember ---------------------------------------------
     # §2 lists Remember among the ten things the product is, and §15 builds every later
     # service on it. This spends no new intelligence: it reads the classifications and
@@ -230,3 +257,58 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
 
     stats.wall_s = time.time() - t0
     return stats
+
+
+def _video_pass(assets, classifications, ctx, catalog, stats, frames_for) -> None:
+    for asset in assets:
+        if asset.media_type != "video":
+            continue
+        frames = list(frames_for(asset) or [])
+        if not frames:
+            # A video whose frames could not be read is not a video with no new
+            # information. Saying nothing is the honest outcome; writing an empty
+            # record would claim the opposite.
+            continue
+
+        # Documents get a stricter gate — a page of text that drifts slightly is still
+        # a different page, and §9's false merge is expensive there.
+        c = classifications.get(asset.asset_id)
+        is_document = bool(c and any(p.startswith("Documents") for p in c.paths))
+        selection = deltas.select_keyframes(frames, is_document=is_document)
+        cost = deltas.estimate_cost(selection)
+
+        # Which keyframes were taken because something *changed*, as opposed to the
+        # periodic re-check the gate does inside a static shot. The two mean opposite
+        # things to a segment, and the gate is the only place that knows which is which.
+        new_content = {d.index for d in selection.decisions
+                       if d.process and not d.reason.startswith(str(deltas.MAX_SKIP_RUN))}
+        record = memory.video_record(
+            asset, selection.keyframes,
+            frame_rate=_frame_rate(frames, asset),
+            classification=c, context=ctx, new_content_at=new_content)
+        catalog.write_video_record(record, frames_seen=selection.total)
+
+        stats.videos += 1
+        stats.video_frames_seen += selection.total
+        stats.video_frames_processed += selection.processed
+        stats.video_ms_saved += cost.saved_ms
+    catalog.commit()
+
+
+def _frame_rate(frames, asset) -> float:
+    """Derived from the frames themselves where they carry timestamps, because the
+    sampling rate is a property of what the caller handed us and not of the file.
+
+    A caller that samples every tenth frame of a 30 fps video is giving us 3 fps, and
+    using the file's rate would put every segment boundary in the wrong place — the
+    record would name the wrong seconds of the user's own video.
+    """
+    stamped = [f for f in frames if f.timestamp_s]
+    if len(stamped) >= 2:
+        span = stamped[-1].timestamp_s - stamped[0].timestamp_s
+        steps = stamped[-1].index - stamped[0].index
+        if span > 0 and steps > 0:
+            return steps / span
+    if asset.duration_s > 0 and len(frames) > 1:
+        return (len(frames) - 1) / asset.duration_s
+    return 1.0

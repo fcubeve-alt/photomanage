@@ -34,7 +34,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
 | S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | DONE | `pvm/memory.py` builds entities of all six kinds with evidence, `pvm/catalog.py::write_memory` persists them, `tests/test_memory.py` locks the claims it may not make, `pvm/cli.py::cmd_remember` answers L1-B's worked example. Objects and documents are **category-level** entities — see S3-ENTITY and T1B-RESOLVER, which track that limit rather than double-counting it here |
 | S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | Browse and Timeline/Places work (`pvm/cli.py::cmd_tree`), and the relation network is now traversable from an entity (`pvm/memory.py::MemoryGraph.history`, `co_occurring`); Intent Search does not exist |
-| S2-MAINTAIN | Maintain：每一张新照片进入后自动重复以上过程 | PARTIAL | incremental re-classification works (`tests/test_catalog.py`); video does not enter the pipeline at all |
+| S2-MAINTAIN | Maintain：每一张新照片进入后自动重复以上过程 | PARTIAL | incremental re-classification works (`tests/test_catalog.py`) and video now enters the pipeline (B4-RECORD). What is still missing is the automatic part: nothing schedules a run when new photos arrive — on a device that is `BGProcessingTask`, which is C-4 and lives in the app |
 | S2-DERIVE | Derive Services：衣橱、旅行、购物、物品、提醒 | OUT-OF-SCOPE | Tier 2 / §15 — explicitly a later value layer, not skipped work |
 
 ## L1 §3 — the index dimensions
@@ -136,7 +136,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | B2-CHANGE | 优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理 | L1B:9 | DONE | `pvm/catalog.py::signals_fingerprint`, `pvm/deltas.py` |
 | B3-PHOTOS | 系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类 | L1B:34 | DONE | `pvm/dedup.py` |
 | B4-NOFRAMES | 禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型 | L1B:37 | DONE | `pvm/deltas.py::select_keyframes`, `tests/test_deltas.py` |
-| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | PARTIAL | the record exists and is exercised: `pvm/memory.py::VideoMemoryRecord` and `video_record` build Date / Place / Person / Object / Event / segments / representative frames from the frames `deltas.py` chose, tested in `tests/test_memory.py`. It is still **not reached in production**: video does not enter `pvm/pipeline.py` at all (S2-MAINTAIN), so nothing calls it outside the tests |
+| B4-RECORD | PVME 最终需要保存的不是“一堆被 AI 分析过的视频帧”，而是这个视频对用户个人视觉记忆真正贡献的新信息 | L1B:40 | DONE | video enters `pvm/pipeline.py::_video_pass`, which gates frames through `pvm/deltas.py::select_keyframes` and writes one row per video — Date / Place / Person / Object / Event / segments / representative frames — via `pvm/catalog.py::write_video_record`. `pvm/cli.py::cmd_video` shows it. `tests/test_memory.py::VideoReachesThePipeline` measures it: 61 of 1,800 frames on a 60-second clip, 245 seconds of deep work skipped. Frames arrive through a caller-supplied callable because the engine has no decoder; without one a video is still catalogued from its metadata and the video counter stays at zero rather than implying it looked inside |
 | B6-MINMODEL | 规则 / metadata 能解决 → 不用 AI。轻模型能解决 → 不用大模型。Apple Native 能解决 → 不增加额外模型 | L1B:71 | DONE | `pvm/classifier.py` escalation; the engine carries no third-party model |
 
 ## L2 Tier 1 — 核心能力可行性 (the tier this engine actually belongs to)
@@ -196,8 +196,10 @@ place to hide than a gap.
 2. **S10-INTENT** — natural-language retrieval. One of the four paths the product is
    defined by (§10, §19). `cmd_remember --where` answers one fixed question shape;
    that is not intent search.
-3. **B4-RECORD, the production half** — the Video Memory Record is built and tested,
-   but video never enters the pipeline (S2-MAINTAIN), so nothing calls it for real.
+3. **S10-RELATIONS, the join** — going from a receipt to its warranty document, or
+   from an order screenshot to the delivery photo. The traversal from one entity to its
+   assets works; joining two entities that are the same purchase needs T1B-RESOLVER
+   applied across categories, which is not built.
 5. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
    an action the engine can name and cannot perform.
 6. **S14-PERSONAL / T2G-LEARNING** — Personal Policy, and the feedback loop §14 and

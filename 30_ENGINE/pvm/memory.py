@@ -476,6 +476,28 @@ def _mark_repeats(groups, by_id, graph) -> None:
 # Video (L1-B §4). What a video must leave behind is a record, not a pile of frames.
 # --------------------------------------------------------------------------------
 
+def format_span(start: float, end: float) -> str:
+    """`mm:ss`, with a decimal when the span is short enough that whole seconds would
+    hide it.
+
+    A cut lasting two thirds of a second is a real span in the data and rendered
+    `00:10–00:10` on screen, which reads as nothing at all. Losing a distinction in the
+    formatter after taking the trouble to keep it in the record is the same failure one
+    layer out.
+    """
+    def clock(seconds: float, decimals: int) -> str:
+        # Rounded first, then split. Splitting first prints 59.967 as "00:60.0",
+        # because the carry happens in the formatter after the minute is already fixed.
+        value = round(seconds, decimals)
+        minutes = int(value // 60)
+        rest = value - minutes * 60
+        width = 2 if decimals == 0 else 2 + 1 + decimals
+        return f"{minutes:02d}:{rest:0{width}.{decimals}f}"
+
+    decimals = 1 if (end - start) < 10 else 0
+    return f"{clock(start, decimals)}\u2013{clock(end, decimals)}"
+
+
 @dataclass
 class VideoMemoryRecord:
     """The shape L1-B §4 specifies, verbatim: Date / Place / Person / Object / Event /
@@ -504,32 +526,66 @@ class VideoMemoryRecord:
             parts.append(f"Event: {self.event}")
         if self.segments:
             parts.append("Relevant segment: " + ", ".join(
-                f"{int(s // 60):02d}:{int(s % 60):02d}–{int(e // 60):02d}:{int(e % 60):02d}"
-                for s, e in self.segments))
+                format_span(a, b) for a, b in self.segments))
         parts.append(f"Representative frames: {len(self.representative_frames)}")
         return "\n".join(parts)
 
 
+def _segments_by_content(frames: List[int], new_content: set,
+                         frame_rate: float) -> List[Tuple[float, float]]:
+    """A segment runs from the change that started it to the change that ended it."""
+    if not frames or frame_rate <= 0:
+        return []
+    out: List[Tuple[float, float]] = []
+    start = frames[0]
+    for index in frames[1:]:
+        if index in new_content:
+            out.append((start / frame_rate, index / frame_rate))
+            start = index
+    out.append((start / frame_rate, frames[-1] / frame_rate))
+    # A trailing segment that opened on the final frame has nothing after it to close
+    # against. It is a moment, not a span, and is dropped rather than reported as a
+    # zero-length segment the user would have to interpret.
+    return [(a, b) for a, b in out if b > a] or ([] if len(frames) < 2 else out[:1])
+
+
+def _segments_by_adjacency(frames: List[int], frame_rate: float) -> List[Tuple[float, float]]:
+    """For callers holding bare indices with no record of why each was taken: a run of
+    consecutive frames is one segment. Correct for that input and no more — the gate's
+    own output should go through `_segments_by_content` instead."""
+    if not frames or frame_rate <= 0:
+        return []
+    out: List[Tuple[float, float]] = []
+    start = previous = frames[0]
+    for index in frames[1:]:
+        if index - previous > 1:
+            out.append((start / frame_rate, previous / frame_rate))
+            start = index
+        previous = index
+    out.append((start / frame_rate, max(previous, start) / frame_rate))
+    return out
+
+
 def video_record(asset: AssetSignals, keyframe_indices: Sequence[int],
                  frame_rate: float, classification: Optional[Classification] = None,
-                 context: Optional[LibraryContext] = None) -> VideoMemoryRecord:
+                 context: Optional[LibraryContext] = None,
+                 new_content_at: Optional[Iterable[int]] = None) -> VideoMemoryRecord:
     """Build the record from the frames the delta gate already chose.
 
-    The segments are the runs of consecutive keyframes: a keyframe opens a segment and
-    the next one closes it, so what is stored is *when something was happening*, not a
-    list of timestamps. That is the difference between a record and an index of frames.
+    `new_content_at` is the set of keyframes taken because something *changed* — a cut,
+    a drift, the first frame. The gate also takes a keyframe every thirty frames in a
+    completely static shot, as a periodic re-check, and those two kinds of keyframe mean
+    opposite things here. Without the distinction a sixty-second video came back as
+    sixty-one zero-length "segments" — a list of instants, which is exactly the pile of
+    frames L1-B §4 says must not be what a video leaves behind.
+
+    So a segment opens on new content and is *extended*, not ended, by a heartbeat
+    sample. What gets stored is when something was happening.
     """
     frames = sorted(set(keyframe_indices))
-    segments: List[Tuple[float, float]] = []
-    if frames and frame_rate > 0:
-        start = frames[0]
-        previous = frames[0]
-        for index in frames[1:]:
-            if index - previous > 1:
-                segments.append((start / frame_rate, previous / frame_rate))
-                start = index
-            previous = index
-        segments.append((start / frame_rate, max(previous, start) / frame_rate))
+    segments = (_segments_by_content(frames, set(new_content_at), frame_rate)
+                if new_content_at is not None
+                else _segments_by_adjacency(frames, frame_rate))
 
     place = None
     if asset.place:

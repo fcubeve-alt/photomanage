@@ -8,6 +8,7 @@ CLI for the classification engine.
     python -m pvm.cli review   --catalog out.sqlite
     python -m pvm.cli remember --catalog out.sqlite
     python -m pvm.cli remember --catalog out.sqlite --where "my red suitcase"
+    python -m pvm.cli video    --catalog out.sqlite
 
 The `--library` reader is deliberately pluggable. On a phone the source is PhotoKit;
 here it is whatever adapter can produce `AssetSignals`, which is the only contract the
@@ -186,6 +187,40 @@ def cmd_remember(args) -> int:
     return 0
 
 
+def cmd_video(args) -> int:
+    """L1-B §4: what a video left behind, rather than how it was analysed."""
+    import json as _json
+
+    catalog = Catalog(args.catalog)
+    rows = catalog.video_records(args.limit)
+    if not rows:
+        print("no videos have been looked inside yet")
+        catalog.close()
+        return 1
+    for (asset_id, date, place, people, objects, event,
+         segments, frames, frames_seen, why) in rows:
+        print(f"\n{asset_id}")
+        if date:
+            print(f"  Date: {date[:10]}")
+        if place:
+            print(f"  Place: {place}")
+        for label, raw in (("Person", people), ("Object", objects)):
+            values = _json.loads(raw)
+            if values:
+                print(f"  {label}: " + ", ".join(values))
+        if event:
+            print(f"  Event: {event}")
+        spans = _json.loads(segments)
+        if spans:
+            from pvm.memory import format_span
+            print("  Relevant segment: " + ", ".join(format_span(a, b) for a, b in spans))
+        kept = len(_json.loads(frames))
+        print(f"  Representative frames: {kept} of {frames_seen:,}")
+        print(f"      {why}")
+    catalog.close()
+    return 0
+
+
 def _graph_from(catalog) -> "MemoryGraph":
     """Read the stored memory back into a graph so questions are answered by the same
     code that built it. Rebuilding the answer logic against SQL would be a second
@@ -259,6 +294,11 @@ def main(argv=None) -> int:
     p.add_argument("--limit", type=int, default=40)
     p.add_argument("--sightings", type=int, default=3)
     p.set_defaults(fn=cmd_remember)
+
+    p = sub.add_parser("video", help="what each video contributed, not how it was analysed")
+    p.add_argument("--catalog", default="pvm_catalog.sqlite")
+    p.add_argument("--limit", type=int, default=25)
+    p.set_defaults(fn=cmd_video)
 
     args = ap.parse_args(argv)
     return args.fn(args)

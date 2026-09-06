@@ -37,7 +37,7 @@ from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def _sqlite_int64(value):
@@ -199,6 +199,23 @@ class Catalog:
           PRIMARY KEY(asset_a, asset_b)
         );
 
+        -- L1-B §4: what a video leaves behind is a record, not a pile of frames —
+        -- 这个视频对用户个人视觉记忆真正贡献的新信息. One row per video, holding the
+        -- shape §4 names, plus what the delta gate skipped so the saving is auditable
+        -- rather than asserted.
+        CREATE TABLE IF NOT EXISTS video_records(
+          asset_id TEXT PRIMARY KEY REFERENCES assets(asset_id) ON DELETE CASCADE,
+          date TEXT,
+          place TEXT,
+          people TEXT NOT NULL,          -- JSON array
+          objects TEXT NOT NULL,         -- JSON array
+          event TEXT,
+          segments TEXT NOT NULL,        -- JSON array of [start_s, end_s]
+          frames TEXT NOT NULL,          -- JSON array of representative frame indices
+          frames_seen INTEGER NOT NULL,
+          why TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
         self.db.commit()
@@ -330,6 +347,28 @@ class Catalog:
                FROM observations WHERE entity_id=?
                ORDER BY seen_at IS NULL, seen_at LIMIT ?""",
             (entity_id, limit)).fetchall()
+
+    def write_video_record(self, record, frames_seen: int) -> None:
+        self.db.execute(
+            """INSERT OR REPLACE INTO video_records(asset_id,date,place,people,objects,
+                   event,segments,frames,frames_seen,why)
+               VALUES(?,?,?,?,?,?,?,?,?,?)""",
+            (record.asset_id,
+             record.date.isoformat() if record.date else None,
+             record.place,
+             json.dumps(record.people),
+             json.dumps(record.objects),
+             record.event,
+             json.dumps([[round(a, 3), round(b, 3)] for a, b in record.segments]),
+             json.dumps(record.representative_frames),
+             frames_seen,
+             "; ".join(e.reason for e in record.evidence)))
+
+    def video_records(self, limit: int = 50):
+        return self.db.execute(
+            """SELECT asset_id,date,place,people,objects,event,segments,frames,
+                      frames_seen,why FROM video_records ORDER BY date DESC LIMIT ?""",
+            (limit,)).fetchall()
 
     def write_entity_review(self, pairs) -> None:
         self.db.execute("DELETE FROM entity_review")
