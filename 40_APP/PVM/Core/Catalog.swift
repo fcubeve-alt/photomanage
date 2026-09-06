@@ -16,7 +16,12 @@ import SQLite3
 ///  * **Explanations are stored, not regenerated.** The reason shown to the user is the
 ///    reason the engine actually used. Recomputing it later against newer rules would
 ///    quietly rewrite history.
-public final class Catalog {
+///
+/// `@unchecked Sendable` is a claim, so here is the basis for it: the connection is
+/// opened with `SQLITE_OPEN_FULLMUTEX`, which serialises every call into SQLite itself,
+/// and the class holds no other mutable state. That is what lets the indexing work run
+/// off the main thread — without it the depth pass would block the UI for minutes.
+public final class Catalog: @unchecked Sendable {
 
     public static let batchSize = 200
     private static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)

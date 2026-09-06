@@ -47,10 +47,27 @@ public final class IngestionCoordinator: ObservableObject {
 
     // MARK: - entry points
 
+    /// Indexing runs off the main thread. This is not a nicety: the depth pass is
+    /// 105–154 ms per asset measured, so a paced slice of 2,000 assets is five minutes.
+    /// On the main actor that is five minutes of frozen UI, which would make the paced
+    /// design — whose entire point is not to take the phone away — do exactly that.
+    private static let work = DispatchQueue(label: "com.pvm.app.indexing", qos: .utility)
+
+    /// No `Sendable` constraint, deliberately. `PHAsset` is a class and cannot be
+    /// Sendable, and the values crossing here are either value types or the catalogue,
+    /// whose thread-safety comes from `SQLITE_OPEN_FULLMUTEX` and is documented on the
+    /// type. Claiming a constraint the code cannot honour would be worse than stating
+    /// the reason it is safe.
+    private static func offMain<T>(_ body: @escaping () -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            work.async { continuation.resume(returning: body()) }
+        }
+    }
+
     public func start() {
         switch PhotoLibrarySource.authorizationStatus() {
         case .authorized, .limited:
-            runBreadthPass()
+            Task { await runBreadthPass() }
         case .notDetermined:
             phase = .needsPermission
         default:
@@ -63,7 +80,7 @@ public final class IngestionCoordinator: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if status == .authorized || status == .limited {
-                    self.runBreadthPass()
+                    await self.runBreadthPass()
                 } else {
                     self.phase = .failed(
                         "Without access to your photos there is nothing to catalogue.")
@@ -76,12 +93,12 @@ public final class IngestionCoordinator: ObservableObject {
     /// where there is no real photo library to read.
     public func loadFixture(_ signals: [AssetSignals]) {
         assets = signals
-        classify(budget: .text, phaseLabel: .breadth(done: 0, total: signals.count))
+        Task { await classify(budget: .text, phaseLabel: .breadth(done: 0, total: signals.count)) }
     }
 
     // MARK: - phases
 
-    private func runBreadthPass() {
+    private func runBreadthPass() async {
         guard let catalog else {
             phase = .failed("The catalogue could not be opened.")
             return
@@ -100,8 +117,11 @@ public final class IngestionCoordinator: ObservableObject {
         phase = .breadth(done: 0, total: collected.count)
 
         // Metadata only — no pixel is decoded, which is why this is seconds and not days.
-        let stats = Pipeline.run(assets: collected, catalog: catalog, budget: .metadata)
-        self.stats = stats
+        let snapshot = collected
+        let result = await Self.offMain {
+            Pipeline.run(assets: snapshot, catalog: catalog, budget: .metadata)
+        }
+        stats = result
         ttfuvSeconds = Date().timeIntervalSince(started)
         plan = IngestionPlanner.plan(librarySize: collected.count)
         refreshCounts()
@@ -147,13 +167,17 @@ public final class IngestionCoordinator: ObservableObject {
         phase = pending.count == slice.count ? .complete : .ready
     }
 
-    private func classify(budget: Tier, phaseLabel: Phase) {
+    private func classify(budget: Tier, phaseLabel: Phase) async {
         guard let catalog else { return }
         phase = phaseLabel
         let started = Date()
-        stats = Pipeline.run(assets: assets, catalog: catalog, budget: budget)
+        let snapshot = assets
+        let result = await Self.offMain {
+            Pipeline.run(assets: snapshot, catalog: catalog, budget: budget)
+        }
+        stats = result
         ttfuvSeconds = Date().timeIntervalSince(started)
-        plan = IngestionPlanner.plan(librarySize: assets.count)
+        plan = IngestionPlanner.plan(librarySize: snapshot.count)
         refreshCounts()
         phase = .ready
     }
