@@ -332,6 +332,48 @@ class VideoLeavesARecordNotFrames(unittest.TestCase):
                       "the saving is part of the record, not a hidden optimisation")
 
 
+class TheStoredMemoryAnswersTheSameWayTheBuiltOneDoes(unittest.TestCase):
+    """`pvm remember --where` reloads the graph out of SQLite and asks the same code
+    that built it — the right design, because the hedging rules should have one
+    implementation. But the reload is itself real logic: it rebuilds every Observation
+    from columns, and a bug there would show a wrong answer about the user's own life
+    while every test of the graph itself stayed green."""
+
+    def _run(self, assets):
+        import os
+        import tempfile
+
+        from pvm import pipeline
+        from pvm.catalog import Catalog
+        from pvm.cli import _graph_from
+
+        directory = tempfile.mkdtemp()
+        catalog = Catalog(os.path.join(directory, "c.sqlite"))
+        pipeline.run(assets, catalog)
+        reloaded = _graph_from(catalog)
+        catalog.close()
+        return reloaded
+
+    def test_the_reloaded_graph_gives_the_identical_answer(self):
+        assets = fixture.build()
+        built, reloaded = graph_of(assets), self._run(assets)
+        self.assertEqual(sorted(built.entities), sorted(reloaded.entities),
+                         "the stored memory holds different things")
+        for question in ("Anna", "Passport", "Tokyo", "Headphones"):
+            self.assertEqual(built.answer_where_last_seen(question),
+                             reloaded.answer_where_last_seen(question),
+                             f"\u201c{question}\u201d is answered differently once stored")
+
+    def test_the_hedge_survives_the_round_trip(self):
+        """§11 is stored, not recomputed. If `place_source` did not come back, an
+        inferred place would quietly become a fact the moment it was written down."""
+        reloaded = self._run([
+            asset("i", face_clusters=[FaceCluster("c", "Anna")],
+                  geo=GeoFix(LONDON.lat, LONDON.lon, source="inferred"), place=UK_LONDON)
+        ])
+        self.assertIn("inferred", reloaded.answer_where_last_seen("Anna"))
+
+
 class Determinism(unittest.TestCase):
 
     def test_building_the_same_library_twice_gives_the_same_memory(self):
