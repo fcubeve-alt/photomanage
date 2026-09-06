@@ -226,9 +226,17 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     # ---- cost -----------------------------------------------------------
     w("## Cost — what the engine had to spend\n\n")
     w("L1-B says stop escalating when the answer stops changing. This is that, measured:\n\n")
-    w("| deepest tier needed | assets | share |\n|---|--:|--:|\n")
+    w("| deepest tier that produced the ANSWER | assets | share |\n|---|--:|--:|\n")
     for t, n in sorted(stats.by_tier.items()):
         w(f"| {Tier(t).label} | {n:,} | {n/max(1,stats.classified)*100:.1f}% |\n")
+    w("\n| deepest tier the engine PAID FOR | assets | share |\n|---|--:|--:|\n")
+    for t, n in sorted(stats.by_tier_spent.items()):
+        w(f"| {Tier(t).label} | {n:,} | {n/max(1,stats.classified)*100:.1f}% |\n")
+    w("\nThe second table is larger than the first, and should be: a photo answered by "
+      "its GPS fix still cost a face pass if one ran. Read the OCR row in it with care "
+      "— the corpus hands every asset a text string, so it reflects the adapter and not "
+      "the C-1 gate, which on a device decides which assets get an OCR pass at all and "
+      "lives upstream in `OCRGate.swift`.\n\n")
     w(f"\nClassification throughput: **{stats.assets_per_s:,.0f} assets/s** "
       f"({stats.wall_s*1000/max(1,stats.classified):.3f} ms/asset) for the decision logic alone — "
       "this excludes OCR, embedding and thumbnail decode, which are the T0-A costs and "

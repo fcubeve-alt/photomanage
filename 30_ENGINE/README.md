@@ -92,8 +92,8 @@ as classifier error forever, so they are counted and not scored.
 | macro F1, root level, scored roots | **0.998** |
 | leaf exact, where the label is derivable (n=5,845) | **99.8%** |
 | wrong root | **0** |
-| answered by metadata alone | 74.1% |
-| classification throughput (decision logic only) | ~5,700 assets/s |
+| answered by metadata alone | 73.3% |
+| classification throughput (decision logic only) | ~5,000 assets/s |
 | safety red lines, audited against the written catalogue | 4 / 4 PASS |
 | metadata-only ablation, macro F1 | 0.569 |
 

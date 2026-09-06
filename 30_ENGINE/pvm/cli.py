@@ -16,7 +16,14 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import sys
+
+# `pvm tree | head` is the first thing anyone does with this, and without restoring the
+# default SIGPIPE handler Python turns the closed pipe into a traceback after the useful
+# output has already been printed. Not available on Windows, hence the guard.
+if hasattr(signal, "SIGPIPE"):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 for _stream in (sys.stdout, sys.stderr):
     try:
