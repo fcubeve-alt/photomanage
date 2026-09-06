@@ -64,18 +64,37 @@ final class ScreenshotTests: XCTestCase {
     /// followed it found nothing; and a row below the fold does not exist until the
     /// list scrolls to it, so `exists` was answering a question about the viewport
     /// rather than about the product.
-    @discardableResult
-    private func row(_ identifier: String, swipes: Int = 6) -> XCUIElement {
-        let element = app.descendants(matching: .any)[identifier]
-        if element.waitForExistence(timeout: 20) { return element }
-        for _ in 0..<swipes {
-            app.swipeUp()
-            if element.exists { return element }
+    ///
+    /// It queries concrete element types rather than `.any`. The first version used
+    /// `app.descendants(matching: .any)[identifier]`, which forces XCUITest to snapshot
+    /// the entire accessibility hierarchy on every evaluation — the UI step went from
+    /// 4 minutes to over 15 and was cancelled before it could reach the 45-minute
+    /// timeout. On a runner billed at ten times the Linux rate that is not a style
+    /// point.
+    private func element(_ identifier: String) -> XCUIElement {
+        for query in [app.cells, app.buttons, app.staticTexts, app.otherElements] {
+            let candidate = query[identifier]
+            if candidate.exists { return candidate }
         }
-        return element
+        return app.cells[identifier]
     }
 
-    /// §23 Structure First: the home must show order and a catalogue, not another
+    @discardableResult
+    private func row(_ identifier: String, swipes: Int = 4) -> XCUIElement {
+        // One bounded wait for the list to populate, then scroll. Waiting the full
+        // timeout again on every swipe is what turns a missing row into a minute.
+        if app.cells.firstMatch.waitForExistence(timeout: 20) == false {
+            return app.cells[identifier]
+        }
+        for _ in 0...swipes {
+            let found = element(identifier)
+            if found.exists { return found }
+            app.swipeUp()
+        }
+        return element(identifier)
+    }
+
+    /// §23 Structure First: the home must show order and a catalogue, not another    /// §23 Structure First: the home must show order and a catalogue, not another
     /// infinite scroll of photos. If a screenshot of this ever shows a photo grid, the
     /// product has drifted into being a Cleaner.
     func testHomeIsStructureFirst() {
@@ -125,20 +144,23 @@ final class ScreenshotTests: XCTestCase {
     /// Returns whatever it last looked at when it finds nothing, so the caller asserts
     /// rather than this silently returning something harmless — a helper that quietly
     /// succeeds at nothing is how a test passes without testing.
+    ///
+    /// Scoped to `app.cells` for the same reason as `element(_:)`: a predicate over
+    /// `.any` re-snapshots the whole hierarchy every time it is evaluated.
     private func firstAsset(maxDepth: Int) -> XCUIElement {
-        let assets = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH 'asset-'"))
-        for _ in 0...maxDepth {
-            if assets.firstMatch.waitForExistence(timeout: 5) { return assets.firstMatch }
-            let children = app.descendants(matching: .any)
-                .matching(NSPredicate(format: "identifier BEGINSWITH 'child-'"))
+        let assets = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'asset-'"))
+        let children = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'child-'"))
+        for depth in 0...maxDepth {
+            if assets.firstMatch.waitForExistence(timeout: depth == 0 ? 10 : 3) {
+                return assets.firstMatch
+            }
             guard children.firstMatch.exists else { break }
             children.firstMatch.tap()
         }
         return assets.firstMatch
     }
 
-    /// §2 Remember, on screen.    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
+    /// §2 Remember, on screen.    /// §2 Remember, on screen.    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
     /// what the library knows exists. If this screen is ever empty on the fixture, the
     /// product has gone back to being a filing system.
     func testTheLibraryRemembersThingsAndSaysWhy() {

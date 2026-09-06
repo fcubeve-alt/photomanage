@@ -94,6 +94,12 @@ jobs:
           set -o pipefail
           swift test --package-path PVMCore | tee unit.log
 
+      # `-maximum-test-execution-time-allowance` is a budget, not a nicety. A UI test
+      # that waits on an element which will never appear does not fail — it waits, and
+      # the whole suite then runs until the job timeout on a runner billed at ten times
+      # the Linux rate. That happened: a query over `.any` element types took the step
+      # from 4 minutes past 15 before it was cancelled by hand. Two minutes is generous
+      # for a test whose slowest legitimate action is a screenshot.
       - name: Screenshots and screen descriptions
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -103,6 +109,8 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -configuration Debug CODE_SIGNING_ALLOWED=NO \
             -only-testing:PVMUITests \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 120 \
             | tee ui.log
 
       # stdout from inside the Simulator does not reach xcodebuild's log — that cost a
