@@ -29,8 +29,20 @@ pvm/schedule.py    paced ingestion: a free breadth pass, then depth over days (D
 pvm/deltas.py      change-driven processing for video and sequences (DEC-029)
 pvm/cli.py         plan / classify / tree / why / review
 eval/              measurement against the 10,000-asset labelled library
-tests/             55 behavioural tests, including every safety red line
+tests/             88 behavioural tests, including every safety red line
+CONSTRAINTS.md     every binding L1 / L1-B clause, its status, and the test proving it
+check_constraints.py  fails CI when a clause is paraphrased or claims DONE with nothing behind it
+pvm/kpi.py         the Constitution §18 KPIs — the measures the product is judged by
 ```
+
+## Read CONSTRAINTS.md first
+
+`CONSTRAINTS.md` is the register of every binding clause in L1 and L1-B, quoted
+verbatim, with an honest status and the test that proves it: **34 clauses — 21 DONE,
+6 PARTIAL, 4 MISSING.** It exists because this engine was built without reading the
+documents that specify it, and its requirements were reported back to the Owner as
+discoveries (PF-12). `check_constraints.py` runs in CI so that cannot recur quietly: a
+clause cannot be softened by rewording it, and cannot claim completion on an intention.
 
 ## Run it
 
@@ -110,6 +122,11 @@ as classifier error forever, so they are counted and not scored.
 
 | | |
 |---|--:|
+| **Automation Ratio** (§18) | **94.0%** |
+| **Human Review Burden** (§18) | **60 per 1,000** |
+| **Catastrophic Error Rate** (§18) | **0** |
+| **Classification Coverage** (§18) | **94.0%** |
+| **TTFUV** (§24 Gate 3) | **2.8 s** at 10k, 28 s at 100k |
 | macro F1, root level, scored roots | **0.998** |
 | leaf exact, where the label is derivable (n=5,845) | **99.8%** |
 | wrong root | **0** |
@@ -120,6 +137,11 @@ as classifier error forever, so they are counted and not scored.
 
 The ablation is the interesting column: free signals alone get you 0.569, and the
 expensive tiers are what buy the remaining 0.43.
+
+**The §18 rows come first for a reason.** F1 and precision are measures I chose; the
+KPIs are the ones the Constitution names, and where the two disagree the KPIs win. An
+engine can score 0.998 F1 while handing 300 of every 1,000 assets back to the user —
+and the F1 cannot see it.
 
 ## What it does not do yet
 

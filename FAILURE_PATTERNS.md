@@ -115,3 +115,28 @@ The true accounting on that date:
 3. When the Owner asks whether something is done, answer with the line count of what does **not** exist first.
 
 **Status.** Caught by Owner challenge on 2026-09-06, not by me — the second time that has happened (see PF-08). Recorded in DEC-027.
+
+### PF-12 · Building the product without reading the documents that specify it
+**Risk.** The binding requirements live in L1 and L1-B. The digests — `CONSTITUTION_UNDERSTANDING.md`, `ARCHITECTURE_METHODOLOGY.md` — are convenient and incomplete by design. A session that reads only the digests can build something that works, passes its own tests, scores well on measures it chose itself, and quietly fails clauses that were written down before it started. Nothing goes red. The gap surfaces only when the Owner reads the output and recognises their own requirements being reported back as discoveries.
+
+**Occurred 2026-09-06, twice in one session, and the Owner caught both.**
+
+The Owner gave two design instructions — pace a large first index instead of racing it, and process only what changed in a video instead of every frame. Both were implemented and both were presented as new. Both were already mandatory:
+
+- **L1 §24 Gate 3:** *"首次使用必须 Progressive Indexing。先给 Quick Wins 和基本目录，再逐渐补全深度索引。新增 TTFUV（Time To First Useful View）作为 P0 指标"*
+- **L1 §24 Gate 1:** *"采用分层信号、轻量模型、分块/分时、checkpoint、增量处理和后台机会执行"*
+- **L1-B §4:** *"禁止默认采用：Video → 每隔 N 帧抽图 → 每一帧跑完整视觉模型"*
+
+Then: *"这些设计思想，都已经在文档中体现了，为何还要我这么碎片化的"*. Correct, and the honest answer is that I did not read them. `SESSION_HANDOFF.md` said to read L1 *"only if you need product-level detail"* — and I judged that building the product's core engine did not require product-level detail.
+
+The audit that followed found more than the two clauses the Owner named. **L1 §18 defines eight KPIs the product is judged by — Automation Ratio, Human Review Burden, Weighted Error Cost, Catastrophic Error Rate, Classification Coverage, Retrieval Success, Continuous Hygiene Rate, Personalization Gain — and the evaluation reported none of them.** It reported F1 and precision, which I had chosen. An engine can score 0.998 F1 while handing 300 of every 1,000 assets back to the user, and the F1 cannot see it.
+
+**Guard — structural, because an instruction to read more carefully is not one.**
+1. `30_ENGINE/CONSTRAINTS.md` lists every binding L1/L1-B clause with its **verbatim source text**, an honest status, and the test or metric that proves it. 34 clauses: 21 DONE, 6 PARTIAL, 4 MISSING, 2 out of scope — the gaps named rather than absent.
+2. `30_ENGINE/check_constraints.py` runs in CI and fails when a quote no longer appears in the source it cites, when a clause marked DONE names code that does not exist, or when a PARTIAL/MISSING has no explanation. **A constraint cannot be paraphrased into something easier to satisfy, and cannot claim completion on an intention.**
+3. The evaluation reports the **§18 KPIs** alongside its own measures, and says which of the two wins when they disagree.
+4. `SESSION_HANDOFF.md` no longer offers L1 as optional reading for engine work.
+
+**Generalisation.** When a requirement is met by accident and reported as an insight, the requirement was not read. That is not a communication failure; it means the specification was not an input. Any component that implements product behaviour must cite the clauses it satisfies **before** it is called done.
+
+**Status.** Caught by Owner challenge on 2026-09-06 — the third time (see PF-08, PF-11). Guarded in CI. Recorded in DEC-030.

@@ -43,6 +43,7 @@ jobs:
           python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
           python 30_ENGINE/eval/evaluate.py --selftest > /dev/null
+          python 30_ENGINE/check_constraints.py --selftest > /dev/null
           python recovery_check.py --strict > /dev/null
 
       - name: Analyzer self-tests under a non-UTF-8 console (PF-10 regression)
@@ -53,11 +54,22 @@ jobs:
           python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
           python 30_ENGINE/eval/evaluate.py --selftest > /dev/null
+          python 30_ENGINE/check_constraints.py --selftest > /dev/null
           python recovery_check.py --strict > /dev/null
 
       # The classification engine (DEC-028). Its safety red lines are checked against
       # the catalogue it actually writes, not against the code that writes it, so a
       # regression that only shows up in persisted rows still fails the build.
+      # PF-12: the engine was built without reading the documents that specify it.
+      # This is the check that makes that fail the build instead of waiting for the
+      # Owner to notice. Every binding L1/L1-B clause must still be quoted verbatim
+      # from its source, and every clause marked DONE must name code that exists.
+      - name: Binding constraints still match the source documents
+        working-directory: 30_ENGINE
+        run: |
+          python check_constraints.py --selftest > /dev/null
+          python check_constraints.py
+
       - name: Classification engine — behaviour and safety tests
         working-directory: 30_ENGINE
         run: python -m unittest discover -s tests -q

@@ -48,7 +48,7 @@ for _stream in (sys.stdout, sys.stderr):
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from eval.adapter import ground_truth, load_manifest          # noqa: E402
-from pvm import pipeline, taxonomy                            # noqa: E402
+from pvm import kpi, pipeline, taxonomy                       # noqa: E402
 from pvm.catalog import Catalog                               # noqa: E402
 from pvm.risk import Action, Risk                             # noqa: E402
 from pvm.signals import Tier                                  # noqa: E402
@@ -252,6 +252,24 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w("  Almost all of these are the `Downloads` and `Objects` assets above, whose "
       "signal the corpus does not carry. An engine that guessed a leaf for them would "
       "score better here and be worse in the hand.\n\n")
+
+    # ---- the KPIs the product is actually defined by ---------------------
+    # PF-12: F1 and precision are the measures I chose. These are the ones L1 §18
+    # names, and where the two disagree these win. A classifier with a superb F1 and a
+    # Human Review Burden of 300 per 1,000 is a failed product — the user was handed
+    # the work back — and the F1 cannot see it.
+    errors = {}
+    for aid, t in truth.items():
+        preds = [p for p in predicted.get(aid, []) if taxonomy.root_of(p) != "Timeline"]
+        truths = set(t["paths"])
+        errors[aid] = bool(preds) and not (set(preds) & truths)
+    k = kpi.report(catalog, library_size=len(truth), errors_by_asset=errors)
+    w("## Constitution §18 KPIs\n\n")
+    w(k.as_markdown())
+    w("\nWeighted Error Cost here is **outcome**: it prices the real mistakes against "
+      "the labels. On a real library there are no labels, so the field number is "
+      "*exposure* — what it would cost if every acting proposal were wrong — and the "
+      "two must never be reported as the same quantity.\n\n")
 
     # ---- safety ---------------------------------------------------------
     audit = safety_audit(catalog)

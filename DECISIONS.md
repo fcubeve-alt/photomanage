@@ -686,3 +686,30 @@ the whole saving rests on. It needs real footage, not a device, so it is not blo
 HG-1.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-030 · 2026-09-06 · Constraint audit after PF-12 — the specification becomes a CI check
+**Owner challenge:** *"这些设计思想，都已经在文档中体现了，为何还要我这么碎片化的"* — why is the Owner having to feed back, piecemeal, requirements that the documents already contain?
+
+**They were right.** Both design instructions given during DEC-029 were already binding: L1 §24 Gate 3 mandates Progressive Indexing and names TTFUV a P0 metric; L1 §24 Gate 1 mandates 分块/分时 + checkpoint + 增量处理 + 后台机会执行; L1-B §4 forbids the naive every-N-frames video pipeline. I had not read L1 or L1-B while building the engine, and reported their requirements back as findings. **PF-12.**
+
+**The audit found more than the two clauses the Owner named.** Full result in `30_ENGINE/CONSTRAINTS.md`: **34 binding clauses — 21 DONE, 6 PARTIAL, 4 MISSING, 2 out of scope.**
+
+The four MISSING, now named rather than absent:
+- **B4-RECORD** — L1-B §4 requires a **Video Memory Record** (Date / Place / Person / Object / Event / relevant segment / representative frames) into the Unified Visual Memory Graph. `deltas.py` selects frames; it does not produce the record. Frame selection was the easy half.
+- **S14-PERSONAL** — §14 Personal Policy from the user's Keep/Delete/Protect/Restore corrections. Not built (Tier 2).
+- **K-PERSONAL** — Personalization Gain, which depends on the above.
+- **Select Best** — §25 Layer 6 lists it among the policy actions; `risk.py::Action` has no such member.
+
+The six PARTIAL are mostly one shape: **Category-Specific Entity Resolution** (§24 Gate 2 / §25 Layer 4 — 证件用 OCR/版式/字段, 合同用文本指纹/页码, 普通照片用时间/地点/视觉相似) and **Lifecycle/importance** (§25 Layer 5), both Tier 1-A.
+
+**The most consequential single finding: the engine was being measured against the wrong things.** §18 names eight KPIs. The evaluation reported F1 and precision — measures I chose. Now fixed: `pvm/kpi.py` computes Automation Ratio, Human Review Burden, Weighted Error Cost, Catastrophic Error Rate, Classification Coverage, Continuous Hygiene Rate and TTFUV, and `eval/evaluate.py` prints them with the statement that **where they disagree with F1, they win**. First measurement on the 10k library: Automation Ratio **94.0%**, Human Review Burden **60 per 1,000**, Catastrophic Error Rate **0**, Coverage **94.0%**, TTFUV **2.8 s** (28 s at 100k).
+
+`kpi.py` also separates **outcome** (priced against labels, evaluation only) from **exposure** (what it would cost if every acting proposal were wrong, the only honest field metric). Reporting exposure as outcome is how a dashboard starts lying.
+
+**The guard, and why it is not a promise.** `check_constraints.py` runs in CI and fails when a quoted clause no longer appears verbatim in the source document it cites, when a clause marked DONE names code that does not exist, or when a PARTIAL/MISSING carries no explanation. Its own self-test proves it catches a paraphrase, a DONE with nothing behind it, a DONE citing a missing symbol, and a silent gap. **A constraint cannot be softened by rewording it into the register, and cannot claim completion on an intention.**
+
+**Also corrected:** `SESSION_HANDOFF.md` listed L1 as optional reading — *"only if you need product-level detail"*. That framing is what let the engine be built without it. Engine work now requires `CONSTRAINTS.md`, which points at the source.
+
+**Status.** ACTIVE.
