@@ -33,7 +33,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S2-DECIDE | Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作 | DONE | `pvm/risk.py::decide_action`, `pvm/risk.py::policy_table` |
 | S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
 | S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | DONE | `pvm/memory.py` builds entities of all six kinds with evidence, `pvm/catalog.py::write_memory` persists them, `tests/test_memory.py` locks the claims it may not make, `pvm/cli.py::cmd_remember` answers L1-B's worked example. Objects and documents are **category-level** entities — see S3-ENTITY and T1B-RESOLVER, which track that limit rather than double-counting it here |
-| S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | Browse and Timeline/Places work (`pvm/cli.py::cmd_tree`), and the relation network is now traversable from an entity (`pvm/memory.py::MemoryGraph.history`, `co_occurring`); Intent Search does not exist |
+| S2-RETRIEVE | Retrieve：分类浏览、时间地点、自然语言和关系网络 | PARTIAL | all four paths exist: browse (`pvm/cli.py::cmd_tree`), timeline and places, the relation network from an entity (`pvm/memory.py::MemoryGraph.history`), and natural language (`pvm/intent.py`). PARTIAL because Intent Search is bounded by what is indexed — see S10-INTENT — and none of the four has been measured with real users, which is T0-B |
 | S2-MAINTAIN | Maintain：每一张新照片进入后自动重复以上过程 | PARTIAL | incremental re-classification works (`tests/test_catalog.py`) and video now enters the pipeline (B4-RECORD). What is still missing is the automatic part: nothing schedules a run when new photos arrive — on a device that is `BGProcessingTask`, which is C-4 and lives in the app |
 | S2-DERIVE | Derive Services：衣橱、旅行、购物、物品、提醒 | OUT-OF-SCOPE | Tier 2 / §15 — explicitly a later value layer, not skipped work |
 
@@ -78,7 +78,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 |---|---|---|---|---|
 | S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | PARTIAL | `pvm/cli.py::cmd_tree` browses the tree; the Person level inside Documents does not exist |
 | S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | year, city and trip work; month/day and named places do not (see S3-TIME, S3-PLACE) |
-| S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | MISSING | no natural-language retrieval of any kind — this is one of the four paths the product is defined by, and it is absent |
+| S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | PARTIAL | `pvm/intent.py` resolves a sentence against what the library actually indexes — categories, people, places, remembered entities, exact time windows, media type, and 正反面 — in Chinese and English, and `pvm/cli.py::cmd_find` answers the Constitution's first worked example. It cannot answer the second, 找所有有气球的照片, because there is no open-vocabulary visual index; it names 气球 as a term it cannot search and **refuses to answer broadly** rather than returning the whole library. `tests/test_intent.py` (18 tests) is mostly about that refusal |
 | S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | PARTIAL | `pvm/memory.py::MemoryGraph.history` goes from a person, object, purchase or trip to its assets and `pvm/cli.py::cmd_remember` exposes it. What is missing is the join: from a receipt to the warranty document, or from an order screenshot to the delivery photo — that needs the entity resolution T1B-RESOLVER tracks |
 | S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/signals.py::GeoFix` carries `source` and `confidence` and the classifier refuses to use an inferred fix as if measured — but **nothing actually infers**, so assets without GPS get no place at all |
 | S11-EVENT | 时间 + 地点 + 人物 + 内容可以自动形成 Event / Trip 候选 | L1:162 | PARTIAL | Trip only (`pvm/context.py::_find_trips`); no other event type is derived |
@@ -98,7 +98,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | seven of eight in `pvm/kpi.py::report`; Personalization Gain requires S14-PERSONAL, and Retrieval Success requires real users (T0-B) |
 | S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | PARTIAL | coverage is reported; **no confusion matrix is produced** — Tier 1-A deliverable |
 | S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
-| S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | three of four exist; Intent Search does not — see S10-INTENT |
+| S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | all four exist. PARTIAL because their success rates have not been measured — Tier 1-E wants 成功率、步骤数、耗时 on real tasks, which needs users |
 | S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
 | S22-ENTRY | 核心指标新增 Retrieval Entry Share | L1:254 | OUT-OF-SCOPE | T0-B measures this with real users; nothing an engine can self-report |
 | S23-STRUCTURE | 首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流 | L1:259 | PARTIAL | the engine produces the counts and the tree a Structure-First home needs; **there is no home, because there is no app** |
@@ -131,7 +131,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
-| B1-ORDER | Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory | L1B:13 | PARTIAL | per-asset escalation is `pvm/classifier.py`; **Candidate Reduction as a retrieval stage does not exist**, and the worked example in §1 is retrieval-shaped |
+| B1-ORDER | Cheap Signals → Candidate Reduction → Selective Intelligence → Structured Memory | L1B:13 | DONE | per-asset escalation is `pvm/classifier.py`; Candidate Reduction as a *retrieval* stage is `pvm/intent.py`, which narrows against stored rows and computes no new signal to answer a search. Its ceiling is what got indexed, which S10-INTENT tracks |
 | B1-NOHEAVY | 任何“把所有照片、所有视频帧全部交给重型模型理解”的架构，原则上都应视为错误设计 | L1B:11 | DONE | `tests/test_engine.py::Cost`, `tests/test_deltas.py::ItSavesRealWork` |
 | B2-CHANGE | 优先识别真正新增/变化的信息，只对有新信息价值的部分进行更深层推理 | L1B:9 | DONE | `pvm/catalog.py::signals_fingerprint`, `pvm/deltas.py` |
 | B3-PHOTOS | 系统应先使用低成本信号识别重复、近重复、同场景和变化程度，再决定是否需要更深层的分类 | L1B:34 | DONE | `pvm/dedup.py` |
@@ -193,9 +193,9 @@ place to hide than a gap.
    it can only refuse to answer, because nothing joins two views of one chair or
    separates one chair on two days from two identical chairs. It is the ceiling on
    S3-ENTITY and on Object Memory, and it is now the largest gap.
-2. **S10-INTENT** — natural-language retrieval. One of the four paths the product is
-   defined by (§10, §19). `cmd_remember --where` answers one fixed question shape;
-   that is not intent search.
+2. **An open-vocabulary visual index** — the ceiling on S10-INTENT. 找所有有气球的
+   照片 is answerable only with embeddings, which is the same missing piece as
+   T1B-EMBEDDING and blocked on the same thing: real photographs.
 3. **S10-RELATIONS, the join** — going from a receipt to its warranty document, or
    from an order screenshot to the delivery photo. The traversal from one entity to its
    assets works; joining two entities that are the same purchase needs T1B-RESOLVER

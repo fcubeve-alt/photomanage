@@ -9,6 +9,7 @@ CLI for the classification engine.
     python -m pvm.cli remember --catalog out.sqlite
     python -m pvm.cli remember --catalog out.sqlite --where "my red suitcase"
     python -m pvm.cli video    --catalog out.sqlite
+    python -m pvm.cli find     --catalog out.sqlite "找我的身份证正反面"
 
 The `--library` reader is deliberately pluggable. On a phone the source is PhotoKit;
 here it is whatever adapter can produce `AssetSignals`, which is the only contract the
@@ -187,6 +188,25 @@ def cmd_remember(args) -> int:
     return 0
 
 
+def cmd_find(args) -> int:
+    """§10 Intent Search. The output leads with what the search understood and what it
+    could not, because a list of results without that is a claim the search cannot
+    back — and an empty list without it is a false statement about the user's photos."""
+    from pvm import intent
+
+    catalog = Catalog(args.catalog)
+    results = intent.search(catalog, args.query, limit=args.limit)
+    print(results.summary())
+    for hit in results.hits:
+        print(f"  {hit.asset_id}  ·  {hit.why}")
+    if results.sides:
+        print("\nsides or pages of the same document:")
+        for members in results.sides.values():
+            print("  " + "  ·  ".join(members))
+    catalog.close()
+    return 0 if results.hits else 1
+
+
 def cmd_video(args) -> int:
     """L1-B §4: what a video left behind, rather than how it was analysed."""
     import json as _json
@@ -299,6 +319,12 @@ def main(argv=None) -> int:
     p.add_argument("--catalog", default="pvm_catalog.sqlite")
     p.add_argument("--limit", type=int, default=25)
     p.set_defaults(fn=cmd_video)
+
+    p = sub.add_parser("find", help="say what you are looking for, in your own words")
+    p.add_argument("query")
+    p.add_argument("--catalog", default="pvm_catalog.sqlite")
+    p.add_argument("--limit", type=int, default=50)
+    p.set_defaults(fn=cmd_find)
 
     args = ap.parse_args(argv)
     return args.fn(args)
