@@ -183,6 +183,13 @@ def report(rows, host, out):
     max_bg = int(BUDGET["cold_background_100k_s"] * 1000 / ms)
     w(f"\n**Ceiling: {max_fg:,} assets in the 90-minute foreground budget; "
       f"{max_bg:,} assets in the 8-hour background budget.**\n\n")
+    w("**This is one sample, not a constant.** Two runs of identical code over an "
+      "identical corpus on 2026-09-06 came back at 104.7 and 154.1 ms/asset — a 1.47x "
+      "spread, and ceilings of 51,567 and 35,049 from the same commit. Shared CI "
+      "runners contend for CPU; the deterministic outputs (index bytes, memory growth, "
+      "gate ratio, failure count) matched exactly across both, so the variance is the "
+      "host and not the harness. Quote the ceiling as a band, never as a figure, and "
+      "treat a single run's number as the sample it is.\n\n")
 
     w("### B · Device band (PREDICTION — no device has run this)\n\n")
     w(f"Assumption, stated so it can be attacked: a phone takes **{DERATE[0]:.0f}x to "

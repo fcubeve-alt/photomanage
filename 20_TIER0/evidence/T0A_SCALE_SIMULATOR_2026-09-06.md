@@ -8,37 +8,51 @@ which accepts device measurements only (PF-01, P-02).
 
 | | |
 |---|---|
-| Workflow | `.github/workflows/t0a-scale.yml`, run 34022334180 |
-| Commit | `c01d9a6` on `claude/classification-program-dev-yk88jj` |
+| Workflow | `.github/workflows/t0a-scale.yml`, runs **34022334180** and **34023173268** |
+| Commits | `c01d9a6` and `210be7c` on `claude/classification-program-dev-yk88jj` (harness identical in both) |
 | Runner | GitHub Actions `macos-15`, standard arm64, Xcode 16.4 |
 | Simulator host | 3 cores, 7 GB, iOS 26.2 (23C54) |
 | Corpus | synthetic, generated in-process; 200 / 1000 / 3000 assets, 25% text-bearing |
-| Artifact | `t0a-scale` (id 9986053936), holds `scale_results.txt` and the raw log |
+| Artifacts | `t0a-scale` ids 9986053936 and 9986414069, each holding `scale_results.txt` and the raw log |
 | Cost | $0. HG-1 is still open; nothing here needed it |
 
 ## Headline
 
-**104.7 ms per asset**, flat across a fifteen-fold range of corpus sizes.
+**105–154 ms per asset**, flat across a fifteen-fold range of corpus sizes within each
+run. Two runs, not one, and the reason for the range is finding 0 below.
 
-| | assets |
-|---|--:|
-| Simulator ceiling, 90-minute foreground budget | **51,567** |
-| Simulator ceiling, 8-hour background budget | **275,026** |
-| Device band, 90-minute foreground — **PREDICTION, no device has run this** | **10,313 – 25,783** |
+| | run 1 | run 2 |
+|---|--:|--:|
+| ms/asset at n=3000 | 104.7 | 154.1 |
+| Simulator ceiling, 90-minute foreground budget | 51,567 | 35,049 |
+| Simulator ceiling, 8-hour background budget | 275,026 | 186,932 |
+| Device band, 90-min foreground — **PREDICTION, no device has run this** | 10,313 – 25,783 | 7,009 – 17,524 |
 
-The device band assumes a phone takes 2×–5× the Simulator's wall time. That factor is
-a modelling assumption stated so it can be attacked, not a measurement, and it is
-replaced by real numbers the day HG-1 clears.
+**Read the ceiling as roughly 35k–52k assets in the 90-minute foreground budget, and
+roughly 7k–26k on the predicted device band.** The device band assumes a phone takes
+2×–5× the Simulator's wall time — a modelling assumption stated so it can be attacked,
+not a measurement, replaced by real numbers the day HG-1 clears.
 
-So: a 100k library does not fit the 90-minute foreground budget even on the optimistic
-ceiling, and does fit the 8-hour background budget with room to spare. A library up to
-roughly 50k fits both on the ceiling. The Owner's own framing — that 100k is far above
-what most people hold, and 10k is already a large library — is the right one to design
-against, and this measurement is consistent with it.
+So: a 100k library does not fit the 90-minute foreground budget on either run's
+optimistic ceiling, and fits the 8-hour background budget on both with room to spare.
+A library up to roughly 30k fits both budgets even on the slower run. The Owner's own
+framing — that 100k is far above what most people hold, and 10k is already a large
+library — is the right one to design against, and both runs are consistent with it.
 
-## Three findings
+## Findings
 
-**1 · C-1's central prediction is now in doubt.** The spec predicted OCR would dominate
+**0 · A single run is a sample, not a constant — and the harness is not the variable.**
+The two runs above are the same harness over the same corpus at the same sizes, 1.47×
+apart. Everything deterministic matched *exactly* across both — 4,219 index bytes per
+asset, 3,072-byte embedding, +404 MB growth, 2,308 MB peak, 52% gate ratio, zero
+failures — so the variance is CPU contention on a shared runner, not the measurement.
+Two consequences: quote this ceiling as a band and never as a figure, and note that a
+number which moves 47% between two runs of the same code on the same host is not a
+number anyone should be making an irreversible architecture decision from. A device
+measurement is what settles A1; this is what tells you roughly where to look.
+
+**1 · C-1's central prediction is now in doubt.** *(Reproduced in both runs: embedding
+84% and 85%, OCR 6% in both.)* The spec predicted OCR would dominate
 per-asset cost by roughly an order of magnitude over embedding, which is why the OCR
 gate exists and why the gate ratio was expected to decide A1. Measured at a 52% gate
 ratio: **embedding is 84% of per-asset cost and OCR is 6%.** Per asset actually OCR'd,
@@ -53,14 +67,15 @@ optimisation belongs on the embedding rather than on the OCR gate — the gate c
 best remove a stage that costs a fraction of the one nothing gates.
 
 **2 · Index size is 2× over its budget, and all of the overage is one field.**
+*(Identical in both runs, to the byte.)*
 4,219 B/asset against a §8 budget of 2,048. The feature-print blob alone is 3,072 B;
 everything else comes to 1,147 B, which is inside the budget on its own. At 100k that
 is 0.42 GB. This is a design choice to make — store the embedding, quantise it, or
 recompute it on demand — not a bug to fix. The budget was written before anyone knew
 what a feature print weighed.
 
-**3 · Cost is linear.** 127.7 → 110.8 → 104.7 ms/asset from n=200 to n=3000; the trend
-is *downward* as fixed costs amortise. Nothing in the pipeline is superlinear, which is
+**3 · Cost is linear within a run.** 127.7 → 110.8 → 104.7 ms/asset from n=200 to
+n=3000 in run 1; the trend is *downward* as fixed costs amortise. Nothing in the pipeline is superlinear, which is
 what makes the extrapolation above legitimate. Zero failed assets across 4,200
 indexings.
 
