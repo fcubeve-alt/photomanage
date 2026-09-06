@@ -28,6 +28,9 @@ public final class IngestionCoordinator: ObservableObject {
     @Published public private(set) var stats: RunStats?
     @Published public private(set) var plan: IngestionPlan?
     @Published public private(set) var ttfuvSeconds: Double?
+    /// §2 Remember. Read once per refresh rather than per row: the list is short and
+    /// the alternative is a query inside a SwiftUI body, which runs on every redraw.
+    @Published public private(set) var memoryEntities: [Catalog.EntityRow] = []
 
     public let catalog: Catalog?
     private var assets: [AssetSignals] = []
@@ -185,6 +188,23 @@ public final class IngestionCoordinator: ObservableObject {
 
     public func refreshCounts() {
         rolledCounts = catalog?.rolledCounts() ?? [:]
+        memoryEntities = catalog?.entities(limit: 500) ?? []
+        sightingCounts = [:]
+    }
+
+    /// Cached because a SwiftUI list body is re-evaluated freely and a SQL count per
+    /// row per redraw is how a catalogue browser starts to feel slow.
+    private var sightingCounts: [String: Int] = [:]
+
+    public func sightingCount(of entityID: String) -> Int {
+        if let n = sightingCounts[entityID] { return n }
+        let n = sightings(of: entityID).count
+        sightingCounts[entityID] = n
+        return n
+    }
+
+    public func sightings(of entityID: String) -> [Catalog.SightingRow] {
+        catalog?.sightings(of: entityID) ?? []
     }
 
     // MARK: - derived

@@ -103,6 +103,37 @@ public final class Catalog: @unchecked Sendable {
           reversible INTEGER NOT NULL, requires_confirmation INTEGER NOT NULL,
           auto_applicable INTEGER NOT NULL, note TEXT NOT NULL, why TEXT NOT NULL
         );
+        -- The visual memory (§2 Remember, §15). Entities are things in the world;
+        -- observations are sightings of them. Beside the catalogue rather than inside
+        -- it because they answer different questions: `assignments` says which shelf a
+        -- photo is on, `observations` says where a thing was and when.
+        CREATE TABLE IF NOT EXISTS entities(
+          entity_id TEXT PRIMARY KEY,
+          kind TEXT NOT NULL,
+          name TEXT NOT NULL,
+          category_path TEXT,
+          confidence REAL NOT NULL,
+          why TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_entities_kind ON entities(kind);
+
+        CREATE TABLE IF NOT EXISTS observations(
+          entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
+          asset_id TEXT NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
+          seen_at TEXT,
+          place TEXT,
+          confidence REAL NOT NULL,
+          reason TEXT NOT NULL,
+          -- §11 travels with the row. A place column with no provenance column is a
+          -- guess that storage has promoted to a fact.
+          source TEXT NOT NULL,
+          place_source TEXT NOT NULL,
+          repeats TEXT,
+          PRIMARY KEY(entity_id, asset_id, reason)
+        );
+        CREATE INDEX IF NOT EXISTS idx_obs_entity ON observations(entity_id, seen_at);
+        CREATE INDEX IF NOT EXISTS idx_obs_asset ON observations(asset_id);
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
     }
@@ -304,6 +335,145 @@ public final class Catalog: @unchecked Sendable {
         sqlite3_prepare_v2(db, "DELETE FROM \(table) WHERE asset_id=?;", -1, &st, nil)
         sqlite3_bind_text(st, 1, assetID, -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_step(st); sqlite3_finalize(st)
+    }
+
+    /// Replace the stored memory with this one.
+    ///
+    /// Rebuilt wholesale rather than merged. An entity is a conclusion drawn from the
+    /// whole library — who appears often enough to be a person, which runs of days are
+    /// a trip — so a partial update would leave conclusions standing on assets that
+    /// have since been deleted. The catalogue rows are the durable thing; the memory is
+    /// derived from them and cheap to derive again.
+    /// A text column, or "" when it is NULL. Callers that need to tell those apart
+    /// check `sqlite3_column_type` first — this is only for the columns declared
+    /// NOT NULL, where an empty string would already mean the row is wrong.
+    static func text(_ st: OpaquePointer?, _ column: Int32) -> String {
+        guard let c = sqlite3_column_text(st, column) else { return "" }
+        return String(cString: c)
+    }
+
+    public func writeMemory(_ graph: MemoryGraph) {
+        exec("DELETE FROM observations;")
+        exec("DELETE FROM entities;")
+        begin()
+        for e in graph.entities.values {
+            var st: OpaquePointer?
+            sqlite3_prepare_v2(db, """
+                INSERT OR REPLACE INTO entities(entity_id,kind,name,category_path,
+                                                confidence,why) VALUES(?,?,?,?,?,?);
+                """, -1, &st, nil)
+            sqlite3_bind_text(st, 1, e.entityID, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 2, e.kind.rawValue, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 3, e.name, -1, Catalog.SQLITE_TRANSIENT)
+            if let path = e.categoryPath {
+                sqlite3_bind_text(st, 4, path, -1, Catalog.SQLITE_TRANSIENT)
+            } else {
+                sqlite3_bind_null(st, 4)
+            }
+            sqlite3_bind_double(st, 5, e.confidence)
+            sqlite3_bind_text(st, 6, e.why, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_step(st); sqlite3_finalize(st)
+        }
+        let formatter = ISO8601DateFormatter()
+        for o in graph.observations where graph.entities[o.entityID] != nil {
+            var st: OpaquePointer?
+            sqlite3_prepare_v2(db, """
+                INSERT OR REPLACE INTO observations(entity_id,asset_id,seen_at,place,
+                    confidence,reason,source,place_source,repeats)
+                VALUES(?,?,?,?,?,?,?,?,?);
+                """, -1, &st, nil)
+            sqlite3_bind_text(st, 1, o.entityID, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 2, o.assetID, -1, Catalog.SQLITE_TRANSIENT)
+            if let when = o.when {
+                sqlite3_bind_text(st, 3, formatter.string(from: when), -1, Catalog.SQLITE_TRANSIENT)
+            } else {
+                sqlite3_bind_null(st, 3)
+            }
+            if let place = o.place {
+                sqlite3_bind_text(st, 4, place, -1, Catalog.SQLITE_TRANSIENT)
+            } else {
+                sqlite3_bind_null(st, 4)
+            }
+            sqlite3_bind_double(st, 5, o.confidence)
+            sqlite3_bind_text(st, 6, o.reason, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 7, o.source.rawValue, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 8, o.placeSource.rawValue, -1, Catalog.SQLITE_TRANSIENT)
+            if let repeats = o.repeatsAsset {
+                sqlite3_bind_text(st, 9, repeats, -1, Catalog.SQLITE_TRANSIENT)
+            } else {
+                sqlite3_bind_null(st, 9)
+            }
+            sqlite3_step(st); sqlite3_finalize(st)
+        }
+        commit()
+    }
+
+    public struct EntityRow {
+        public let entityID: String
+        public let kind: String
+        public let name: String
+        public let categoryPath: String?
+        public let confidence: Double
+        public let why: String
+    }
+
+    public func entities(kind: String? = nil, limit: Int = 200) -> [EntityRow] {
+        var sql = "SELECT entity_id,kind,name,category_path,confidence,why FROM entities"
+        if kind != nil { sql += " WHERE kind=?" }
+        sql += " ORDER BY kind, confidence DESC, name LIMIT ?;"
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, sql, -1, &st, nil)
+        var index: Int32 = 1
+        if let kind {
+            sqlite3_bind_text(st, index, kind, -1, Catalog.SQLITE_TRANSIENT)
+            index += 1
+        }
+        sqlite3_bind_int(st, index, Int32(limit))
+        var out: [EntityRow] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append(EntityRow(
+                entityID: Catalog.text(st, 0), kind: Catalog.text(st, 1),
+                name: Catalog.text(st, 2),
+                categoryPath: sqlite3_column_type(st, 3) == SQLITE_NULL
+                    ? nil : Catalog.text(st, 3),
+                confidence: sqlite3_column_double(st, 4), why: Catalog.text(st, 5)))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+    public struct SightingRow {
+        public let assetID: String
+        public let seenAt: String?
+        public let place: String?
+        public let reason: String
+        public let placeIsInferred: Bool
+        public let repeatsAsset: String?
+    }
+
+    /// Oldest first, undated last — the same order `MemoryGraph.history` gives, so the
+    /// two cannot disagree about what "last seen" means.
+    public func sightings(of entityID: String, limit: Int = 200) -> [SightingRow] {
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            SELECT asset_id,seen_at,place,reason,place_source,repeats FROM observations
+            WHERE entity_id=? ORDER BY seen_at IS NULL, seen_at LIMIT ?;
+            """, -1, &st, nil)
+        sqlite3_bind_text(st, 1, entityID, -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_int(st, 2, Int32(limit))
+        var out: [SightingRow] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append(SightingRow(
+                assetID: Catalog.text(st, 0),
+                seenAt: sqlite3_column_type(st, 1) == SQLITE_NULL ? nil : Catalog.text(st, 1),
+                place: sqlite3_column_type(st, 2) == SQLITE_NULL ? nil : Catalog.text(st, 2),
+                reason: Catalog.text(st, 3),
+                placeIsInferred: Catalog.text(st, 4) != "measured",
+                repeatsAsset: sqlite3_column_type(st, 5) == SQLITE_NULL
+                    ? nil : Catalog.text(st, 5)))
+        }
+        sqlite3_finalize(st)
+        return out
     }
 
     public func writeRelations(_ groups: [RelationGroup]) {

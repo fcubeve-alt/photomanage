@@ -128,6 +128,28 @@ final class ScreenshotTests: XCTestCase {
                       "the §18 KPI is not shown, so a growing queue would look normal")
     }
 
+    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
+    /// what the library knows exists. If this screen is ever empty on the fixture, the
+    /// product has gone back to being a filing system.
+    func testTheLibraryRemembersThingsAndSaysWhy() {
+        XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: 20))
+        row("memory").tap()
+        XCTAssertTrue(app.navigationBars["Memory"].waitForExistence(timeout: 10))
+        capture("07-memory")
+
+        // The fixture contains Anna, London, a passport and a Tokyo trip, so the memory
+        // must contain a person, a place, a document and an event.
+        XCTAssertTrue(row("memory-person:anna").exists,
+                      "a named face did not become someone the library remembers")
+
+        row("memory-person:anna").tap()
+        XCTAssertTrue(app.navigationBars["Anna"].waitForExistence(timeout: 5))
+        capture("08-entity")
+        // The red line, on screen: an entity has to say why it is believed to exist.
+        XCTAssertTrue(app.staticTexts["Why the library thinks this exists"].exists,
+                      "an entity is shown with no account of why it exists")
+    }
+
     /// The paced depth pass is offered, not imposed (§24 Gate 1, DEC-029).
     func testThePlanIsOfferedRatherThanImposed() {
         XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: 20))

@@ -26,6 +26,7 @@ struct HomeView: View {
                 default:
                     statusSection
                     categoriesSection
+                    memorySection
                     maintenanceSection
                 }
             }
@@ -98,6 +99,29 @@ struct HomeView: View {
                 // product failure; this says what the row *is*.
                 .accessibilityIdentifier("browse-\(entry.path)")
             }
+        }
+    }
+
+    /// §2 Remember, reachable from the home. Placed directly under Browse because the
+    /// two answer different questions about the same library — which shelf is this on,
+    /// and what does the library know exists — and §23 is about seeing both at a glance.
+    private var memorySection: some View {
+        Section {
+            NavigationLink {
+                MemoryView(coordinator: coordinator)
+            } label: {
+                HStack {
+                    Image(systemName: "brain").frame(width: 28).foregroundStyle(.tint)
+                    Text("What the library remembers")
+                    Spacer()
+                    Text("\(coordinator.memoryEntities.count)")
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+            .accessibilityIdentifier("memory")
+        } footer: {
+            Text("People, places, things, papers, purchases and trips — and where each "
+                 + "was last seen.")
         }
     }
 

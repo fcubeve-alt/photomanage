@@ -21,6 +21,9 @@ public struct RunStats {
     public var skippedUnchanged = 0
     public var forgotten = 0
     public var scored = 0
+    public var entities = 0
+    public var observations = 0
+    public var entityReview = 0
     public var needsReview = 0
     public var unfiled = 0
     public var byTier: [Tier: Int] = [:]
@@ -55,6 +58,7 @@ public enum Pipeline {
     public static func run(assets: [AssetSignals], catalog: Catalog,
                            budget: Tier = .text,
                            reconcileDeletions: Bool = true,
+                           buildMemory: Bool = true,
                            progress: ((Int, Int) -> Void)? = nil) -> RunStats {
         let started = Date()
         var stats = RunStats()
@@ -140,6 +144,21 @@ public enum Pipeline {
             stats.scored += 1
         }
         catalog.commit()
+
+        // ---- phase 4: remember -----------------------------------------
+        // §2 lists Remember among the ten things the product is, and §15 builds every
+        // later service on it. No new intelligence is spent: this reads the
+        // classifications and signals already computed above.
+        if buildMemory, !classifications.isEmpty {
+            let graph = MemoryBuilder.build(
+                assets: assets, classifications: classifications, context: context,
+                momentGroups: report.relations.filter { $0.kind == "same_moment" }
+                    .map { $0.members })
+            catalog.writeMemory(graph)
+            stats.entities = graph.entities.count
+            stats.observations = graph.observations.count
+        }
+        stats.entityReview = report.needsEntityReview.count
 
         stats.wallSeconds = Date().timeIntervalSince(started)
         return stats
