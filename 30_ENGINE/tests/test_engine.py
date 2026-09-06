@@ -340,3 +340,33 @@ class DuplicatesAndTheThingsThatOnlyLookLikeThem(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TransientAssetsExpireBeforeTheyAreTidied(unittest.TestCase):
+    """A verification code screenshot taken this morning is the most useful photo in
+    the library. The same screenshot in two months is clutter. The risk class is the
+    same on both days; what changes is whether acting on it is safe."""
+
+    def _otp(self):
+        return classify(asset(is_screenshot=True, ocr_ran=True,
+                              ocr_text="VERIFICATION CODE 115838"))
+
+    def test_a_fresh_code_is_kept(self):
+        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=1)
+        self.assertEqual(p.action, Action.KEEP)
+        self.assertIn("still recent", p.note)
+
+    def test_an_expired_code_is_offered_for_archiving(self):
+        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=120)
+        self.assertEqual(p.action, Action.PROPOSE_ARCHIVE)
+
+    def test_archiving_a_code_still_requires_confirmation_and_stays_reversible(self):
+        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=120)
+        self.assertTrue(p.requires_confirmation)
+        self.assertTrue(p.reversible)
+        self.assertFalse(p.auto_applicable)
+
+    def test_an_unknown_age_is_not_an_old_age(self):
+        """Absent evidence must never read as evidence for acting."""
+        p = propose(self._otp(), Risk.R2_TRANSIENT, age_days=None)
+        self.assertEqual(p.action, Action.KEEP)

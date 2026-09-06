@@ -69,6 +69,13 @@ PROTECTED_PATHS_PREFIX = (
 )
 TRANSIENT_PREFIX = ("Screenshots > Temporary",)
 
+# A transient asset is only transient once it has expired. A verification code
+# screenshot taken this morning is the most useful photo in the library; the same
+# screenshot in two months is clutter. Proposing to tidy it away on the day it was
+# taken is exactly the over-eager automation §7's bet does NOT cover, because the cost
+# of being wrong there is the user missing the thing they screenshotted it for.
+TRANSIENT_GRACE_DAYS = 30
+
 
 @dataclass
 class Proposal:
@@ -138,7 +145,8 @@ def classify_risk(c: Classification, *, is_exact_duplicate: bool = False,
 
 
 def propose(c: Classification, risk: Risk, *, extra_evidence: Optional[List[Evidence]] = None,
-            duplicate_of: Optional[str] = None) -> Proposal:
+            duplicate_of: Optional[str] = None,
+            age_days: Optional[float] = None) -> Proposal:
     """One asset, one proposal. The wording is what the user reads, so it says what
     would happen and what would survive it."""
     evidence = list(extra_evidence or [])
@@ -165,8 +173,18 @@ def propose(c: Classification, risk: Risk, *, extra_evidence: Optional[List[Evid
                         note="one of several near-identical frames from the same moment; "
                              "the frames that differ are kept")
     if risk == Risk.R2_TRANSIENT:
+        # An unknown age is not an old age. Absent evidence must never read as evidence
+        # for acting, so an asset with no capture date stays put.
+        if age_days is None:
+            return Proposal(c.asset_id, Action.KEEP, risk, evidence,
+                            note="a code or ticket with no capture date — kept, because "
+                                 "there is no evidence it has expired")
+        if age_days < TRANSIENT_GRACE_DAYS:
+            return Proposal(c.asset_id, Action.KEEP, risk, evidence,
+                            note=(f"a code or ticket — still recent ({age_days:.0f} days old), "
+                                  f"so it stays put until it is {TRANSIENT_GRACE_DAYS} days old"))
         return Proposal(c.asset_id, Action.PROPOSE_ARCHIVE, risk, evidence,
-                        note="a code or ticket that stops being useful after its date")
+                        note=f"a code or ticket that has stopped being useful — {age_days:.0f} days old")
     if risk == Risk.R6_UNKNOWN:
         return Proposal(c.asset_id, Action.REVIEW, risk, evidence,
                         note="not understood well enough to file confidently — kept and shown to you")

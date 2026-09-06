@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import time
 from collections import Counter
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence
 
@@ -146,7 +147,12 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
                                          and aid not in report.protected_distinct),
             has_unnamed_person=any("unnamed person" in n for n in c.notes),
         )
-        proposal = propose(c, risk, duplicate_of=report.exact_duplicate_of.get(aid))
+        age_days = None
+        if a.created_at is not None:
+            now = datetime.now(a.created_at.tzinfo) if a.created_at.tzinfo else datetime.now()
+            age_days = max(0.0, (now - a.created_at).total_seconds() / 86400)
+        proposal = propose(c, risk, duplicate_of=report.exact_duplicate_of.get(aid),
+                           age_days=age_days)
         catalog.upsert(a, c, risk, proposal)
         stats.by_risk[int(risk)] += 1
         stats.scored += 1
