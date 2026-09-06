@@ -1,0 +1,103 @@
+# XcodeGen spec for the app. Same pattern as the Tier 0 harness: a hand-written
+# .pbxproj drifts and nobody notices, so the project is generated and CI is
+# reproducible. Regenerate on a Mac with: xcodegen generate
+
+name: PVM
+options:
+  bundleIdPrefix: com.pvm
+  deploymentTarget:
+    iOS: '17.0'
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    CODE_SIGN_STYLE: Manual
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  PVM:
+    type: application
+    platform: iOS
+    sources:
+      - path: PVM
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.app
+        MARKETING_VERSION: '0.1'
+        CURRENT_PROJECT_VERSION: '1'
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: '1,2'
+        SWIFT_EMIT_LOC_STRINGS: YES
+    info:
+      path: PVM/Info.plist
+      properties:
+        CFBundleDisplayName: Visual Library
+        # Read access. Everything the product does starts here.
+        NSPhotoLibraryUsageDescription: >-
+          Reads the photos already on your phone so they can be catalogued and found
+          again. Nothing is uploaded and no photo leaves this device.
+        # Write access is for acting on proposals the user confirms — never silently.
+        NSPhotoLibraryAddUsageDescription: >-
+          Only used to act on changes you have confirmed. Removals go to Recently
+          Deleted and stay undoable for 30 days.
+        UIBackgroundModes:
+          - processing
+        # C-4: BGProcessingTask must be declared here or scheduling silently fails.
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.pvm.app.catalogue
+    dependencies:
+      - sdk: Photos.framework
+      - sdk: PhotosUI.framework
+      - sdk: Vision.framework
+      - sdk: BackgroundTasks.framework
+      - sdk: libsqlite3.tbd
+
+  PVMTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PVMTests
+    dependencies:
+      - target: PVM
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.app.tests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
+
+  # Screenshots, so the UI can be looked at rather than imagined. The app is written on
+  # a machine with no Mac and no iPhone; without this, "the UI is built" would rest on
+  # the fact that it compiles.
+  PVMUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: PVMUITests
+    dependencies:
+      - target: PVM
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.app.uitests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
+
+schemes:
+  PVM:
+    build:
+      targets:
+        PVM: all
+        PVMTests: [test]
+        PVMUITests: [test]
+    test:
+      targets:
+        - PVMTests
+        - PVMUITests
+    run:
+      config: Debug

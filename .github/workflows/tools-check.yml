@@ -86,6 +86,11 @@ jobs:
             { echo "::error::a safety red line failed"; grep "^- FAIL" "$RUNNER_TEMP/eval.md"; exit 1; } || true
           sed -n '/^## Root-level/,/^\*\*Macro/p' "$RUNNER_TEMP/eval.md" >> "$GITHUB_STEP_SUMMARY"
 
+      # The app's taxonomy and rules are generated from the engine. This is the guard
+      # that stops the shipping product and the reference implementation drifting apart.
+      - name: The app's shared Swift still matches the engine
+        run: python 40_APP/generate_shared.py --check
+
       - name: Generators are deterministic
         run: |
           cd 20_TIER0/study_assets && python build_prototype.py > /dev/null && cd -

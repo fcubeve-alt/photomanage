@@ -1,0 +1,146 @@
+name: App build, tests and screenshots
+
+# The app is written on a machine with no Mac and no iPhone. This is what stops
+# "the UI is built" from resting entirely on the fact that it compiles — which is
+# precisely the claim PF-11 is about.
+#
+# Three things run here:
+#   1. the shared Swift is regenerated from the Python engine and must not change,
+#   2. the ported behaviour and safety tests run on the Simulator,
+#   3. the app is launched with a seeded library, screenshotted, and each screen is
+#      also dumped as text so it can be READ in the log rather than only looked at.
+#
+# None of it is a device result. The Simulator has no thermal state, no battery, no
+# jetsam, no Neural Engine and no real photo library (P-02, PF-01).
+
+on:
+  push:
+    paths:
+      - '40_APP/**'
+      - '30_ENGINE/pvm/**'
+      - '.github/workflows/app-build.yml'
+  pull_request:
+    paths:
+      - '40_APP/**'
+  workflow_dispatch:
+
+concurrency:
+  group: app-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: macos-15          # standard arm64 runner. Do NOT switch to -large/-xlarge.
+    timeout-minutes: 45
+
+    env:
+      XCODE_VERSION: '16.4'
+      SCHEME: PVM
+      PROJECT_DIR: 40_APP
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          xcodebuild -version
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The taxonomy and the rules are generated from the engine. Maintained by hand
+      # they diverge silently, and every number measured on the engine stops describing
+      # the product.
+      - name: Shared Swift still matches the Python engine
+        run: python 40_APP/generate_shared.py --check
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: xcodegen generate --spec project.yml
+
+      - name: Pick a simulator
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for rt,v in sorted(d.items(),reverse=True) if 'iOS' in rt for x in v if x.get('isAvailable')))")
+          echo "udid=$DEVICE" >> "$GITHUB_OUTPUT"
+          echo "simulator: $DEVICE"
+
+      - name: Build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project PVM.xcodeproj -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO \
+            | tee build.log
+
+      - name: Behaviour and safety tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project PVM.xcodeproj -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO \
+            -only-testing:PVMTests \
+            | tee unit.log
+
+      - name: Screenshots and screen descriptions
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project PVM.xcodeproj -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO \
+            -only-testing:PVMUITests \
+            | tee ui.log
+
+      # stdout from inside the Simulator does not reach xcodebuild's log — that cost a
+      # whole run on the T0-A sweep — so the files are collected off the runner's disk.
+      - name: Collect what the app actually showed
+        if: always()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p screens
+          find "$HOME/Library/Developer/CoreSimulator/Devices" \
+               -name 'pvm-*.png' -newermt '-2 hours' -exec cp {} screens/ \; 2>/dev/null || true
+          find "$HOME/Library/Developer/CoreSimulator/Devices" \
+               -name 'pvm-*.txt' -newermt '-2 hours' -exec cp {} screens/ \; 2>/dev/null || true
+          ls -la screens || true
+          echo "===== WHAT THE APP SHOWED ====="
+          for f in screens/*.txt; do
+            [ -e "$f" ] || continue
+            echo "--- $f ---"
+            cat "$f"
+          done
+          if ! ls screens/*.png >/dev/null 2>&1; then
+            echo "::warning::no screenshots were captured — the UI run produced nothing to look at"
+          fi
+
+      - name: Summarise errors
+        if: failure()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "===== ERRORS ====="
+          grep -E "error:" build.log unit.log ui.log 2>/dev/null | sort -u | head -60 || true
+
+      - name: Upload logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: |
+            ${{ env.PROJECT_DIR }}/build.log
+            ${{ env.PROJECT_DIR }}/unit.log
+            ${{ env.PROJECT_DIR }}/ui.log
+            ${{ env.PROJECT_DIR }}/screens
+          retention-days: 30
+          if-no-files-found: warn
