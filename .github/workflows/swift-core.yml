@@ -33,6 +33,10 @@ jobs:
     timeout-minutes: 25
     container:
       image: swift:5.10-jammy
+    env:
+      # The fixture's dates are naive. Both implementations must read them in the same
+      # calendar or a capture near midnight lands in a different year on one side.
+      TZ: UTC
 
     steps:
       - uses: actions/checkout@v4

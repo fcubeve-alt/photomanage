@@ -111,7 +111,7 @@ final class PipelineAndFixtureTests: XCTestCase {
         let catalog = try makeCatalog()
         _ = Pipeline.run(assets: FixtureLibrary.make(), catalog: catalog)
         XCTAssertEqual(catalog.scalar("""
-            SELECT COUNT(*) FROM proposals WHERE auto_applicable=1 AND action != 'autoClean';
+            SELECT COUNT(*) FROM proposals WHERE auto_applicable=1 AND action != 'auto_clean';
             """), 0)
         XCTAssertGreaterThan(catalog.scalar("SELECT COUNT(*) FROM proposals WHERE auto_applicable=1"), 0,
                              "the fixture contains a byte-identical re-download; it should be tidyable")

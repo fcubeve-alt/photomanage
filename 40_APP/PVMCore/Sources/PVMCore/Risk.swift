@@ -81,7 +81,16 @@ public enum Recoverability: String {
 /// aggressive R0 action §6 calls for, constrained below to recoverable assets: the
 /// deletion itself is the platform's, lands in Recently Deleted, and stays undoable.
 public enum Action: String {
-    case autoClean, suggestDelete, selectBest, archive, keep, protectAsset, review
+    // Raw values match `30_ENGINE/pvm/risk.py` exactly. Both implementations write into
+    // the same schema, so they must write the same strings — "identical schema" with
+    // different spellings for the same decision is not identical.
+    case autoClean = "auto_clean"
+    case suggestDelete = "suggest_delete"
+    case selectBest = "select_best"
+    case archive = "archive"
+    case keep = "keep"
+    case protectAsset = "protect"
+    case review = "review"
 
     public var label: String {
         switch self {

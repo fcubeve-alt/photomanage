@@ -21,8 +21,11 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
+import shutil
 import sys
+import tempfile
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -34,13 +37,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, ".."))
 ENGINE = os.path.join(REPO, "30_ENGINE")
 OUT = os.path.join(HERE, "PVMCore", "Sources", "PVMCore")
+RESOURCES = os.path.join(HERE, "PVMCore", "Tests", "PVMCoreTests", "Resources")
 
 sys.path.insert(0, ENGINE)
+from pvm import fixture as F                   # noqa: E402
 from pvm import rules as R                     # noqa: E402
 from pvm import taxonomy as T                  # noqa: E402
 from pvm.risk import RISK_BY_PATH_PREFIX       # noqa: E402
 from pvm.classifier import SETTLE_AT           # noqa: E402
 from pvm.verdict import MAX_CONFIDENCE, REVIEW_FLOOR   # noqa: E402
+from pvm.catalog import Catalog                # noqa: E402
+from pvm import pipeline as P                  # noqa: E402
+from pvm import taxonomy as TX                 # noqa: E402
 
 BANNER = """// GENERATED — do not edit.
 // Source: 30_ENGINE/pvm/{sources}
@@ -138,7 +146,48 @@ def gen_rules() -> str:
     return "\n".join(lines) + "\n"
 
 
+def gen_fixture() -> str:
+    """The shared library, as data both implementations read."""
+    return json.dumps(F.to_json(), indent=1, ensure_ascii=False, sort_keys=True) + "\n"
+
+
+def gen_expected() -> str:
+    """What the reference implementation makes of that library.
+
+    This is the conformance contract. Both sides having tests does not prove they
+    agree, and disagreement is the failure that matters: the app files a passport
+    somewhere the engine would not, both suites stay green, and every number measured
+    on the engine stops describing the product. The Swift test replays this and
+    compares; whichever side moved is the one that fails.
+
+    Only the decisions are recorded — paths, risk, action — not confidences, which are
+    floating point and would turn a real conformance check into a flaky one.
+    """
+    TX.reset_minted()
+    assets = F.build()
+    tmp = tempfile.mkdtemp()
+    catalog = Catalog(os.path.join(tmp, "conformance.sqlite"))
+    try:
+        P.run(assets, catalog, reconcile_deletions=False)
+        rows = {}
+        for asset_id, path in catalog.db.execute(
+                "SELECT asset_id, path FROM assignments ORDER BY asset_id, path"):
+            rows.setdefault(asset_id, {"paths": [], "risk": None, "action": None})
+            rows[asset_id]["paths"].append(path)
+        for asset_id, risk in catalog.db.execute("SELECT asset_id, risk FROM assets"):
+            if asset_id in rows:
+                rows[asset_id]["risk"] = risk
+        for asset_id, action in catalog.db.execute("SELECT asset_id, action FROM proposals"):
+            if asset_id in rows:
+                rows[asset_id]["action"] = action
+    finally:
+        catalog.close()
+        shutil.rmtree(tmp, ignore_errors=True)
+    return json.dumps(rows, indent=1, ensure_ascii=False, sort_keys=True) + "\n"
+
+
 FILES = {"Taxonomy.generated.swift": gen_taxonomy, "Rules.generated.swift": gen_rules}
+RESOURCE_FILES = {"fixture.json": gen_fixture, "expected.json": gen_expected}
 
 
 def main() -> int:
@@ -149,9 +198,12 @@ def main() -> int:
     args = ap.parse_args()
 
     os.makedirs(OUT, exist_ok=True)
+    os.makedirs(RESOURCES, exist_ok=True)
     stale = []
-    for name, fn in FILES.items():
-        path = os.path.join(OUT, name)
+    targets = [(OUT, FILES), (RESOURCES, RESOURCE_FILES)]
+    for directory, group in targets:
+      for name, fn in group.items():
+        path = os.path.join(directory, name)
         new = fn()
         old = None
         if os.path.exists(path):

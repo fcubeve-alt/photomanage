@@ -1,0 +1,645 @@
+{
+ "burst-0": {
+  "action": "select_best",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "burst-1": {
+  "action": "select_best",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "burst-2": {
+  "action": "select_best",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "burst-3": {
+  "action": "select_best",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "burst-4": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "buy-order": {
+  "action": "archive",
+  "paths": [
+   "Purchases > Orders",
+   "Screenshots",
+   "Timeline > 2026"
+  ],
+  "risk": 4
+ },
+ "buy-receipt": {
+  "action": "archive",
+  "paths": [
+   "Documents > Receipts",
+   "Purchases > Receipts",
+   "Timeline > 2026"
+  ],
+  "risk": 4
+ },
+ "doc-contract-1": {
+  "action": "protect",
+  "paths": [
+   "Documents > Contracts",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "doc-contract-2": {
+  "action": "protect",
+  "paths": [
+   "Documents > Contracts",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "doc-contract-3": {
+  "action": "protect",
+  "paths": [
+   "Documents > Contracts",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "doc-contract-4": {
+  "action": "protect",
+  "paths": [
+   "Documents > Contracts",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "doc-id-front": {
+  "action": "protect",
+  "paths": [
+   "Documents > Identity > ID Cards",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "doc-passport": {
+  "action": "protect",
+  "paths": [
+   "Documents > Identity > Passports",
+   "Timeline > 2025"
+  ],
+  "risk": 5
+ },
+ "home-0": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-1": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-10": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-11": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-12": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-13": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-14": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-15": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-16": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-17": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-18": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-19": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-2": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-20": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-21": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-22": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-23": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-24": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-25": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-26": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-27": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-28": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-29": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-3": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-30": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-31": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-32": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-33": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-34": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-35": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-36": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-37": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-38": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-39": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-4": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-5": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-6": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-7": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-8": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "home-9": {
+  "action": "keep",
+  "paths": [
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 2
+ },
+ "meme-copy": {
+  "action": "auto_clean",
+  "paths": [
+   "Downloads > Memes",
+   "Timeline > 2025"
+  ],
+  "risk": 0
+ },
+ "meme-original": {
+  "action": "keep",
+  "paths": [
+   "Downloads > Memes",
+   "Timeline > 2025"
+  ],
+  "risk": 0
+ },
+ "mystery": {
+  "action": "review",
+  "paths": [
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "person-anna-0": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-anna-1": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-anna-2": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-anna-3": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-anna-4": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-anna-5": {
+  "action": "keep",
+  "paths": [
+   "People > Anna",
+   "Places > United Kingdom > London",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "person-group": {
+  "action": "keep",
+  "paths": [
+   "People > Groups",
+   "Timeline > 2025"
+  ],
+  "risk": 3
+ },
+ "shot-chat": {
+  "action": "keep",
+  "paths": [
+   "Screenshots > Chat",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "shot-pickup-old": {
+  "action": "suggest_delete",
+  "paths": [
+   "Screenshots > Temporary > Pickup Codes",
+   "Timeline > 2025"
+  ],
+  "risk": 1
+ },
+ "shot-plain": {
+  "action": "keep",
+  "paths": [
+   "Screenshots",
+   "Timeline > 2026"
+  ],
+  "risk": 2
+ },
+ "tokyo-0": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-1": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-10": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-11": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-2": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-3": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-4": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-5": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-6": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-7": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-8": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ },
+ "tokyo-9": {
+  "action": "keep",
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025",
+   "Travel > Tokyo · Apr 2025"
+  ],
+  "risk": 3
+ }
+}
