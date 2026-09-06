@@ -192,9 +192,10 @@ final class VideoReachesThePipelineTests: XCTestCase {
 
     private func run(framesFor: ((AssetSignals) -> [Frame])?) throws
         -> (RunStats, [Catalog.VideoRow]) {
+        // No explicit close: `Catalog` releases its handle in `deinit`, and the
+        // temporary directory goes with it in tearDown.
         let catalog = try XCTUnwrap(
             Catalog(path: directory.appendingPathComponent("c.sqlite").path))
-        defer { catalog.close() }
         let stats = Pipeline.run(assets: [videoAsset()], catalog: catalog,
                                  framesFor: framesFor)
         return (stats, catalog.videoRecords())

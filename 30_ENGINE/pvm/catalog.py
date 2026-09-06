@@ -37,7 +37,7 @@ from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def _sqlite_int64(value):
@@ -104,6 +104,9 @@ class Catalog:
           created_at REAL,
           content_hash TEXT,
           dhash INTEGER,
+          -- Needed to answer "找视频" without opening every asset. A retrieval path
+          -- that has to re-derive what something is has not been indexed.
+          media_type TEXT NOT NULL DEFAULT 'image',
           tier_used INTEGER,
           risk INTEGER,
           needs_review INTEGER,
@@ -263,11 +266,12 @@ class Catalog:
         self.db.execute(
             """INSERT OR REPLACE INTO assets
                (asset_id,signals_fp,engine_fp,created_at,content_hash,dhash,
-                tier_used,risk,needs_review,notes,classified_at)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                media_type,tier_used,risk,needs_review,notes,classified_at)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
             (aid, signals_fingerprint(asset), self._engine,
              asset.created_at.timestamp() if asset.created_at else None,
-             asset.content_hash, _sqlite_int64(asset.dhash), int(c.tier_used), int(risk),
+             asset.content_hash, _sqlite_int64(asset.dhash), asset.media_type,
+             int(c.tier_used), int(risk),
              int(c.needs_review), json.dumps(c.notes, ensure_ascii=False), time.time()))
 
         for a in c.assignments:
