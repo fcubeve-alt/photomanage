@@ -607,3 +607,82 @@ those beach photos by location is not answerable from the asset's own data. Left
 finding for whoever next touches the test library; not silently patched.
 
 **Status.** ACTIVE.
+
+---
+
+### DEC-029 · 2026-09-06 · Paced ingestion and change-driven processing — A1 becomes a scheduling constraint, A3 becomes the whole kill test
+**Two Owner rulings, both accepted, both built. One correction to each.**
+
+---
+
+**Ruling 1 — a large library is paced, not raced.** A new user with 100k photos does
+not have to wait for one long run. Do a coarse pass first, then a set amount per day,
+tell them what is happening, offer choices, and stand down when they pick the phone up.
+*"没有必要就是你装系统…这半个小时…我一定把你搞完，没有的，这是一个很人性化的"*.
+
+**The data supports it and offers something better than the version proposed.** Breadth
+is nearly free; depth is what costs. A breadth pass reads PhotoKit metadata only — date,
+GPS, media subtype — and decodes **no pixels**: 0.18–0.28 ms/asset measured, and 0.17
+ms/asset in a real run of the engine over the 10,000-asset library. **A 100k library
+gets Timeline, Places, Travel and Screenshots in under 30 seconds**, not in a day. Depth
+(OCR, embedding, faces) is 105–154 ms/asset — three orders of magnitude more — and that
+is the part worth pacing. So the user is never told "wait N days for your library". They
+are told "your library is here in a minute, and it gets deeper while you use the phone".
+Built as `30_ENGINE/pvm/schedule.py` and `pvm plan`.
+
+**THE CORRECTION, and it must not be lost in the agreement: pacing makes A3 MORE
+critical, not less.** A3 is not "indexing is slow"; it is *the system kills the task and
+the index cannot resume — progress is lost*. A ninety-minute run that loses its place
+costs ninety minutes. **A twenty-two-day plan that loses its place is a product that
+never finishes.** And `BGProcessingTask` is granted at the system's discretion and
+withdrawn from apps that misbehave — "2,000 a day" is a request, not a schedule. A4
+(incrementality) rises with it, because a paced first run overlaps with new photos
+arriving, so the engine must ingest new assets while still working through old ones.
+
+**Recorded consequence for the Tier 0 gate.** By this ruling **A1 is no longer a kill
+question** — it is a scheduling constraint with a known cost per asset, and a library
+too large for one run is paced rather than refused. **A3 is now the entire kill test**,
+and A4 is promoted alongside it. This does not lower the bar; it moves all of it onto
+the two claims that were always the ones a device has to answer.
+
+---
+
+**Ruling 2 — do not analyse every frame; analyse what changed.** *"第一帧和第二帧…如果
+基本上没什么变化…我们只对那种有变化的地方进行处理"*. This is L1-B applied to time, and
+it is FC-1 generalised from duplicate stills to sequences. Accepted.
+
+**THE CORRECTION, because the rule as stated silently destroys content.** "Compare each
+frame with the one before it, skip if similar" fails on a slow pan: every adjacent pair
+is similar, so nothing is ever processed, while the start and end of the sequence are
+different scenes. Measured on a 600-frame synthetic pan: the pairwise rule processes
+**1 frame of 600**, and frames 0 and 599 differ by **41 of 64 hash bits** — an entire
+scene never looked at, with no error and no symptom.
+
+Every comparison is therefore against the **last frame actually processed** — the
+current keyframe — never against the immediately preceding frame. Drift then accumulates
+until it crosses a threshold and opens a new keyframe. On the same 600-frame pan that
+processes 76 frames and still saves **80%** of the work.
+
+**Measured savings** (cost model built from the measured per-stage numbers, so the
+arithmetic is real even though the sequences are synthetic): static shot **88%**, slow
+pan **80%**, cuts every 60 frames **79%**, handheld motion **61%**. Every frame still
+pays decode and hash — the gate's own cost is counted, not hidden.
+
+**Three guards, each one a way this loses data if left off**, all tested:
+1. **FC-1a** — `dHash` returns 0 both for a class of ordinary images and for every hash
+   failure, so a failure is indistinguishable from a perfect match, and a perfect match
+   is exactly what licenses a skip. An unusable hash always processes.
+2. **Documents** — contract page 1 and page 2 are visually near-identical and
+   semantically unrelated. Visual similarity may never skip text extraction.
+3. **First and last frame** always processed; plus a hard cap of 30 consecutive skips,
+   for drift slower than the threshold forever.
+
+Built as `30_ENGINE/pvm/deltas.py`, 15 tests including the pairwise-failure demonstration.
+
+**OPEN-3, stated rather than assumed:** these decisions are measured on synthetic hash
+sequences. Whether `dHash` separates scenes as cleanly on **real video frames** — motion
+blur, exposure shifts, compression artefacts — is unverified, and it is the assumption
+the whole saving rests on. It needs real footage, not a device, so it is not blocked by
+HG-1.
+
+**Status.** ACTIVE.

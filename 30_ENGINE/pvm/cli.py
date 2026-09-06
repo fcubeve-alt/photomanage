@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pvm import pipeline, taxonomy                      # noqa: E402
 from pvm.catalog import Catalog                          # noqa: E402
+from pvm.schedule import plan_ingestion, progress_report  # noqa: E402
 from pvm.signals import Tier                             # noqa: E402
 
 
@@ -64,6 +65,29 @@ def cmd_classify(args) -> int:
     for t in (ctx.trips if ctx else []):
         print(f"learned trip: {t.label}  {t.start}..{t.end}  {t.asset_count} assets")
     catalog.close()
+    return 0
+
+
+def cmd_plan(args) -> int:
+    """What a user with this many photos would actually be told and offered."""
+    n = args.assets
+    if n is None:
+        n = len(_load(args.library))
+    plan = plan_ingestion(n, pessimistic=not args.optimistic)
+    print(plan.user_message())
+    print()
+    print(f"breadth pass : {plan.breadth.assets:,} assets in {plan.breadth.human()} "
+          f"— {plan.breadth.what_the_user_gets}")
+    print("depth pass   : offered as")
+    for o in plan.options:
+        mark = "*" if o.key == plan.recommended else " "
+        print(f"  {mark} [{o.key:9s}] {o.label:32s} {o.daily_assets:>7,}/day  "
+              f"{o.days:>4} days  {o.daily_work_min:.0f} min/day")
+        if o.caveat:
+            print(f"                {o.caveat}")
+    print()
+    for note in plan.notes:
+        print(f"note: {note}")
     return 0
 
 
@@ -120,9 +144,18 @@ def main(argv=None) -> int:
     p.add_argument("--catalog", default="pvm_catalog.sqlite")
     p.add_argument("--budget", default="ocr",
                    choices=["metadata", "hash", "visual", "faces", "ocr"],
-                   help="highest signal tier the engine may spend (for ablations)")
+                   help=("highest signal tier the engine may spend. `metadata` IS the "
+                         "breadth pass: no pixel is decoded, so a 100k library gets its "
+                         "shelves in seconds and the depth pass can be paced afterwards"))
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(fn=cmd_classify)
+
+    p = sub.add_parser("plan", help="how a library of this size would be ingested")
+    p.add_argument("--assets", type=int, help="library size; or use --library to count one")
+    p.add_argument("--library")
+    p.add_argument("--optimistic", action="store_true",
+                   help="quote the faster of the two measured runs (default: the slower)")
+    p.set_defaults(fn=cmd_plan)
 
     p = sub.add_parser("tree")
     p.add_argument("--catalog", default="pvm_catalog.sqlite")

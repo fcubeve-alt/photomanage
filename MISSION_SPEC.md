@@ -16,6 +16,8 @@ Mission-level success for this phase = a defensible `TIER0_GO_NO_GO.md` backed b
 - **A** Device: 100k-asset first index completes on real iPhones (3 tiers) without thermal death or unrecoverable background kill, and updates incrementally.
 - **B** Retrieval Entry: in blind/semi-blind task tests against native Apple Photos, a majority of **external** users prefer this product as their first stop for finding visual assets.
 - **C** Payment: a real conversion signal (not a survey) at the *Continuous Automatic Management* rung or higher.
+**Amended 2026-09-06 by DEC-029.** The Owner rules that a large library is **paced, not raced**: a breadth pass (metadata only, no pixels decoded — measured at 0.17 ms/asset) makes 100k assets browsable in under 30 seconds, and the expensive depth pass runs a set amount per day with the user told what is happening and offered choices. **A1 is therefore no longer a kill question** — it is a scheduling constraint with a measured cost per asset. **A3 (survivability) is now the entire kill test, and A4 (incrementality) is promoted alongside it**: pacing makes both *more* critical, because a twenty-two-day plan that loses its place is worse than a ninety-minute run that loses its place, and a paced first run overlaps with new photos arriving.
+
 **Superseded 2026-09-06 by DEC-026.** The Owner has decided the product is a GO and cancelled **C** and **D**; **B** is frozen pending OPEN-2. **A is the only remaining kill test** — it asks a physics question that the build decision does not answer. A3 failure is fatal; an A1-only failure degrades scope rather than killing. The Constitution §7 automation-tolerance bet is now a named accepted risk carried into M4 rather than a Tier 0 finding.
 
 ## IN SCOPE (now)

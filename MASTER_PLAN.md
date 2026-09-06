@@ -37,8 +37,16 @@ meet real data for the first time. What is missing is the data, not the tooling.
 describes a programme that will run. C and D are cancelled by the Owner and B is
 frozen pending **OPEN-2**, so the gate now rests on **A alone**:
 - **A3 (survivability) failure is fatal** — an index that cannot survive being killed
-  and resumed is not a product, regardless of the build decision.
-- An **A1-only failure degrades scope** to "recent N months" rather than killing it.
+  and resumed is not a product, regardless of the build decision. **DEC-029 raises this
+  further:** with ingestion paced over days rather than run in one go, a lost resume
+  cursor no longer costs ninety minutes, it costs a first run that never completes.
+- **A1 is no longer a kill question (DEC-029).** It is a scheduling constraint: the
+  breadth pass is measured at 0.17 ms/asset with no pixels decoded, so a 100k library is
+  browsable in under 30 seconds, and the depth pass at 105–154 ms/asset is paced. A
+  library too large for one run is paced, not refused.
+- **A4 (incrementality) is promoted alongside A3** — a paced first run overlaps with new
+  photos arriving, so ingesting new assets while still working through old ones stops
+  being a convenience and becomes a requirement.
 - **A1 is currently pessimistic** — `FC-1` means the harness measures the naive
   baseline, not the intended architecture. Fix or explicitly accept before reading a
   verdict from it.

@@ -25,7 +25,9 @@ pvm/risk.py        R0-R6 and what each one permits. There is no DELETE action
 pvm/dedup.py       duplicates, and the four things that only look like duplicates
 pvm/catalog.py     SQLite: checkpointing, incrementality, stored explanations
 pvm/pipeline.py    context -> classify -> relate and score, resumable throughout
-pvm/cli.py         classify / tree / why / review
+pvm/schedule.py    paced ingestion: a free breadth pass, then depth over days (DEC-029)
+pvm/deltas.py      change-driven processing for video and sequences (DEC-029)
+pvm/cli.py         plan / classify / tree / why / review
 eval/              measurement against the 10,000-asset labelled library
 tests/             55 behavioural tests, including every safety red line
 ```
@@ -33,8 +35,11 @@ tests/             55 behavioural tests, including every safety red line
 ## Run it
 
 ```bash
+python -m pvm.cli plan     --assets 100000
 python -m pvm.cli classify --library ../20_TIER0/study_assets/library/manifest.json \
-                           --catalog out.sqlite
+                           --catalog out.sqlite --budget metadata   # breadth pass
+python -m pvm.cli classify --library ../20_TIER0/study_assets/library/manifest.json \
+                           --catalog out.sqlite                     # depth pass
 python -m pvm.cli tree   --catalog out.sqlite
 python -m pvm.cli why    --catalog out.sqlite --asset A00001
 python -m pvm.cli review --catalog out.sqlite
@@ -44,6 +49,22 @@ python eval/evaluate.py --library ../20_TIER0/study_assets/library/manifest.json
 ```
 
 No third-party dependencies. Python 3.11+.
+
+## Breadth is free; depth is what you pace
+
+The single most useful thing the measurements said. A breadth pass reads PhotoKit
+metadata only and decodes **no pixels** — 0.17 ms/asset in a real run, so a 100k library
+has Timeline, Places, Travel and Screenshots **in under 30 seconds**. The depth pass
+(OCR, embedding, faces) is 105–154 ms/asset, three orders of magnitude more.
+
+So a large library is never "wait N days for your library". It is "your library is here
+in a minute, and it gets deeper while you use the phone" — and `pvm plan` produces the
+options a user is offered rather than choosing for them.
+
+The thing this does *not* fix, and the reason it is written down here: pacing makes
+survivability **more** critical, not less. A ninety-minute run that loses its place
+costs ninety minutes; a twenty-two-day plan that loses its place never finishes. The
+resume cursor is the load-bearing part of the whole design.
 
 ## The five decisions worth arguing with
 
@@ -102,8 +123,18 @@ expensive tiers are what buy the remaining 0.43.
 
 ## What it does not do yet
 
-- **No video.** The canonical tree has eleven roots and none is Video (FC-2). Video
-  assets are noted as having nowhere to go rather than filed as photos.
+- **No video *classification*.** The canonical tree has eleven roots and none is Video
+  (FC-2), so video assets are noted as having nowhere to go rather than filed as photos.
+  What does exist is `deltas.py`: change-driven frame selection, which saves 61–88% of
+  the per-frame work depending on motion, compares against the last processed keyframe
+  rather than the previous frame (the naive version processes 1 frame of 600 on a slow
+  pan and never sees the scene change), and refuses to skip on a failed hash, on
+  document content, or for more than 30 frames in a row.
+- **OPEN-3: dHash on real footage is unverified.** The frame-selection decisions are
+  measured on synthetic hash sequences and the cost saving is arithmetic from measured
+  stage costs. Whether `dHash` separates scenes as cleanly through motion blur, exposure
+  shifts and compression is the assumption the whole saving rests on. It needs real
+  video, not a device.
 - **Objects, Clothing, Downloads are untested against real data.** Their rules exist and
   are unit-tested, but the corpus carries no scene labels and no provenance, so nothing
   here measures them. That is a missing signal, not a missing rule, and inventing either
