@@ -189,6 +189,16 @@ class Catalog:
         CREATE INDEX IF NOT EXISTS idx_obs_entity ON observations(entity_id, seen_at);
         CREATE INDEX IF NOT EXISTS idx_obs_asset ON observations(asset_id);
 
+        -- §24 Gate 2: 低置信度只能进入 Review Queue，不自动合并/删除. A pair the
+        -- Category-Specific Entity Resolver would not decide is a question for the
+        -- user, and a question nobody is shown is the same as a merge nobody agreed to.
+        CREATE TABLE IF NOT EXISTS entity_review(
+          asset_a TEXT NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
+          asset_b TEXT NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
+          reason TEXT NOT NULL,
+          PRIMARY KEY(asset_a, asset_b)
+        );
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
         self.db.commit()
@@ -320,6 +330,19 @@ class Catalog:
                FROM observations WHERE entity_id=?
                ORDER BY seen_at IS NULL, seen_at LIMIT ?""",
             (entity_id, limit)).fetchall()
+
+    def write_entity_review(self, pairs) -> None:
+        self.db.execute("DELETE FROM entity_review")
+        for a, b, reason in pairs:
+            self.db.execute(
+                "INSERT OR REPLACE INTO entity_review(asset_a,asset_b,reason) VALUES(?,?,?)",
+                (a, b, reason))
+        self.db.commit()
+
+    def entity_review_queue(self, limit: int = 50):
+        return self.db.execute(
+            "SELECT asset_a, asset_b, reason FROM entity_review LIMIT ?",
+            (limit,)).fetchall()
 
     def checkpoint(self, cursor_value: str) -> None:
         """Cursor and work commit together. Separately would mean a cursor that points

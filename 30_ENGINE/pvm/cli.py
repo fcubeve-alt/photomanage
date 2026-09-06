@@ -127,11 +127,22 @@ def cmd_why(args) -> int:
 def cmd_review(args) -> int:
     catalog = Catalog(args.catalog)
     rows = catalog.review_queue(args.limit)
-    if not rows:
+    pairs = catalog.entity_review_queue(args.limit)
+    if not rows and not pairs:
         print("nothing waiting for review")
     for aid, action, risk, note, why in rows:
         print(f"{aid}  [{action}]  {note}")
         print(f"      why: {why}")
+
+    # §24 Gate 2 sends undecided same-entity pairs here rather than merging them. They
+    # are a different shape of question — "are these two the same thing" rather than
+    # "what should happen to this one" — so they are listed separately instead of being
+    # flattened into the action queue, where they would read as proposals.
+    if pairs:
+        print(f"\nare these the same thing? ({len(pairs)})")
+        for a, b, reason in pairs:
+            print(f"  {a}  ·  {b}")
+            print(f"      {reason}")
     catalog.close()
     return 0
 

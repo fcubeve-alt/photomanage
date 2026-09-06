@@ -202,6 +202,14 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
         stats.by_risk[int(risk)] += 1
         stats.by_action[proposal.action.value] += 1
         stats.scored += 1
+    # Written AFTER the scoring loop, not with the relations, and the order is load
+    # bearing. `entity_review` carries a foreign key to `assets` with ON DELETE CASCADE
+    # — which is what stops a deleted photo leaving a question about itself behind — and
+    # `upsert` uses INSERT OR REPLACE. In SQLite a REPLACE deletes the old row before
+    # inserting the new one, and that delete cascades. Writing these rows before the
+    # scoring loop silently emptied the table: the count said 1 and the queue the user
+    # reads said 0, which is the exact shape of failure this project keeps hitting.
+    catalog.write_entity_review(report.needs_entity_review)
     catalog.commit()
 
     # ---- phase 4: remember ---------------------------------------------

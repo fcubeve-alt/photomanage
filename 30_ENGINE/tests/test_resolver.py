@@ -294,6 +294,29 @@ class TheGateForbidsAUniversalModel(unittest.TestCase):
 class UndecidedGoesToReviewAndNeverToAMerge(unittest.TestCase):
     """低置信度只能进入 Review Queue，不自动合并/删除."""
 
+    def test_an_undecided_pair_reaches_the_stored_queue_the_user_actually_reads(self):
+        """Counting them is not sending them to review. A question nobody is shown is
+        the same as a merge nobody agreed to."""
+        import tempfile
+
+        from pvm import pipeline
+        from pvm.catalog import Catalog
+
+        a = asset("q1", labels=["chair"], dhash=0x0F0F_0F0F_0F0F_0F0F)
+        b = asset("q2", labels=["chair"], dhash=0x0F0F_0F0F_0F0F_0F0E,
+                  when=WHEN + timedelta(days=2))
+        with tempfile.TemporaryDirectory() as d:
+            catalog = Catalog(os.path.join(d, "c.sqlite"))
+            try:
+                stats = pipeline.run([a, b], catalog)
+                self.assertEqual(1, stats.entity_review)
+                queued = catalog.entity_review_queue()
+                self.assertEqual(1, len(queued))
+                self.assertEqual({"q1", "q2"}, {queued[0][0], queued[0][1]})
+                self.assertTrue(queued[0][2].strip(), "the question has to explain itself")
+            finally:
+                catalog.close()
+
     def test_an_uncertain_pair_reaches_the_review_list_and_stays_distinct(self):
         a = asset("r1", labels=["chair"], dhash=0x0F0F_0F0F_0F0F_0F0F)
         b = asset("r2", labels=["chair"], dhash=0x0F0F_0F0F_0F0F_0F0E,
