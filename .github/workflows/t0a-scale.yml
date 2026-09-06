@@ -1,0 +1,120 @@
+name: T0-A scale sweep (Simulator — NOT a device result)
+
+# Answers one question at $0, while HG-1 is still open: what does one asset cost to
+# index, and therefore how large a library fits the pre-registered §8 time budget?
+#
+# It runs the real pipeline (thumbnail decode -> dHash -> text likelihood -> OCR gate
+# -> gated OCR -> feature print -> SQLite upsert with C-3 checkpoints) on the iOS
+# Simulator. The Simulator has no thermal state, no battery, no jetsam and no Neural
+# Engine, so this can produce an optimistic CEILING and can never produce an A1-A4
+# device verdict (P-02, PF-01). The analyzer stamps that on every report it writes.
+#
+# Kept separate from ios-build.yml deliberately: that workflow must stay fast enough
+# to run on every harness change, and this one is minutes of Vision work.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sizes:
+        description: 'Corpus sizes to sweep, ascending, comma separated'
+        default: '200,1000,3000'
+      text_ratio:
+        description: 'Fraction of the corpus that is text-bearing (drives the OCR gate ratio)'
+        default: '0.25'
+  push:
+    paths:
+      - '20_TIER0/harness/PVMBenchTests/ScaleBenchmarkTests.swift'
+      - '20_TIER0/harness/analyze_scale.py'
+      - '.github/workflows/t0a-scale.yml'
+
+concurrency:
+  group: t0a-scale-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scale:
+    runs-on: macos-15          # standard arm64 runner. Do NOT switch to -large/-xlarge.
+    timeout-minutes: 45
+
+    env:
+      XCODE_VERSION: '16.4'
+      SCHEME: PVMBench
+      PROJECT_DIR: 20_TIER0/harness
+      SIZES: ${{ github.event.inputs.sizes || '200,1000,3000' }}
+      TEXT_RATIO: ${{ github.event.inputs.text_ratio || '0.25' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          xcodebuild -version
+
+      # Every analyzer is self-tested before it sees real data (MASTER_PLAN standing
+      # checks). Two real bugs have already been caught this way.
+      - name: Self-test the analyzer before it sees data
+        run: python3 20_TIER0/harness/analyze_scale.py --selftest
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: xcodegen generate --spec project.yml
+
+      # TEST_RUNNER_<VAR> is how xcodebuild puts <VAR> into the test process's
+      # environment. The test prints PVM_SCALE_ENV_CHECK either way, so a sweep that
+      # silently skipped is one grep away rather than a mystery green run.
+      - name: Run the scale sweep
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          DEVICE=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for rt,v in sorted(d.items(),reverse=True) if 'iOS' in rt for x in v if x.get('isAvailable')))")
+          echo "simulator udid: $DEVICE  sizes: $SIZES  text ratio: $TEXT_RATIO"
+          xcodebuild test \
+            -project PVMBench.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
+            -configuration Debug \
+            -only-testing:PVMBenchTests/ScaleBenchmarkTests \
+            CODE_SIGNING_ALLOWED=NO \
+            TEST_RUNNER_PVM_SCALE_BENCH=1 \
+            TEST_RUNNER_PVM_SCALE_SIZES="$SIZES" \
+            TEST_RUNNER_PVM_SCALE_TEXT_RATIO="$TEXT_RATIO" \
+            | tee scale.log
+
+      - name: Confirm the sweep actually ran
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          grep -c "PVM_SCALE_RESULT " scale.log > /dev/null || {
+            echo "::error::no PVM_SCALE_RESULT lines — the sweep was skipped, not measured."
+            grep "PVM_SCALE_ENV_CHECK" scale.log || true
+            exit 1
+          }
+          grep "PVM_SCALE_RESULT " scale.log
+
+      - name: Analyze
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 analyze_scale.py --log scale.log --out T0A_SCALE_SIMULATOR.md
+          cat T0A_SCALE_SIMULATOR.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summarise errors
+        if: failure()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "===== ERRORS ====="
+          grep -E "error:" scale.log 2>/dev/null | sort -u | head -40 || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: t0a-scale
+          path: |
+            ${{ env.PROJECT_DIR }}/scale.log
+            ${{ env.PROJECT_DIR }}/T0A_SCALE_SIMULATOR.md
+          retention-days: 30
+          if-no-files-found: warn

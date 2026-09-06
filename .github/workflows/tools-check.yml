@@ -40,6 +40,7 @@ jobs:
       - name: Analyzer self-tests
         run: |
           python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
+          python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
           python recovery_check.py --strict > /dev/null
 
@@ -48,6 +49,7 @@ jobs:
           PYTHONIOENCODING: gbk
         run: |
           python 20_TIER0/harness/analyze_benchmark.py --selftest > /dev/null
+          python 20_TIER0/harness/analyze_scale.py --selftest > /dev/null
           python 20_TIER0/study_assets/analyze_studies.py selftest > /dev/null
           python recovery_check.py --strict > /dev/null
 
