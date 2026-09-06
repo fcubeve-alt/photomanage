@@ -33,6 +33,11 @@ struct CategoryView: View {
                                 Text("\(child.count)").foregroundStyle(.secondary).monospacedDigit()
                             }
                         }
+                        // Sub-categories and photos look alike to XCUITest — both are
+                        // cells. Tapping "the first cell" therefore drilled into
+                        // another folder instead of opening a photo, and the test that
+                        // checks an asset can explain itself never reached an asset.
+                        .accessibilityIdentifier("child-\(child.path)")
                     }
                 }
             }
@@ -46,6 +51,7 @@ struct CategoryView: View {
                     } label: {
                         AssetRowLabel(row: row)
                     }
+                    .accessibilityIdentifier("asset-\(row.assetID)")
                 }
             }
         }

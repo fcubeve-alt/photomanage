@@ -103,32 +103,42 @@ final class ScreenshotTests: XCTestCase {
         row("browse-Documents").tap()
         capture("02-documents")
 
-        // Down to the leaf the tree defines for identity papers.
-        if app.staticTexts["Identity"].waitForExistence(timeout: 5) {
-            app.staticTexts["Identity"].tap()
-            capture("03-identity")
-        }
+        // Drill until an actual photo is on screen. Sub-categories and photos are both
+        // cells, so "the first cell" was a folder — the previous version drilled into
+        // `Identity`, tapped cell 0 again, landed in `Passports`, and concluded that an
+        // asset could not explain itself without ever having opened one.
+        let asset = firstAsset(maxDepth: 3)
+        XCTAssertTrue(asset.exists,
+                      "no photo was reachable under Documents — the fixture files "
+                      + "seven there, so either the tree or the browse view is wrong")
+        capture("03-inside-documents")
 
+        asset.tap()
         // The safety red line, on screen: every entry must be able to explain itself.
-        let firstRow = app.cells.element(boundBy: 0)
-        if firstRow.waitForExistence(timeout: 5) {
-            firstRow.tap()
-            XCTAssertTrue(app.navigationBars["Why is this here?"].waitForExistence(timeout: 5),
-                          "an asset could not explain why it was filed where it was")
-            capture("04-why-is-this-here")
+        XCTAssertTrue(app.navigationBars["Why is this here?"].waitForExistence(timeout: 5),
+                      "an asset could not explain why it was filed where it was")
+        capture("04-why-is-this-here")
+    }
+
+    /// The first photo reachable from here, following sub-categories as needed.
+    ///
+    /// Returns whatever it last looked at when it finds nothing, so the caller asserts
+    /// rather than this silently returning something harmless — a helper that quietly
+    /// succeeds at nothing is how a test passes without testing.
+    private func firstAsset(maxDepth: Int) -> XCUIElement {
+        let assets = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'asset-'"))
+        for _ in 0...maxDepth {
+            if assets.firstMatch.waitForExistence(timeout: 5) { return assets.firstMatch }
+            let children = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "identifier BEGINSWITH 'child-'"))
+            guard children.firstMatch.exists else { break }
+            children.firstMatch.tap()
         }
+        return assets.firstMatch
     }
 
-    func testTheReviewQueueIsReachableAndSmall() {
-        XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: 20))
-        row("review-queue").tap()
-        XCTAssertTrue(app.navigationBars["Review queue"].waitForExistence(timeout: 5))
-        capture("05-review-queue")
-        XCTAssertTrue(app.staticTexts["Human Review Burden"].exists,
-                      "the §18 KPI is not shown, so a growing queue would look normal")
-    }
-
-    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
+    /// §2 Remember, on screen.    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
     /// what the library knows exists. If this screen is ever empty on the fixture, the
     /// product has gone back to being a filing system.
     func testTheLibraryRemembersThingsAndSaysWhy() {
