@@ -41,7 +41,7 @@ public enum PhotoLibrarySource {
         s.isVideo = asset.mediaType == .video
         s.durationSeconds = asset.duration
         s.isScreenshot = asset.mediaSubtypes.contains(.photoScreenshot)
-        s.isScreenRecording = asset.mediaSubtypes.contains(.videoScreenRecording)
+        s.isScreenRecording = PhotoLibrarySource.looksLikeScreenRecording(asset)
         s.burstID = asset.burstIdentifier
         if let loc = asset.location {
             s.geo = GeoFix(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude, source: .exif)
@@ -50,21 +50,38 @@ public enum PhotoLibrarySource {
         return s
     }
 
-    /// Where the pixels came from. PhotoKit does not answer this directly, so it is
-    /// derived from the resource: an asset the camera took has camera metadata and a
-    /// filename shaped like IMG_1234; one saved from another app usually has neither.
-    /// A wrong answer costs a Downloads assignment, never a deletion.
+    /// PhotoKit has no screen-recording subtype — `videoScreenRecording` does not
+    /// exist, which is what the first build of this file assumed. A screen recording is
+    /// just a video, so the only available signal is iOS's own filename prefix. A
+    /// filename heuristic, stated as one.
+    private static func looksLikeScreenRecording(_ asset: PHAsset) -> Bool {
+        guard asset.mediaType == .video else { return false }
+        guard let name = PHAssetResource.assetResources(for: asset).first?.originalFilename
+        else { return false }
+        return name.uppercased().hasPrefix("RPREPLAY")
+    }
+
+    /// Where the pixels came from. PhotoKit does not answer this directly.
+    ///
+    /// Deliberately conservative: `camera` when there is positive evidence, `shared`
+    /// and `downloaded` where the source type says so outright, and `unknown`
+    /// otherwise. The first version returned "downloaded" for anything without a
+    /// camera-style filename, which would have swept every renamed, edited or
+    /// third-party-app photo into the Downloads shelf — a mass mis-filing produced by
+    /// a guess. `Downloads` therefore stays largely unreachable until a real
+    /// provenance signal exists, which is the honest position: the evaluation against
+    /// the labelled library found exactly the same gap.
     private static func provenance(of asset: PHAsset) -> String {
         if asset.mediaSubtypes.contains(.photoScreenshot) { return "screenshot" }
         if asset.sourceType.contains(.typeCloudShared) { return "shared" }
         if asset.sourceType.contains(.typeiTunesSynced) { return "downloaded" }
-        let resources = PHAssetResource.assetResources(for: asset)
-        guard let name = resources.first?.originalFilename else { return "unknown" }
+        guard let name = PHAssetResource.assetResources(for: asset).first?.originalFilename
+        else { return "unknown" }
         let upper = name.uppercased()
         if upper.hasPrefix("IMG_") || upper.hasPrefix("DSC") || upper.hasPrefix("PXL_") {
             return "camera"
         }
-        return "downloaded"
+        return "unknown"
     }
 
     /// Reverse geocoding is a network call and a rate-limited one, so it is done for the
