@@ -1,4 +1,5 @@
 import SwiftUI
+import PVMCore
 
 /// The safety red line made visible: **every suggestion must be able to explain why.**
 ///

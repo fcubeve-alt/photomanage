@@ -1,5 +1,6 @@
 import Foundation
 import Photos
+import PVMCore
 #if canImport(Combine)
 import Combine
 #endif

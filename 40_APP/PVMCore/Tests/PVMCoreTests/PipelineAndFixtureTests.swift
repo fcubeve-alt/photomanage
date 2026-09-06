@@ -1,5 +1,5 @@
 import XCTest
-@testable import PVM
+@testable import PVMCore
 
 /// End-to-end over the fixture library, plus the persistence guarantees the phone will
 /// actually depend on: incrementality, checkpointing, and the safety audit read back

@@ -1,5 +1,5 @@
 import XCTest
-@testable import PVM
+@testable import PVMCore
 
 /// The behaviours that must hold for every library, and the safety red lines that must
 /// hold even when the classifier is wrong. Ported from

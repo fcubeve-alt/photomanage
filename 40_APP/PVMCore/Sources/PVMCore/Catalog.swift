@@ -1,5 +1,9 @@
 import Foundation
-import SQLite3
+#if canImport(SQLite3)
+import SQLite3          // Apple platforms ship it as a module
+#else
+import CSQLite          // Linux: declared by the system-library target
+#endif
 
 /// THE CATALOGUE — where the engine's conclusions live, and how they survive being
 /// killed. Schema identical to `30_ENGINE/pvm/catalog.py`, so the reference

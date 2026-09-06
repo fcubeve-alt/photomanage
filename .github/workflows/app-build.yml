@@ -13,15 +13,11 @@ name: App build, tests and screenshots
 # None of it is a device result. The Simulator has no thermal state, no battery, no
 # jetsam, no Neural Engine and no real photo library (P-02, PF-01).
 
+# MANUAL ONLY. macOS runners bill at ten times the Linux rate on a private repository
+# and the budget ran out running this on every push. The platform-independent half is
+# verified continuously by swift-core.yml on Linux; this is spent deliberately, when
+# there is a reason to check the UI, the PhotoKit path or the Vision signals.
 on:
-  push:
-    paths:
-      - '40_APP/**'
-      - '30_ENGINE/pvm/**'
-      - '.github/workflows/app-build.yml'
-  pull_request:
-    paths:
-      - '40_APP/**'
   workflow_dispatch:
 
 concurrency:
@@ -89,7 +85,7 @@ jobs:
             -project PVM.xcodeproj -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -configuration Debug CODE_SIGNING_ALLOWED=NO \
-            -only-testing:PVMTests \
+            -only-testing:PVMCoreTests \
             | tee unit.log
 
       - name: Screenshots and screen descriptions

@@ -1,4 +1,5 @@
 import SwiftUI
+import PVMCore
 
 /// §23 STRUCTURE FIRST, PHOTOS SECOND.
 ///

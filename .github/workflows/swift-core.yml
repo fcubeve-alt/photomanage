@@ -1,0 +1,56 @@
+name: Swift core (Linux)
+
+# The classification logic, the risk policy and the duplicate guards compile and test
+# on Linux, because none of them touch UIKit, PhotoKit or Vision.
+#
+# This exists for a blunt reason: macOS runner minutes are billed at ten times the
+# Linux rate on a private repository, and they ran out mid-session, which stopped all
+# verification of ~4,000 lines of Swift. Everything that can be checked without an
+# Apple platform is now checked here instead — faster, roughly a tenth of the cost, and
+# it keeps running when the macOS budget does not.
+#
+# It is not a substitute for the iOS build. The UI, PhotoKit ingestion and Vision
+# signals still need macOS, and nothing here is a device result.
+
+on:
+  push:
+    paths:
+      - '40_APP/PVMCore/**'
+      - '30_ENGINE/pvm/**'
+      - '.github/workflows/swift-core.yml'
+  pull_request:
+    paths:
+      - '40_APP/PVMCore/**'
+  workflow_dispatch:
+
+concurrency:
+  group: swift-core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: swift:5.10-jammy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SQLite headers
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends libsqlite3-dev python3 > /dev/null
+
+      # The taxonomy and rules are generated from the Python engine. Checked here too,
+      # so a drift is caught on the cheap runner rather than the expensive one.
+      - name: Shared Swift still matches the Python engine
+        run: python3 40_APP/generate_shared.py --check
+
+      - name: Build
+        working-directory: 40_APP/PVMCore
+        run: swift build -v 2>&1 | tail -40
+
+      - name: Test
+        working-directory: 40_APP/PVMCore
+        run: swift test

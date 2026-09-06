@@ -1,4 +1,5 @@
 import SwiftUI
+import PVMCore
 
 /// Drill-down. §23: 点击后进入第二级更细分类; §3: 同一 Asset 可以从多个入口到达，禁止为了
 /// UI 分类而复制原始照片 — so this shows the *same* asset row under every entry that

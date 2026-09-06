@@ -1,4 +1,5 @@
 import SwiftUI
+import PVMCore
 
 /// The paced depth pass, offered rather than imposed (L1 §24 Gate 1, DEC-029).
 ///

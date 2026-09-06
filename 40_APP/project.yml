@@ -10,6 +10,10 @@ options:
   createIntermediateGroups: true
   groupSortPosition: top
 
+packages:
+  PVMCore:
+    path: PVMCore
+
 settings:
   base:
     SWIFT_VERSION: '5.0'
@@ -53,24 +57,12 @@ targets:
         BGTaskSchedulerPermittedIdentifiers:
           - com.pvm.app.catalogue
     dependencies:
+      - package: PVMCore
       - sdk: Photos.framework
       - sdk: PhotosUI.framework
       - sdk: Vision.framework
       - sdk: BackgroundTasks.framework
       - sdk: libsqlite3.tbd
-
-  PVMTests:
-    type: bundle.unit-test
-    platform: iOS
-    sources:
-      - path: PVMTests
-    dependencies:
-      - target: PVM
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.app.tests
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGNING_ALLOWED: NO
 
   # Screenshots, so the UI can be looked at rather than imagined. The app is written on
   # a machine with no Mac and no iPhone; without this, "the UI is built" would rest on
@@ -93,11 +85,9 @@ schemes:
     build:
       targets:
         PVM: all
-        PVMTests: [test]
         PVMUITests: [test]
     test:
       targets:
-        - PVMTests
         - PVMUITests
     run:
       config: Debug

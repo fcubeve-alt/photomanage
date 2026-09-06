@@ -33,7 +33,7 @@ for _stream in (sys.stdout, sys.stderr):
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, ".."))
 ENGINE = os.path.join(REPO, "30_ENGINE")
-OUT = os.path.join(HERE, "PVM", "Core")
+OUT = os.path.join(HERE, "PVMCore", "Sources", "PVMCore")
 
 sys.path.insert(0, ENGINE)
 from pvm import rules as R                     # noqa: E402

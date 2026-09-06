@@ -1,5 +1,5 @@
 import XCTest
-@testable import PVM
+@testable import PVMCore
 
 /// §6, §5 and the safety red lines. The scale is pinned to the Constitution clause by
 /// clause because an earlier version of the reference engine used these same seven

@@ -1,4 +1,5 @@
 import SwiftUI
+import PVMCore
 
 @main
 struct PVMApp: App {
