@@ -197,8 +197,30 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           echo "===== UI TEST FAILURES ====="
-          grep -E "error:|XCTAssert.*failed" ui.log unit.log build.log 2>/dev/null \
-            | sed 's/.*photomanage\///' | sort -u | head -40 || true
+          # The pattern list has to cover every way xcodebuild says something went
+          # wrong, not just the two that had happened so far. On 2026-09-07 a run came
+          # back FAILED with this section completely EMPTY: every assertion passed and
+          # all six screens rendered, and the step failed some other way — a timeout, a
+          # crash, a non-zero exit — none of which contains "error:" or
+          # "XCTAssert...failed". A failure report that cannot describe the failure is
+          # the fifth instance of one shape in this repository: the thing that reports
+          # is never exercised by the thing it reports on.
+          found=$(grep -E "error:|XCTAssert.*failed|Test Case .* failed|exceeded execution time allowance|Test session exited|Testing failed|Restarting after unexpected exit|crash" \
+            ui.log unit.log build.log 2>/dev/null \
+            | sed 's/.*photomanage\///' | sort -u | head -40 || true)
+          if [ -n "$found" ]; then
+            echo "$found"
+          else
+            # The backstop, and the point of this whole step: an unrecognised failure
+            # mode must never again produce an empty report. If nothing matched, show
+            # the raw end of the log and say why.
+            echo "(nothing matched the known failure patterns — the raw tail follows)"
+            for log in ui.log unit.log build.log; do
+              [ -s "$log" ] || continue
+              echo "--- last 25 lines of $log ---"
+              tail -25 "$log" | sed 's/.*photomanage\///'
+            done
+          fi
           echo "===== WHAT THE APP SHOWED ====="
           for f in screens/*.txt; do
             [ -e "$f" ] || continue
