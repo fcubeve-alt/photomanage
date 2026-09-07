@@ -82,10 +82,22 @@ def build() -> List[AssetSignals]:
             dhash=0x99AABBCCDDEEFF00 | page)
 
     # Purchases — cross-listed into Documents by the tree: one asset, two entries.
+    #
+    # All three carry the same order number, which is §10's join: entering from the
+    # order has to reach the receipt, the screenshot and the warranty even though they
+    # sit under different roots. A fixture where nothing shares a reference would let
+    # the two implementations disagree about the join with both suites green.
     add("buy-receipt", created_at=_at(2026, 3, 15), source="camera", ocr_ran=True,
-        ocr_text="RECEIPT — HEADPHONES £129.00")
+        ocr_text="RECEIPT — HEADPHONES £129.00  ORDER NO 784125")
     add("buy-order", created_at=_at(2026, 3, 14), is_screenshot=True, source="screenshot",
-        pixel_w=1170, pixel_h=2532, ocr_ran=True, ocr_text="ORDER CONFIRMATION — HEADPHONES")
+        pixel_w=1170, pixel_h=2532, ocr_ran=True,
+        ocr_text="ORDER CONFIRMATION — HEADPHONES  ORDER NO 784125")
+    add("buy-warranty", created_at=_at(2026, 3, 20), source="camera", ocr_ran=True,
+        ocr_text="WARRANTY CERTIFICATE — HEADPHONES  ORDER NO 784125  24 MONTHS")
+    # ...and one that carries a DIFFERENT reference, so the join has something it must
+    # refuse as well as something it must make.
+    add("buy-other", created_at=_at(2026, 3, 21), source="camera", ocr_ran=True,
+        ocr_text="RECEIPT — KETTLE £24.00  ORDER NO 990001")
 
     # Screenshots: one expired, two not.
     add("shot-pickup-old", created_at=_at(2025, 1, 6), is_screenshot=True, source="screenshot",

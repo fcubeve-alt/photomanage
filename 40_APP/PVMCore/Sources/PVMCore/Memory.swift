@@ -278,6 +278,10 @@ public enum MemoryBuilder {
             purchases(asset, c, placeName, placeSource, &graph)
         }
 
+        // §10's join, across categories. Over the whole library rather than per asset,
+        // because a relation between two assets is not a property of either one.
+        linkByReference(assets, &graph)
+
         if let context { events(context, byID, &graph) }
         if !momentGroups.isEmpty { markRepeats(momentGroups, byID, &graph) }
         return graph
@@ -519,6 +523,58 @@ public enum MemoryBuilder {
     /// deletes the only thing the graph exists to keep. So what is marked here is
     /// narrower: members of the same *moment*, which genuinely say one thing twice.
     /// They stay stored and queryable, and `lastSeen` reads time, not this flag.
+    /// How many digits a reference must carry before two assets sharing it are treated
+    /// as the same transaction. Three digits is a thousand possible values, which makes
+    /// an accidental collision within one person's library unlikely; two is a hundred,
+    /// which does not. `EntityResolver.identifiers` has already required an explicit
+    /// label and at least one digit, so this is the second gate rather than the only one.
+    static let minJoinDigits = 3
+
+    /// §10 Relations, the join: 从某个人、物品、订单、旅行进入，找到相关照片、截图、
+    /// 文件和收据.
+    ///
+    /// Walking from one entity to its own sightings has always worked. What did not
+    /// exist is the step across categories — from a receipt to the warranty document
+    /// for the same purchase, or from an order screenshot to the photo of what arrived.
+    /// Three assets, three roots, three entities, nothing joining them.
+    ///
+    /// A labelled reference number joins them and nothing else does. No fuzzy matching
+    /// on shop names, no dates-and-totals heuristic, no joining on a two-digit number:
+    /// a false join puts someone else's order in your warranty folder, and §9's whole
+    /// argument is that being wrong about identity is the expensive kind of wrong.
+    static func linkByReference(_ assets: [AssetSignals], _ graph: inout MemoryGraph) {
+        var byReference: [String: [String: AssetSignals]] = [:]
+        for asset in assets where asset.ocrRan && !asset.ocrText.isEmpty {
+            for token in EntityResolver.identifiers(in: asset.ocrText) {
+                guard token.filter({ $0.isNumber }).count >= minJoinDigits else { continue }
+                byReference[token, default: [:]][asset.assetID] = asset
+            }
+        }
+
+        for token in byReference.keys.sorted() {
+            let members = byReference[token] ?? [:]
+            // One asset carrying a reference is a document with a number on it, not a
+            // relation. The join needs two things to join.
+            guard members.count >= 2 else { continue }
+            let id = "purchase:ref-" + slug(token)
+            guard let e = Evidence(
+                    signal: "ocr_text", tier: .text, weight: 0.8,
+                    reason: "\(members.count) things in your library carry the "
+                            + "reference \(token)"),
+                  let entity = Entity(entityID: id, kind: .purchase,
+                                      name: "Reference \(token)", evidence: [e])
+            else { continue }
+            graph.add(entity)
+            for assetID in members.keys.sorted() {
+                guard let asset = members[assetID] else { continue }
+                graph.observe(Observation(
+                    entityID: id, assetID: assetID, when: asset.createdAt,
+                    place: nil, confidence: 0.8,
+                    reason: "this carries the reference \(token)"))
+            }
+        }
+    }
+
     private static func markRepeats(_ groups: [[String]], _ byID: [String: AssetSignals],
                                     _ graph: inout MemoryGraph) {
         for group in groups {

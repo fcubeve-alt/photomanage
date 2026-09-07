@@ -122,7 +122,7 @@ final class ConformanceTests: XCTestCase {
     /// The number of assets the fixture is known to contain. A conformance test that
     /// silently compares nothing and passes is the exact failure this file exists to
     /// prevent, so it is guarded against itself.
-    private static let expectedFixtureSize = 83
+    private static let expectedFixtureSize = 85
 
     func testTheFixtureAndTheExpectationsAreActuallyThere() throws {
         let assets = try loadFixture()
@@ -273,6 +273,39 @@ final class ConformanceTests: XCTestCase {
         XCTAssertNil(TaxonomyRuntime.ensure("Documents > Receipts > Jane Doe"))
         XCTAssertNil(TaxonomyRuntime.ensure("Documents > Identity > Jane Doe > Passports > 2019"))
         XCTAssertNotNil(TaxonomyRuntime.ensure("Documents > Identity > Someone New"))
+    }
+
+    /// §10 Relations, the join. The fixture carries three assets on one order number
+    /// and a fourth on a different one, so this covers the refusal as well as the join.
+    /// It is not in `expected.json` — that records paths, risk, importance and action,
+    /// and a relation is none of those — so without this test the two implementations
+    /// could disagree about which of a user's papers belong together with both suites
+    /// green.
+    func testTheAppJoinsAssetsOnAReferenceTheSameWay() throws {
+        TaxonomyRuntime.resetMinted()
+        let assets = try loadFixture()
+        let context = LibraryContextBuilder.build(assets)
+        let classifier = Classifier(context: context)
+        var classifications: [String: Classification] = [:]
+        for asset in assets { classifications[asset.assetID] = classifier.classify(asset) }
+        let graph = MemoryBuilder.build(assets: assets, classifications: classifications,
+                                        context: context)
+
+        let joined = graph.entities.values.filter { $0.name.hasPrefix("Reference ") }
+        XCTAssertEqual(joined.count, 1,
+                       "the fixture shares exactly one reference across more than one "
+                       + "asset; got \(joined.map { $0.name }.sorted())")
+        let reference = try XCTUnwrap(joined.first)
+        XCTAssertEqual(reference.name, "Reference 784125")
+        let members = graph.observations
+            .filter { $0.entityID == reference.entityID }
+            .map { $0.assetID }.sorted()
+        XCTAssertEqual(members, ["buy-order", "buy-receipt", "buy-warranty"],
+                       "entering from the order must reach the receipt, the screenshot "
+                       + "and the warranty, across three different roots")
+        XCTAssertFalse(members.contains("buy-other"),
+                       "a different order number must not join — a false join puts "
+                       + "someone else's purchase in the user's warranty folder")
     }
 
     /// The risk level and the action are the decisions that authorise doing something

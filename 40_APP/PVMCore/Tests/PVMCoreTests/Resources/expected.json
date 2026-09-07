@@ -60,6 +60,17 @@
   ],
   "risk": 4
  },
+ "buy-other": {
+  "action": "archive",
+  "asset_class": "transaction",
+  "importance": 2,
+  "paths": [
+   "Documents > Receipts",
+   "Purchases > Receipts",
+   "Timeline > 2026 > 03 March > 21"
+  ],
+  "risk": 4
+ },
  "buy-receipt": {
   "action": "archive",
   "asset_class": "transaction",
@@ -68,6 +79,17 @@
    "Documents > Receipts",
    "Purchases > Receipts",
    "Timeline > 2026 > 03 March > 15"
+  ],
+  "risk": 4
+ },
+ "buy-warranty": {
+  "action": "archive",
+  "asset_class": "transaction",
+  "importance": 2,
+  "paths": [
+   "Documents > Warranty",
+   "Purchases > Warranty",
+   "Timeline > 2026 > 03 March > 20"
   ],
   "risk": 4
  },

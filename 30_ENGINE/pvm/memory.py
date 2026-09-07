@@ -301,6 +301,10 @@ def build(assets: Sequence[AssetSignals],
         _documents(asset, c, place_name, place_source, graph)
         _purchases(asset, c, place_name, place_source, graph)
 
+    # §10's join, across categories. Runs over the whole library rather than per asset,
+    # because a relation between two assets is not a property of either one.
+    _link_by_reference(assets, graph)
+
     if context:
         _events(context, by_id, graph)
     if moment_groups:
@@ -490,6 +494,65 @@ def _events(context: LibraryContext, by_id, graph) -> None:
                 graph.observe(Observation(
                     entity_id, asset.asset_id, asset.created_at, None, 0.7,
                     f"part of {gathering.label}"))
+
+
+#: How many digits a reference has to carry before two assets sharing it are treated as
+#: the same transaction. Three digits is a thousand possible values, which makes an
+#: accidental collision between two unrelated documents in one person's library
+#: unlikely; two digits is a hundred, which does not. `resolver.identifiers` has already
+#: required an explicit label (`NO`, `NUMBER`, `#`, `:`) and at least one digit, so this
+#: is the second gate rather than the only one.
+MIN_JOIN_DIGITS = 3
+
+
+def _link_by_reference(assets, graph) -> None:
+    """§10 Relations, the join: 从某个人、物品、订单、旅行进入，找到相关照片、截图、
+    文件和收据.
+
+    Walking from one entity to its own sightings has worked since the graph was built.
+    What did not exist is the step across categories — from a receipt to the warranty
+    document for the same purchase, or from an order screenshot to the photo of what
+    arrived. Those are three different assets, filed under three different roots, with
+    three different entities, and nothing joined them.
+
+    A labelled reference number joins them, and nothing else here does. This is the
+    same evidence §24 Gate 2 already trusts to decide two documents are the same thing
+    (`resolver._resolve_document` merges on an agreeing identifier), used one level up:
+    if two assets carry the same reference, they are about the same transaction.
+
+    What it deliberately does not do is guess. No fuzzy matching on shop names, no
+    dates-and-totals heuristic, no joining on a two-digit number. A false join here
+    puts someone else's order in your warranty folder, and the whole point of §9 is
+    that being wrong about identity is the expensive kind of wrong.
+    """
+    from . import resolver
+
+    by_reference: Dict[str, List] = {}
+    for asset in assets:
+        if not asset.ocr_ran or not asset.ocr_text:
+            continue
+        for token in resolver.identifiers(asset.ocr_text):
+            if sum(ch.isdigit() for ch in token) < MIN_JOIN_DIGITS:
+                continue
+            by_reference.setdefault(token, []).append(asset)
+
+    for token, members in sorted(by_reference.items()):
+        # One asset carrying a reference is a document with a number on it, not a
+        # relation. The join needs two things to join.
+        unique = {a.asset_id: a for a in members}
+        if len(unique) < 2:
+            continue
+        name = f"Reference {token}"
+        entity_id = f"purchase:ref-{_slug(token)}"
+        graph.add_entity(Entity(
+            entity_id, EntityKind.PURCHASE, name,
+            [Evidence("ocr_text", Tier.TEXT, 0.8,
+                      f"{len(unique)} things in your library carry the reference "
+                      f"{token}")]))
+        for asset in sorted(unique.values(), key=lambda a: a.asset_id):
+            graph.observe(Observation(
+                entity_id, asset.asset_id, asset.created_at, None, 0.8,
+                f"this carries the reference {token}"))
 
 
 def _mark_repeats(groups, by_id, graph) -> None:
