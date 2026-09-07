@@ -113,7 +113,35 @@ class Cascade(unittest.TestCase):
         self.assertEqual(len(c.paths), len(set(c.paths)))
 
     def test_every_asset_reaches_the_timeline(self):
-        self.assertIn("Timeline > 2025", classify(asset()).paths)
+        """§3 asks for Year → Month → Day → Moment, and only the deepest node is held:
+        the browse tree rolls counts up, so the year still shows the right total while
+        the asset is counted once rather than four times inside its own parent."""
+        paths = classify(asset()).paths
+        timeline = [p for p in paths if p.startswith("Timeline")]
+        self.assertEqual(1, len(timeline), f"expected one timeline entry, got {timeline}")
+        self.assertTrue(timeline[0].startswith("Timeline > 2025 > "), timeline[0])
+        self.assertIn("Timeline > 2025", taxonomy.ancestors(timeline[0]),
+                      "browsing by year must still reach it")
+
+    def test_a_run_of_captures_becomes_a_moment(self):
+        """§3's fourth level. Derived from neighbours, not from the clock: six frames
+        at 17:59 and two at 18:01 are one moment and an hour boundary would split
+        them."""
+        burst = [asset(f"m{i}", created_at=WHEN.replace(hour=17, minute=59) +
+                       timedelta(seconds=30 * i)) for i in range(8)]
+        ctx = build_context(burst)
+        clf = Classifier(ctx)
+        moments = {clf.classify(a).paths[0] for a in burst}
+        self.assertEqual(1, len(moments),
+                         f"one session split across {len(moments)} moments: {moments}")
+        self.assertEqual(4, taxonomy.depth(moments.pop()) - 1)
+
+    def test_a_lone_photograph_is_not_a_moment(self):
+        """Inventing one would put a browse entry in front of the user for every stray
+        shot they ever took."""
+        deepest = classify(asset()).paths[0]
+        self.assertEqual(4, taxonomy.depth(deepest),
+                         "a single capture stops at the day")
 
     def test_an_asset_with_no_date_says_so_instead_of_guessing_one(self):
         c = classify(asset(created_at=None))

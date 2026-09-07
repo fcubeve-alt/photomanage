@@ -97,6 +97,11 @@ def evaluate(library: str, catalog_path: str, budget: Tier = Tier.TEXT):
 
 def score(truth, predicted) -> dict:
     per_root = {r: Counter() for r in SCORED_ROOTS}
+    # Tier 1-A asks for a confusion matrix, not only precision and recall. The two
+    # answer different questions: P/R says how often a root is wrong, a matrix says
+    # *what it is wrong with* — and "Purchases read as Documents" is a cross-listing
+    # working as designed, while "Documents read as Screenshots" would be a defect.
+    confusion = defaultdict(Counter)
     leaf_scored = Counter()
     leaf_by_root = defaultdict(Counter)
     unscorable_label = Counter()
@@ -115,6 +120,17 @@ def score(truth, predicted) -> dict:
                 per_root[root]["fp"] += 1
             elif in_true and not in_pred:
                 per_root[root]["fn"] += 1
+
+        # One row per true root, counting what was predicted instead. An asset filed
+        # correctly *and* somewhere else contributes to both cells, because that is
+        # what happened — collapsing it to "correct" would hide every over-filing.
+        for true_root in true_roots:
+            if true_root not in SCORED_ROOTS:
+                continue
+            if not pred_roots:
+                confusion[true_root]["(nothing)"] += 1
+            for predicted_root in pred_roots:
+                confusion[true_root][predicted_root] += 1
 
         for root in SIGNAL_ABSENT_ROOTS:
             if root in true_roots:
@@ -148,7 +164,8 @@ def score(truth, predicted) -> dict:
     # Timeline is derived from the capture date on every asset; scoring it separately
     # keeps it from inflating the roots that were actually inferred.
     return {"per_root": per_root, "leaf": leaf_scored, "leaf_by_root": leaf_by_root,
-            "unscorable_label": unscorable_label, "unscorable_signal": unscorable_signal}
+            "unscorable_label": unscorable_label, "unscorable_signal": unscorable_signal,
+            "confusion": {k: dict(v) for k, v in confusion.items()}}
 
 
 def safety_audit(catalog: Catalog) -> dict:
@@ -211,6 +228,27 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
         w(f"| {root} | {c['tp'] + c['fn']:,} | {p:.3f} | {r:.3f} | {f:.3f} | "
           f"{c['tp']:,} | {c['fp']:,} | {c['fn']:,} |\n")
     w(f"\n**Macro F1 across scored roots: {sum(macro)/len(macro):.3f}**\n\n")
+
+    # ---- confusion matrix (Tier 1-A) ------------------------------------
+    w("### Confusion matrix\n\n")
+    w("Rows are the true root, columns what the engine filed it as. An asset filed "
+      "correctly *and* somewhere else appears in both cells, because that is what "
+      "happened; collapsing it to \"correct\" would hide every over-filing. "
+      "`(nothing)` means the engine declined to file it at all.\n\n")
+    confusion = scores["confusion"]
+    columns = sorted({col for row in confusion.values() for col in row})
+    w("| true \\ filed as | " + " | ".join(columns) + " |\n")
+    w("|---" * (len(columns) + 1) + "|\n")
+    for root in SCORED_ROOTS:
+        row = confusion.get(root, {})
+        cells = []
+        for col in columns:
+            n = row.get(col, 0)
+            cells.append("·" if n == 0 else (f"**{n:,}**" if col == root else f"{n:,}"))
+        w(f"| {root} | " + " | ".join(cells) + " |\n")
+    w("\nThe diagonal is in bold. Everything off it is either a cross-listing the tree "
+      "asks for — a receipt is a Document *and* a Purchase — or a mistake, and the "
+      "matrix is what lets those be told apart at a glance.\n\n")
 
     # ---- leaf level -----------------------------------------------------
     leaf = scores["leaf"]

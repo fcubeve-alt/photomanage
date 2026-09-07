@@ -85,20 +85,67 @@ public struct Classifier {
 
     // MARK: - tiers
 
+    /// §3 asks for **Year → Month → Day → Moment**, not just a year. Only the year was
+    /// indexed, which meant "the photos from that afternoon" had nothing to resolve
+    /// against — a whole level of the tree the Constitution names as first-class.
+    ///
+    /// Only the deepest node survives `pruneImpliedAncestors`, which is correct and not
+    /// a loss: the browse tree rolls counts up from the leaves, so a year still shows
+    /// the right total, and holding the same asset at four depths would count it four
+    /// times inside its own parent.
+    ///
+    /// Moment is a **capture session**, not a clock hour: an hour boundary cuts a burst
+    /// in half, so it is derived from neighbours in `LibraryContext` and is absent
+    /// rather than guessed when this asset has none.
     private func timeline(_ a: AssetSignals, _ c: inout Classification) {
         guard let when = a.createdAt, let year = a.year else {
             c.notes.append("no capture date — this asset cannot be placed on the timeline")
             return
         }
-        guard let path = TaxonomyRuntime.ensure("Timeline" + Taxonomy.separator + String(year))
-        else { return }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_GB")
-        f.dateFormat = "d MMMM yyyy"
-        guard let e = Evidence(signal: "createdAt", tier: .metadata, weight: 0.98,
-                               reason: "taken on \(f.string(from: when))"),
-              let assignment = Assignment(path: path, evidence: [e]) else { return }
-        c.add(assignment)
+        let sep = Taxonomy.separator
+        let long = DateFormatter()
+        long.locale = Locale(identifier: "en_GB")
+        long.timeZone = TimeZone(identifier: "UTC")
+        long.dateFormat = "d MMMM yyyy"
+        let monthName = DateFormatter()
+        monthName.locale = Locale(identifier: "en_GB")
+        monthName.timeZone = TimeZone(identifier: "UTC")
+        monthName.dateFormat = "MM MMMM"
+        let monthOnly = DateFormatter()
+        monthOnly.locale = Locale(identifier: "en_GB")
+        monthOnly.timeZone = TimeZone(identifier: "UTC")
+        monthOnly.dateFormat = "MMMM yyyy"
+        let dayOnly = DateFormatter()
+        dayOnly.locale = Locale(identifier: "en_GB")
+        dayOnly.timeZone = TimeZone(identifier: "UTC")
+        dayOnly.dateFormat = "dd"
+
+        func add(_ path: String?, _ reason: String, _ weight: Double = 0.98) {
+            guard let path,
+                  let e = Evidence(signal: "createdAt", tier: .metadata, weight: weight,
+                                   reason: reason),
+                  let assignment = Assignment(path: path, evidence: [e]) else { return }
+            c.add(assignment)
+        }
+
+        let yearPath = "Timeline" + sep + String(year)
+        add(TaxonomyRuntime.ensure(yearPath), "taken on \(long.string(from: when))")
+
+        let monthPath = yearPath + sep + monthName.string(from: when)
+        add(TaxonomyRuntime.ensure(monthPath), "taken in \(monthOnly.string(from: when))")
+
+        let dayPath = monthPath + sep + dayOnly.string(from: when)
+        add(TaxonomyRuntime.ensure(dayPath), "taken on \(long.string(from: when))")
+
+        if let moment = context.moment(for: a.assetID) {
+            let clock = DateFormatter()
+            clock.locale = Locale(identifier: "en_GB")
+            clock.timeZone = TimeZone(identifier: "UTC")
+            clock.dateFormat = "HH:mm"
+            add(TaxonomyRuntime.ensure(dayPath + sep + moment.label),
+                "one of \(moment.assetCount) photos taken around "
+                + "\(clock.string(from: moment.start)) that day", 0.9)
+        }
     }
 
     private func metadataRoot(_ a: AssetSignals, _ c: inout Classification) {

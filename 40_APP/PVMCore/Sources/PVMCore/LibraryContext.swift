@@ -33,6 +33,21 @@ public struct Trip {
     }
 }
 
+/// §3's fourth level of time: a capture session.
+public struct Moment {
+    public let start: Date
+    public let end: Date
+    public let assetCount: Int
+
+    public var label: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "HH:mm"
+        return f.string(from: start)
+    }
+}
+
 public struct LibraryContext {
     public var home: GeoFix?
     public var homeCity: String?
@@ -41,6 +56,10 @@ public struct LibraryContext {
     public var homeSampleSize: Int = 0
     public var trips: [Trip] = []
     public var knownPeople: [String] = []
+    /// assetID → the capture session it belongs to. Absent for an asset with no
+    /// neighbours: a lone photograph is not a session, and inventing one would put a
+    /// browse entry in front of the user for every stray shot they ever took.
+    public var moments: [String: Moment] = [:]
     public var assetCount: Int = 0
 
     public init() {}
@@ -55,6 +74,8 @@ public struct LibraryContext {
         return g.km(to: h) > LibraryContextBuilder.awayKm
     }
 
+    public func moment(for assetID: String) -> Moment? { moments[assetID] }
+
     public func trip(for when: Date?, geo: GeoFix?) -> Trip? {
         guard let w = when, isAway(geo) else { return nil }
         return trips.first { $0.contains(w) }
@@ -62,6 +83,43 @@ public struct LibraryContext {
 }
 
 public enum LibraryContextBuilder {
+    /// Photographs taken further apart than this are two occasions, not one. Clock
+    /// hours cannot do this job — six frames at 17:59 and two at 18:01 are one moment
+    /// and would land in two.
+    public static let momentGapSeconds = 20.0 * 60
+    /// A single photograph is a photograph, not a session worth its own browse entry.
+    public static let minMomentAssets = 2
+
+    /// Group captures into sessions by proximity in time, derived from neighbours
+    /// rather than from the clock. A moment that splits one occasion in two is worse
+    /// than no moment at all: the user sees the same afternoon twice and trusts the
+    /// timeline less.
+    public static func findMoments(_ assets: [AssetSignals]) -> [String: Moment] {
+        let dated = assets.filter { $0.createdAt != nil }
+            .sorted { $0.createdAt! < $1.createdAt! }
+        var out: [String: Moment] = [:]
+        var run: [AssetSignals] = []
+
+        func close(_ group: [AssetSignals]) {
+            guard group.count >= minMomentAssets,
+                  let first = group.first?.createdAt,
+                  let last = group.last?.createdAt else { return }
+            let moment = Moment(start: first, end: last, assetCount: group.count)
+            for asset in group { out[asset.assetID] = moment }
+        }
+
+        for asset in dated {
+            if let previous = run.last?.createdAt,
+               asset.createdAt!.timeIntervalSince(previous) > momentGapSeconds {
+                close(run)
+                run = []
+            }
+            run.append(asset)
+        }
+        close(run)
+        return out
+    }
+
     /// A capture this far from home is somewhere else, not a longer walk.
     public static let awayKm = 120.0
     /// Below this many days away it is a day out, not a trip worth its own entry.
@@ -136,6 +194,7 @@ public enum LibraryContextBuilder {
         }
 
         ctx.trips = findTrips(located, home: ctx.home, calendar: cal)
+        ctx.moments = findMoments(assets)
         return ctx
     }
 

@@ -13,6 +13,17 @@ public final class TaxonomyRuntime {
 
     private static let lock = NSLock()
     private static var minted: Set<String> = []
+    /// How deep each extensible root may grow, taken from what §3 actually names
+    /// rather than from one number for all of them.
+    ///
+    ///   Time：Year → Month → Day → Moment          — four levels, so depth 5
+    ///   GPS：Country → City → Place                — three, so depth 4
+    ///
+    /// A single cap of 3 was not a safety property, it was an accident: it silently
+    /// made §3's fourth level of time impossible to build. The cap still stops a rule
+    /// inventing an eighth level of anything; it is now calibrated to the tree the
+    /// Constitution describes.
+    private static let maxDepthByRoot = ["Timeline": 5, "Places": 4]
     private static let maxDepth = 3
 
     public static func isKnown(_ path: String) -> Bool {
@@ -28,9 +39,13 @@ public final class TaxonomyRuntime {
         if isKnown(path) { return path }
         let parts = path.components(separatedBy: Taxonomy.separator)
         guard let root = parts.first, Taxonomy.extensibleRoots.contains(root) else { return nil }
-        guard parts.count >= 2, parts.count <= maxDepth else { return nil }
-        if parts.count == 3 {
-            guard ensure(parts[0...1].joined(separator: Taxonomy.separator)) != nil else { return nil }
+        guard parts.count >= 2, parts.count <= (maxDepthByRoot[root] ?? maxDepth)
+        else { return nil }
+        // Every ancestor is registered too, so a browse view can render the path it
+        // was given without discovering a gap halfway down it.
+        for depth in 2..<parts.count {
+            guard ensure(parts[0..<depth].joined(separator: Taxonomy.separator)) != nil
+            else { return nil }
         }
         lock.lock(); minted.insert(path); lock.unlock()
         return path

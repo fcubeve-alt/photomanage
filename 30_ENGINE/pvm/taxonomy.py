@@ -53,8 +53,24 @@ _LEAVES = set(LEAF_PATHS)
 # else — a rule that invents `Documents > Crypto` is a bug, and this is where it is
 # caught rather than discovered in the browse UI.
 EXTENSIBLE_ROOTS = frozenset({"People", "Places", "Travel", "Timeline"})
+
+# How deep each extensible root may grow, taken from what §3 actually names rather than
+# from one number for all of them.
+#
+#   Time：Year → Month → Day → Moment          — four levels, so depth 5 with the root
+#   GPS：Country → City → Place                — three, so depth 4
+#
+# A single cap of 3 was not a safety property, it was an accident: it silently made
+# §3's fourth level of time impossible to build, and the first attempt at Month/Day
+# died on it. The cap still exists, and still stops a rule inventing an eighth level of
+# anything — it is now just calibrated to the tree the Constitution describes.
+_MAX_DEPTH_BY_ROOT = {"Timeline": 5, "Places": 4}
 _MAX_DEPTH = 3
 _MINTED: set = set()
+
+
+def max_depth(root: str) -> int:
+    return _MAX_DEPTH_BY_ROOT.get(root, _MAX_DEPTH)
 
 
 def ensure_node(path: str) -> str:
@@ -67,10 +83,14 @@ def ensure_node(path: str) -> str:
             f"{path!r} does not exist and {parts[0]!r} is not an extensible root. "
             "A classification rule may not invent a category."
         )
-    if not 2 <= len(parts) <= _MAX_DEPTH:
-        raise InvalidPath(f"{path!r} is at depth {len(parts)}; extensible nodes allow 2..{_MAX_DEPTH}")
-    if len(parts) == 3:
-        ensure_node(SEP.join(parts[:2]))
+    limit = max_depth(parts[0])
+    if not 2 <= len(parts) <= limit:
+        raise InvalidPath(
+            f"{path!r} is at depth {len(parts)}; {parts[0]} allows 2..{limit}")
+    # Every ancestor is registered too, so a browse view can render the path it was
+    # given without discovering a gap halfway down it.
+    for depth in range(2, len(parts)):
+        ensure_node(SEP.join(parts[:depth]))
     _MINTED.add(path)
     return path
 

@@ -3,7 +3,7 @@
   "action": "select_best",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2026"
+   "Timeline > 2026 > 04 April > 24 > 16:00"
   ],
   "risk": 2
  },
@@ -11,7 +11,7 @@
   "action": "select_best",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2026"
+   "Timeline > 2026 > 04 April > 24 > 16:00"
   ],
   "risk": 2
  },
@@ -19,7 +19,7 @@
   "action": "select_best",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2026"
+   "Timeline > 2026 > 04 April > 24 > 16:00"
   ],
   "risk": 2
  },
@@ -27,7 +27,7 @@
   "action": "select_best",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2026"
+   "Timeline > 2026 > 04 April > 24 > 16:00"
   ],
   "risk": 2
  },
@@ -35,7 +35,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2026"
+   "Timeline > 2026 > 04 April > 24 > 16:00"
   ],
   "risk": 2
  },
@@ -44,7 +44,7 @@
   "paths": [
    "Purchases > Orders",
    "Screenshots",
-   "Timeline > 2026"
+   "Timeline > 2026 > 03 March > 14"
   ],
   "risk": 4
  },
@@ -53,7 +53,7 @@
   "paths": [
    "Documents > Receipts",
    "Purchases > Receipts",
-   "Timeline > 2026"
+   "Timeline > 2026 > 03 March > 15"
   ],
   "risk": 4
  },
@@ -61,7 +61,7 @@
   "action": "protect",
   "paths": [
    "Documents > Contracts",
-   "Timeline > 2025"
+   "Timeline > 2025 > 03 March > 02"
   ],
   "risk": 5
  },
@@ -69,7 +69,7 @@
   "action": "protect",
   "paths": [
    "Documents > Contracts",
-   "Timeline > 2025"
+   "Timeline > 2025 > 03 March > 02"
   ],
   "risk": 5
  },
@@ -77,7 +77,7 @@
   "action": "protect",
   "paths": [
    "Documents > Contracts",
-   "Timeline > 2025"
+   "Timeline > 2025 > 03 March > 02"
   ],
   "risk": 5
  },
@@ -85,7 +85,7 @@
   "action": "protect",
   "paths": [
    "Documents > Contracts",
-   "Timeline > 2025"
+   "Timeline > 2025 > 03 March > 02"
   ],
   "risk": 5
  },
@@ -93,7 +93,7 @@
   "action": "protect",
   "paths": [
    "Documents > Identity > ID Cards",
-   "Timeline > 2025"
+   "Timeline > 2025 > 06 June > 18"
   ],
   "risk": 5
  },
@@ -101,7 +101,7 @@
   "action": "protect",
   "paths": [
    "Documents > Identity > Passports",
-   "Timeline > 2025"
+   "Timeline > 2025 > 06 June > 18"
   ],
   "risk": 5
  },
@@ -109,7 +109,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 02"
   ],
   "risk": 2
  },
@@ -117,7 +117,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 03"
   ],
   "risk": 2
  },
@@ -125,7 +125,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 12"
   ],
   "risk": 2
  },
@@ -133,7 +133,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 13"
   ],
   "risk": 2
  },
@@ -141,7 +141,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 14"
   ],
   "risk": 2
  },
@@ -149,7 +149,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 15"
   ],
   "risk": 2
  },
@@ -157,7 +157,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 16"
   ],
   "risk": 2
  },
@@ -165,7 +165,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 17"
   ],
   "risk": 2
  },
@@ -173,7 +173,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 18"
   ],
   "risk": 2
  },
@@ -181,7 +181,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 19"
   ],
   "risk": 2
  },
@@ -189,7 +189,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 20"
   ],
   "risk": 2
  },
@@ -197,7 +197,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 21"
   ],
   "risk": 2
  },
@@ -205,7 +205,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 04"
   ],
   "risk": 2
  },
@@ -213,7 +213,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 22"
   ],
   "risk": 2
  },
@@ -221,7 +221,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 23"
   ],
   "risk": 2
  },
@@ -229,7 +229,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 24"
   ],
   "risk": 2
  },
@@ -237,7 +237,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 25"
   ],
   "risk": 2
  },
@@ -245,7 +245,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 26"
   ],
   "risk": 2
  },
@@ -253,7 +253,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 27"
   ],
   "risk": 2
  },
@@ -261,7 +261,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 28"
   ],
   "risk": 2
  },
@@ -269,7 +269,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 29"
   ],
   "risk": 2
  },
@@ -277,7 +277,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 30"
   ],
   "risk": 2
  },
@@ -285,7 +285,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 31"
   ],
   "risk": 2
  },
@@ -293,7 +293,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 05"
   ],
   "risk": 2
  },
@@ -301,7 +301,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 01"
   ],
   "risk": 2
  },
@@ -309,7 +309,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 02"
   ],
   "risk": 2
  },
@@ -317,7 +317,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 03"
   ],
   "risk": 2
  },
@@ -325,7 +325,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 04"
   ],
   "risk": 2
  },
@@ -333,7 +333,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 05"
   ],
   "risk": 2
  },
@@ -341,7 +341,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 06"
   ],
   "risk": 2
  },
@@ -349,7 +349,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 07"
   ],
   "risk": 2
  },
@@ -357,7 +357,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 08"
   ],
   "risk": 2
  },
@@ -365,7 +365,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 09"
   ],
   "risk": 2
  },
@@ -373,7 +373,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 02 February > 10"
   ],
   "risk": 2
  },
@@ -381,7 +381,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 06"
   ],
   "risk": 2
  },
@@ -389,7 +389,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 07"
   ],
   "risk": 2
  },
@@ -397,7 +397,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 08"
   ],
   "risk": 2
  },
@@ -405,7 +405,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 09"
   ],
   "risk": 2
  },
@@ -413,7 +413,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 10"
   ],
   "risk": 2
  },
@@ -421,7 +421,7 @@
   "action": "keep",
   "paths": [
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 11"
   ],
   "risk": 2
  },
@@ -429,7 +429,7 @@
   "action": "auto_clean",
   "paths": [
    "Downloads > Memes",
-   "Timeline > 2025"
+   "Timeline > 2025 > 11 November > 20"
   ],
   "risk": 0
  },
@@ -437,14 +437,14 @@
   "action": "keep",
   "paths": [
    "Downloads > Memes",
-   "Timeline > 2025"
+   "Timeline > 2025 > 10 October > 16"
   ],
   "risk": 0
  },
  "mystery": {
   "action": "review",
   "paths": [
-   "Timeline > 2026"
+   "Timeline > 2026 > 05 May > 05"
   ],
   "risk": 2
  },
@@ -453,7 +453,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 03"
   ],
   "risk": 3
  },
@@ -462,7 +462,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 04"
   ],
   "risk": 3
  },
@@ -471,7 +471,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 05"
   ],
   "risk": 3
  },
@@ -480,7 +480,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 06"
   ],
   "risk": 3
  },
@@ -489,7 +489,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 07"
   ],
   "risk": 3
  },
@@ -498,7 +498,7 @@
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
-   "Timeline > 2025"
+   "Timeline > 2025 > 08 August > 08"
   ],
   "risk": 3
  },
@@ -506,7 +506,7 @@
   "action": "keep",
   "paths": [
    "People > Groups",
-   "Timeline > 2025"
+   "Timeline > 2025 > 09 September > 09"
   ],
   "risk": 3
  },
@@ -514,7 +514,7 @@
   "action": "keep",
   "paths": [
    "Screenshots > Chat",
-   "Timeline > 2026"
+   "Timeline > 2026 > 02 February > 02"
   ],
   "risk": 2
  },
@@ -522,7 +522,7 @@
   "action": "suggest_delete",
   "paths": [
    "Screenshots > Temporary > Pickup Codes",
-   "Timeline > 2025"
+   "Timeline > 2025 > 01 January > 06"
   ],
   "risk": 1
  },
@@ -530,7 +530,7 @@
   "action": "keep",
   "paths": [
    "Screenshots",
-   "Timeline > 2026"
+   "Timeline > 2026 > 02 February > 03"
   ],
   "risk": 2
  },
@@ -538,7 +538,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 11",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -547,7 +547,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 11",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -556,7 +556,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 16",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -565,7 +565,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 16",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -574,7 +574,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 12",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -583,7 +583,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 12",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -592,7 +592,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 13",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -601,7 +601,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 13",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -610,7 +610,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 14",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -619,7 +619,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 14",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -628,7 +628,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 15",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
@@ -637,7 +637,7 @@
   "action": "keep",
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025",
+   "Timeline > 2025 > 04 April > 15",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+import math
 from datetime import datetime
 from enum import Enum
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -488,7 +489,14 @@ def format_span(start: float, end: float) -> str:
     def clock(seconds: float, decimals: int) -> str:
         # Rounded first, then split. Splitting first prints 59.967 as "00:60.0",
         # because the carry happens in the formatter after the minute is already fixed.
-        value = round(seconds, decimals)
+        #
+        # Half away from zero, spelled out rather than left to `round()`. Python rounds
+        # halves to even and Swift's `.rounded()` rounds them away from zero, so 190.5
+        # seconds printed 03:10 in the engine and 03:11 in the app — a divergence that
+        # only ever shows up on an exact half and would have been very hard to find
+        # from a screenshot.
+        scale = 10 ** decimals
+        value = math.floor(abs(seconds) * scale + 0.5) / scale * (1 if seconds >= 0 else -1)
         minutes = int(value // 60)
         rest = value - minutes * 60
         width = 2 if decimals == 0 else 2 + 1 + decimals

@@ -165,7 +165,16 @@ final class SpanFormattingTests: XCTestCase {
     }
 
     func testALongSpanStaysInWholeSeconds() {
-        XCTAssertEqual("02:05–03:10", formatSpan(125.0, 190.5))
+        XCTAssertEqual("02:05–03:11", formatSpan(125.0, 190.5))
+    }
+
+    /// Python rounds halves to even and Swift's `.rounded()` rounds them away from
+    /// zero, so 190.5 seconds printed 03:10 in the engine and 03:11 in the app. Only
+    /// ever visible on an exact half, and very hard to find from a screenshot — the
+    /// Linux job found it in fifty seconds. Both now round half away from zero.
+    func testAnExactHalfRoundsTheSameWayInBothImplementations() {
+        XCTAssertEqual("00:00–00:11", formatSpan(0.0, 10.5))
+        XCTAssertEqual("00:00–00:13", formatSpan(0.0, 12.5))
     }
 
     func testTheMinuteCarriesAfterRoundingNotBefore() {

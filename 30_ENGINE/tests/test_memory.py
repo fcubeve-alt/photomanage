@@ -419,7 +419,15 @@ class TimestampsMustNotHideWhatTheRecordKept(unittest.TestCase):
                          "which reads as no span at all")
 
     def test_a_long_span_stays_in_whole_seconds(self):
-        self.assertEqual("02:05\u201303:10", memory.format_span(125.0, 190.5))
+        self.assertEqual("02:05\u201303:11", memory.format_span(125.0, 190.5))
+
+    def test_an_exact_half_rounds_the_same_way_in_both_implementations(self):
+        """Python rounds halves to even, Swift rounds them away from zero. 190.5
+        seconds printed 03:10 in the engine and 03:11 in the app — a divergence that
+        only shows up on an exact half and would be very hard to find from a
+        screenshot. Both now round half away from zero, spelled out."""
+        self.assertEqual("00:00\u201300:11", memory.format_span(0.0, 10.5))
+        self.assertEqual("00:00\u201300:13", memory.format_span(0.0, 12.5))
 
     def test_the_minute_carries_after_rounding_not_before(self):
         self.assertEqual("00:50.0\u201301:00.0", memory.format_span(50.0, 59.967),

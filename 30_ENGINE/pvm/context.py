@@ -63,6 +63,28 @@ class Trip:
         return self.start <= when.date() <= self.end
 
 
+#: Photographs taken further apart than this are two occasions, not one. Chosen for
+#: the same reason SEPARATE_OCCASION is: it has to survive someone taking a break in
+#: the middle of the same event without splitting it, and has to split lunch from
+#: dinner. Clock hours cannot do this job — six frames at 17:59 and two at 18:01 are
+#: one moment and would land in two.
+MOMENT_GAP = timedelta(minutes=20)
+#: A single photograph is a photograph, not a session worth its own browse entry.
+MIN_MOMENT_ASSETS = 2
+
+
+@dataclass(frozen=True)
+class Moment:
+    """§3's fourth level of time: a capture session."""
+    start: datetime
+    end: datetime
+    asset_count: int
+
+    @property
+    def label(self) -> str:
+        return f"{self.start:%H:%M}"
+
+
 @dataclass
 class LibraryContext:
     home: Optional[GeoFix] = None
@@ -72,6 +94,10 @@ class LibraryContext:
     trips: List[Trip] = field(default_factory=list)
     known_people: List[str] = field(default_factory=list)
     year_range: Tuple[Optional[int], Optional[int]] = (None, None)
+    #: asset_id → the capture session it belongs to. Absent for an asset that has no
+    #: neighbours, because a lone photograph is not a session and inventing one would
+    #: put a browse entry in front of the user for every stray shot they ever took.
+    moments: Dict[str, "Moment"] = field(default_factory=dict)
     asset_count: int = 0
 
     @property
@@ -87,6 +113,9 @@ class LibraryContext:
             return False
         return geo.km_to(self.home) > AWAY_KM
 
+    def moment_for(self, asset_id: str) -> Optional["Moment"]:
+        return self.moments.get(asset_id)
+
     def trip_for(self, when: Optional[datetime], geo: Optional[GeoFix]) -> Optional[Trip]:
         if when is None or not self.is_away(geo):
             return None
@@ -94,6 +123,35 @@ class LibraryContext:
             if t.contains(when):
                 return t
         return None
+
+
+def find_moments(assets: Iterable[AssetSignals]) -> Dict[str, Moment]:
+    """Group captures into sessions by proximity in time.
+
+    Derived from neighbours rather than from the clock. An hour boundary cuts a burst
+    in half, and a moment that splits one occasion into two is worse than no moment at
+    all — the user would see the same afternoon twice and trust the timeline less.
+    """
+    dated = sorted((a for a in assets if a.created_at is not None),
+                   key=lambda a: a.created_at)
+    out: Dict[str, Moment] = {}
+    run: List[AssetSignals] = []
+
+    def close(group: List[AssetSignals]) -> None:
+        if len(group) < MIN_MOMENT_ASSETS:
+            return
+        moment = Moment(start=group[0].created_at, end=group[-1].created_at,
+                        asset_count=len(group))
+        for asset in group:
+            out[asset.asset_id] = moment
+
+    for asset in dated:
+        if run and asset.created_at - run[-1].created_at > MOMENT_GAP:
+            close(run)
+            run = []
+        run.append(asset)
+    close(run)
+    return out
 
 
 def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
@@ -151,6 +209,7 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
             ctx.home_country, ctx.home_city = country, city
 
     ctx.trips = _find_trips(located, ctx)
+    ctx.moments = find_moments(assets)
     return ctx
 
 

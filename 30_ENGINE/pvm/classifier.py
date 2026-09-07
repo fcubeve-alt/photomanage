@@ -112,19 +112,51 @@ class Classifier:
     # -- tiers -------------------------------------------------------------
     def _timeline(self, a: AssetSignals, c: Classification) -> None:
         """Every asset is reachable from Timeline. This is the multi-index premise:
-        one original, many entries (§3), and the one entry that never fails."""
+        one original, many entries (§3), and the one entry that never fails.
+
+        §3 asks for **Year → Month → Day → Moment**, not just a year. Only the year was
+        indexed, which meant "the photos from that afternoon" had nothing to resolve
+        against — a whole level of the tree the Constitution names as first-class.
+
+        Only the deepest node survives `_prune_implied_ancestors`, which is correct
+        and not a loss: the browse tree rolls counts up from the leaves, so a year still
+        shows the right total, and holding the same asset at four depths would count it
+        four times inside its own parent.
+
+        Moment is a **capture session**, not a clock hour: a run of photographs taken
+        close together. Hour boundaries cut bursts in half — six frames at 17:59 and
+        two at 18:01 are one moment and would land in two — so the moment is derived
+        from neighbours in `LibraryContext`, and is absent rather than guessed when
+        this asset has none.
+        """
         if a.created_at is None:
             c.notes.append("no capture date — this asset cannot be placed on the timeline")
             return
-        path = taxonomy.ensure_node(f"Timeline > {a.created_at.year}")
+        when = a.created_at
         # Built without %-d / %e: those are glibc extensions and this project's own
         # machine is Windows, where they raise. A date format is not worth a
         # platform-specific crash.
-        when = a.created_at
-        c.add(Assignment(path, [Evidence(
+        year = taxonomy.ensure_node(f"Timeline > {when.year}")
+        c.add(Assignment(year, [Evidence(
             "created_at", Tier.METADATA, 0.98,
-            f"taken on {when.day} {when:%B %Y}",
-        )]))
+            f"taken on {when.day} {when:%B %Y}")]))
+
+        month = taxonomy.ensure_node(f"{year} > {when:%m %B}")
+        c.add(Assignment(month, [Evidence(
+            "created_at", Tier.METADATA, 0.98, f"taken in {when:%B %Y}")]))
+
+        day = taxonomy.ensure_node(f"{month} > {when:%d}")
+        c.add(Assignment(day, [Evidence(
+            "created_at", Tier.METADATA, 0.98,
+            f"taken on {when.day} {when:%B %Y}")]))
+
+        moment = self.ctx.moment_for(a.asset_id)
+        if moment:
+            node = taxonomy.ensure_node(f"{day} > {moment.label}")
+            c.add(Assignment(node, [Evidence(
+                "created_at", Tier.METADATA, 0.9,
+                f"one of {moment.asset_count} photos taken around "
+                f"{moment.start:%H:%M} that day")]))
 
     def _metadata_root(self, a: AssetSignals, c: Classification) -> None:
         if a.media_type == "video":
