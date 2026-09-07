@@ -19,3 +19,7 @@ logs/
 30_ENGINE/**/*.sqlite
 30_ENGINE/**/*.sqlite-wal
 30_ENGINE/**/*.sqlite-shm
+# The ablation arm writes a second catalogue beside the first.
+30_ENGINE/**/*.sqlite.ablation
+30_ENGINE/**/*.sqlite.ablation-wal
+30_ENGINE/**/*.sqlite.ablation-shm

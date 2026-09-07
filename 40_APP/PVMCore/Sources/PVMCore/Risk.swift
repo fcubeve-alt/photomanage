@@ -114,24 +114,73 @@ public enum RiskPolicy {
     /// asset fully present and searchable. Counting it as lossy would have made the
     /// Constitution's own prescription look like a violation.
     public static let actingActions: Set<Action> = [.autoClean, .suggestDelete, .selectBest]
+    public static let removingActions: Set<Action> = [.autoClean, .suggestDelete]
+
+    /// §6's floor drawn on the importance axis, doing a different job: §6 stops a
+    /// *category* being deleted, this stops a §14 personal habit reaching content that
+    /// matters regardless of category.
+    public static let neverDeleteAtOrAboveImportance = Importance.i3Meaningful
+
+    /// §8. Above this an equivalence group is not pruned at all.
+    public static let neverPruneAtOrAboveImportance = Importance.i4Treasured
 }
 
+/// 内容重要性 — §2 ("判断误处理的潜在损失和内容重要性"), §5, §18, §25 Layer 5.
+///
+/// A §5 factor scale, declared here beside the other four. What the scale means, why
+/// it is not a synonym for `Risk`, and how a level is arrived at are all in
+/// `Importance.swift`.
+public enum Importance: Int, Comparable, CaseIterable {
+    case i0None = 0        // spent — a verification code that has been typed in
+    case i1Low = 1         // replaceable from somewhere else, or nobody's memory
+    case i2Ordinary = 2    // the ordinary content of a life, not irreplaceable
+    case i3Meaningful = 3  // a person, a place, an occasion this user was part of
+    case i4Treasured = 4   // would be mourned
+
+    public static func < (a: Importance, b: Importance) -> Bool { a.rawValue < b.rawValue }
+
+    public var meaning: String {
+        switch self {
+        case .i0None: return "已经用过，没有留存价值"
+        case .i1Low: return "可再获得或非本人内容"
+        case .i2Ordinary: return "普通生活内容，值得保留"
+        case .i3Meaningful: return "具有个人意义"
+        case .i4Treasured: return "不可替代"
+        }
+    }
+}
+
+/// The six inputs §5 names:
+///
+///     Category × Importance × Lifecycle × Confidence × Recoverability ×
+///     Personal Preference → Action Policy
+///
+/// `risk` is Category-and-consequence; `importance` is 内容重要性. This carried five of
+/// the six until 2026-09-07 and folded Importance into Category — see
+/// `Importance.swift` for why that is not the same thing.
+///
+/// `importance` defaults to `.i2Ordinary` so a caller that has not assessed it gets the
+/// behaviour that existed before the axis did, rather than accidentally receiving the
+/// protections only a real assessment should earn.
 public struct Factors {
     public let risk: Risk
     public let lifecycle: Lifecycle
     public let confidence: Double
     public let recoverability: Recoverability
+    public let importance: Importance
     public let inEquivalenceGroup: Bool
     public let isExactDuplicate: Bool
     public let personalPreference: Action?
 
     public init(risk: Risk, lifecycle: Lifecycle, confidence: Double,
-                recoverability: Recoverability, inEquivalenceGroup: Bool = false,
+                recoverability: Recoverability, importance: Importance = .i2Ordinary,
+                inEquivalenceGroup: Bool = false,
                 isExactDuplicate: Bool = false, personalPreference: Action? = nil) {
         self.risk = risk
         self.lifecycle = lifecycle
         self.confidence = confidence
         self.recoverability = recoverability
+        self.importance = importance
         self.inEquivalenceGroup = inEquivalenceGroup
         self.isExactDuplicate = isExactDuplicate
         self.personalPreference = personalPreference
@@ -151,6 +200,10 @@ public struct Proposal {
         guard !evidence.isEmpty else { return nil }
         if RiskPolicy.actingActions.contains(action),
            factors.risk >= RiskPolicy.neverActAtOrAbove { return nil }
+        // §5 names Importance as a factor in its own right and §18 weights every error
+        // by it, so it gets a red line of its own rather than riding on the risk one.
+        if RiskPolicy.removingActions.contains(action),
+           factors.importance >= RiskPolicy.neverDeleteAtOrAboveImportance { return nil }
         if RiskPolicy.actingActions.contains(action),
            factors.recoverability == .irreplaceable { return nil }
         if action == .autoClean {
@@ -248,7 +301,15 @@ public enum RiskEngine {
             // SUGGEST_DELETE is also the most aggressive thing a preference can ever
             // produce. AUTO_CLEAN is reachable only from byte-identical duplication,
             // which is evidence rather than taste.
-            if pref == .suggestDelete, f.risk.rawValue < RiskPolicy.neverActAtOrAbove.rawValue {
+            //
+            // The importance floor is the second half of the same argument. A user who
+            // deletes work screenshots every week has told the system something about
+            // work screenshots, and nothing at all about the photograph of their child
+            // that also sits below R4 — People is R3. Risk alone would have let the
+            // habit reach it.
+            if pref == .suggestDelete,
+               f.risk.rawValue < RiskPolicy.neverActAtOrAbove.rawValue,
+               f.importance < RiskPolicy.neverDeleteAtOrAboveImportance {
                 return .suggestDelete
             }
         }
@@ -274,6 +335,13 @@ public enum RiskEngine {
         case .r1LowValue:
             return f.lifecycle == .expired ? .suggestDelete : .keep
         default:
+            // §8: Equivalence 判断必须与 Risk Policy 联动；同样的相似度，在 Meme 和家庭
+            // 照片上采取不同策略. Similarity is the same measurement in both cases, so
+            // what has to differ is what is done with it — and "meme versus family
+            // photograph" is a statement about value, not consequence. Without the
+            // importance axis this clause had nothing to read.
+            if f.inEquivalenceGroup,
+               f.importance >= RiskPolicy.neverPruneAtOrAboveImportance { return .keep }
             // R2 Normal and R3 Personal — §6 says 保守精选 for R3: offered, never applied.
             return f.inEquivalenceGroup ? .selectBest : .keep
         }

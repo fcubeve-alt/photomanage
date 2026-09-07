@@ -22,7 +22,14 @@ final class ConformanceTests: XCTestCase {
     private struct ExpectedRow: Decodable {
         let paths: [String]
         let risk: Int?
+        let importance: Int?
+        let assetClass: String?
         let action: String?
+
+        enum CodingKeys: String, CodingKey {
+            case paths, risk, importance, action
+            case assetClass = "asset_class"
+        }
     }
 
     /// The fixture as it is written, decoded into a type rather than cast out of
@@ -209,6 +216,7 @@ final class ConformanceTests: XCTestCase {
 
         var riskMismatches: [String] = []
         var actionMismatches: [String] = []
+        var importanceMismatches: [String] = []
         var compared = 0
         for (assetID, want) in expected.sorted(by: { $0.key < $1.key }) {
             guard let got = catalog.decision(for: assetID) else {
@@ -225,6 +233,22 @@ final class ConformanceTests: XCTestCase {
                 actionMismatches.append(
                     "\(assetID): engine would \(wantAction), app would \(got.action ?? "nothing")")
             }
+            // §5's sixth factor. Two implementations could agree on every path and
+            // every action while disagreeing about what a photograph is worth — and
+            // §18 weights every error by exactly that number, so the divergence would
+            // show up in no test and in one unreproducible KPI.
+            if let wantImportance = want.importance,
+               got.importance?.rawValue != wantImportance {
+                importanceMismatches.append(
+                    "\(assetID): engine I\(wantImportance) "
+                    + "(\(Importance(rawValue: wantImportance)?.meaning ?? "?")), "
+                    + "app \(got.importance.map { "I\($0.rawValue) (\($0.meaning))" } ?? "none")")
+            }
+            if let wantClass = want.assetClass, got.assetClass != wantClass {
+                importanceMismatches.append(
+                    "\(assetID): engine filed it as §4 \(wantClass), "
+                    + "app as \(got.assetClass ?? "nothing")")
+            }
         }
         XCTAssertGreaterThan(compared, Self.expectedFixtureSize / 2,
                              "only \(compared) decisions were compared")
@@ -232,5 +256,15 @@ final class ConformanceTests: XCTestCase {
                       "risk levels disagree:\n" + riskMismatches.prefix(10).joined(separator: "\n"))
         XCTAssertTrue(actionMismatches.isEmpty,
                       "actions disagree:\n" + actionMismatches.prefix(10).joined(separator: "\n"))
+        XCTAssertTrue(importanceMismatches.isEmpty,
+                      "§5 Importance / §4 class disagree:\n"
+                      + importanceMismatches.prefix(10).joined(separator: "\n"))
+        // The comparison above only runs where the engine recorded an importance. If
+        // it recorded none anywhere, every branch is skipped and the test passes
+        // having checked nothing — the shape of failure this file exists to prevent.
+        XCTAssertGreaterThan(expected.values.filter { $0.importance != nil }.count,
+                             Self.expectedFixtureSize / 2,
+                             "expected.json carries almost no importance values, so the "
+                             + "importance comparison above established nothing")
     }
 }

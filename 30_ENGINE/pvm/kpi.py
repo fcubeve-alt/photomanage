@@ -22,11 +22,39 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from .risk import ACTING_ACTIONS, Action, NEVER_DELETE_AT_OR_ABOVE, Risk
+from .risk import (ACTING_ACTIONS, Action, Importance, NEVER_DELETE_AT_OR_ABOVE,
+                   Recoverability, Risk, recoverability_of)
 from .schedule import BREADTH_MS
 
-# How much being wrong costs, by risk class. Ordinal, deliberately steep at the top:
-# losing a passport is not four times worse than losing a burst frame.
+# §18: Weighted Error Cost = 错误 × 内容重要性 × 不可恢复程度.
+#
+# Three factors multiplied, and until 2026-09-07 this file had two of them, using the
+# risk class as a stand-in for 内容重要性 and then multiplying it again by an
+# irrecoverability derived from that same risk class. One axis was being cubed and the
+# other was not being read at all. The number was not meaningless — risk and importance
+# do correlate — but it priced a passport photograph above a photograph of a
+# grandmother, which is precisely backwards for a metric whose name is the cost of loss.
+#
+# 内容重要性, priced. Ordinal and deliberately steep at the top: losing something
+# irreplaceable is not twice as bad as losing a holiday snap.
+IMPORTANCE_COST = {
+    Importance.I0_NONE: 0.0,        # spent; there is nothing to lose
+    Importance.I1_LOW: 1.0,
+    Importance.I2_ORDINARY: 5.0,
+    Importance.I3_MEANINGFUL: 40.0,
+    Importance.I4_TREASURED: 200.0,
+}
+
+# 不可恢复程度, as a multiplier. §7's tolerance argument only covers recoverable loss,
+# so this is where that argument stops applying rather than a smooth curve.
+IRRECOVERABILITY = {
+    Recoverability.RECOVERABLE: 1.0,
+    Recoverability.HARD_TO_REPLACE: 2.0,
+    Recoverability.IRREPLACEABLE: 5.0,
+}
+
+# Kept for the callers that price a *risk* rather than an importance — the review
+# queue's ordering, and the ablation report. Not used by Weighted Error Cost any more.
 ERROR_COST = {
     Risk.R0_DISPOSABLE: 0.0,       # an identical copy remains
     Risk.R1_LOW_VALUE: 1.0,
@@ -36,7 +64,6 @@ ERROR_COST = {
     Risk.R5_CRITICAL: 100.0,
     Risk.R6_IRREPLACEABLE: 200.0,  # §6 最高保护 — the top of the scale, priced like it
 }
-# §7's tolerance argument only covers recoverable loss. These are where it does not hold.
 IRRECOVERABLE = {Risk.R5_CRITICAL, Risk.R6_IRREPLACEABLE}
 
 
@@ -118,14 +145,21 @@ def weighted_error_cost(catalog, errors_by_asset: Optional[Dict[str, bool]] = No
     if not total:
         return 0.0
     cost = 0.0
-    for asset_id, risk, action in catalog.db.execute(
-            "SELECT a.asset_id, a.risk, p.action FROM assets a JOIN proposals p USING(asset_id)"):
+    for asset_id, risk, imp, action in catalog.db.execute(
+            "SELECT a.asset_id, a.risk, a.importance, p.action "
+            "FROM assets a JOIN proposals p USING(asset_id)"):
         if action not in {a.value for a in ACTING_ACTIONS}:
             continue
         if errors_by_asset is not None and not errors_by_asset.get(asset_id, False):
             continue
         r = Risk(risk) if risk in {int(x) for x in Risk} else Risk.R2_NORMAL
-        cost += ERROR_COST[r] * (3.0 if r in IRRECOVERABLE else 1.0)
+        # A catalogue written before the importance column existed has NULL here. Its
+        # rows are still priced rather than dropped — silently costing nothing would
+        # make an old catalogue look safer than a new one — but they are priced at the
+        # ordinary level and the report says how many were guessed.
+        importance = Importance(imp) if imp in {int(x) for x in Importance} \
+            else Importance.I2_ORDINARY
+        cost += IMPORTANCE_COST[importance] * IRRECOVERABILITY[recoverability_of(r)]
     return cost / total * 1000
 
 

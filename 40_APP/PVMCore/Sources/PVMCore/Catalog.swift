@@ -72,11 +72,21 @@ public final class Catalog: @unchecked Sendable {
           media_type TEXT NOT NULL DEFAULT 'image',
           tier_used INTEGER,
           risk INTEGER,
+          -- §5 names Importance as a factor separate from Category, and §18 weights
+          -- every error by it. Stored rather than re-derived because the review queue
+          -- and the KPI report both need to order by it, and re-deriving it on read
+          -- would mean two answers to one question.
+          importance INTEGER,
+          -- §4's 大类. The tree in `assignments` is where a user browses; this is the
+          -- coarser scheme §4 says exists to 改变整理、风险、生命周期和动作策略.
+          asset_class TEXT,
+          importance_why TEXT,
           needs_review INTEGER,
           notes TEXT,
           classified_at REAL
         );
         CREATE INDEX IF NOT EXISTS idx_assets_risk ON assets(risk);
+        CREATE INDEX IF NOT EXISTS idx_assets_importance ON assets(importance);
         CREATE TABLE IF NOT EXISTS assignments(
           asset_id TEXT NOT NULL,
           path TEXT NOT NULL,
@@ -305,7 +315,8 @@ public final class Catalog: @unchecked Sendable {
     // MARK: - writes
 
     public func upsert(_ a: AssetSignals, _ c: Classification,
-                       risk: Risk, proposal: Proposal?) {
+                       risk: Risk, proposal: Proposal?,
+                       assessment: ImportanceAssessment? = nil) {
         deleteRows("assignments", a.assetID)
         deleteRows("evidence", a.assetID)
 
@@ -313,8 +324,9 @@ public final class Catalog: @unchecked Sendable {
         sqlite3_prepare_v2(db, """
             INSERT OR REPLACE INTO assets
             (asset_id,signals_fp,engine_fp,created_at,content_hash,dhash,
-             media_type,tier_used,risk,needs_review,notes,classified_at)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?);
+             media_type,tier_used,risk,importance,asset_class,importance_why,
+             needs_review,notes,classified_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
             """, -1, &st, nil)
         sqlite3_bind_text(st, 1, a.assetID, -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 2, Catalog.signalsFingerprint(a), -1, Catalog.SQLITE_TRANSIENT)
@@ -326,8 +338,17 @@ public final class Catalog: @unchecked Sendable {
         sqlite3_bind_text(st, 7, a.isVideo ? "video" : "image", -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_bind_int(st, 8, Int32(c.tierUsed.rawValue))
         sqlite3_bind_int(st, 9, Int32(risk.rawValue))
-        sqlite3_bind_int(st, 10, c.needsReview ? 1 : 0)
-        sqlite3_bind_text(st, 11, c.notes.joined(separator: " | "), -1, Catalog.SQLITE_TRANSIENT)
+        if let assessed = assessment {
+            sqlite3_bind_int(st, 10, Int32(assessed.level.rawValue))
+            sqlite3_bind_text(st, 11, assessed.assetClass.key, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 12, assessed.why, -1, Catalog.SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_null(st, 10)
+            sqlite3_bind_null(st, 11)
+            sqlite3_bind_null(st, 12)
+        }
+        sqlite3_bind_int(st, 13, c.needsReview ? 1 : 0)
+        sqlite3_bind_text(st, 14, c.notes.joined(separator: " | "), -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_bind_double(st, 12, Date().timeIntervalSince1970)
         sqlite3_step(st); sqlite3_finalize(st)
 
@@ -921,10 +942,11 @@ public final class Catalog: @unchecked Sendable {
 
     /// The stored decisions for one asset. Used by the conformance test, which needs
     /// the exact row rather than whatever a browse query happens to return first.
-    public func decision(for assetID: String) -> (risk: Risk, action: String?)? {
+    public func decision(for assetID: String)
+            -> (risk: Risk, importance: Importance?, assetClass: String?, action: String?)? {
         var st: OpaquePointer?
         sqlite3_prepare_v2(db, """
-            SELECT a.risk, p.action FROM assets a
+            SELECT a.risk, p.action, a.importance, a.asset_class FROM assets a
             LEFT JOIN proposals p ON p.asset_id = a.asset_id
             WHERE a.asset_id = ?;
             """, -1, &st, nil)
@@ -934,7 +956,15 @@ public final class Catalog: @unchecked Sendable {
         let risk = Risk(rawValue: Int(sqlite3_column_int(st, 0))) ?? .r2Normal
         var action: String?
         if let c = sqlite3_column_text(st, 1) { action = String(cString: c) }
-        return (risk: risk, action: action)
+        // NULL and 0 are different answers here — I0_NONE is a real level and "not
+        // assessed" is not — so the column type is checked rather than the value.
+        var importance: Importance?
+        if sqlite3_column_type(st, 2) != SQLITE_NULL {
+            importance = Importance(rawValue: Int(sqlite3_column_int(st, 2)))
+        }
+        var assetClass: String?
+        if let c = sqlite3_column_text(st, 3) { assetClass = String(cString: c) }
+        return (risk: risk, importance: importance, assetClass: assetClass, action: action)
     }
 
     public func paths(for assetID: String) -> [String] {

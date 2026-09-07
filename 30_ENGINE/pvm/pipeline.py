@@ -29,11 +29,11 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence
 
-from . import dedup, deltas, memory, taxonomy
+from . import dedup, deltas, importance, memory, taxonomy
 from .catalog import BATCH, Catalog
 from .classifier import Classifier
 from .context import LibraryContext, build_context
-from .risk import (Factors, Risk, classify_risk, lifecycle_of, propose,
+from .risk import (Action, Factors, Importance, Risk, classify_risk, lifecycle_of, propose,
                    recoverability_of)
 from .signals import AssetSignals, Tier
 
@@ -73,6 +73,9 @@ class RunStats:
     by_tier: Counter = field(default_factory=Counter)
     by_tier_spent: Counter = field(default_factory=Counter)
     by_risk: Counter = field(default_factory=Counter)
+    by_importance: Counter = field(default_factory=Counter)
+    by_asset_class: Counter = field(default_factory=Counter)
+    personal_preferences_applied: int = 0
     by_action: Counter = field(default_factory=Counter)
     by_root: Counter = field(default_factory=Counter)
     unfiled: int = 0
@@ -106,8 +109,13 @@ class RunStats:
             "paid for up to: " + ", ".join(
                 f"{Tier(t).label}={n}" for t, n in sorted(self.by_tier_spent.items())),
             "risk: " + ", ".join(f"{Risk(r).name}={n}" for r, n in sorted(self.by_risk.items())),
+            "importance: " + ", ".join(
+                f"{Importance(i).name}={n}" for i, n in sorted(self.by_importance.items())),
+            "§4 class: " + ", ".join(
+                f"{k}={n}" for k, n in sorted(self.by_asset_class.items(), key=lambda kv: -kv[1])),
             "action: " + ", ".join(f"{a}={n}" for a, n in sorted(self.by_action.items())),
-            f"needs review {self.needs_review}  unfiled {self.unfiled}",
+            f"needs review {self.needs_review}  unfiled {self.unfiled}  "
+            f"§14 preferences applied {self.personal_preferences_applied}",
             f"remembered: {self.entities} things, {self.observations} sightings",
             f"same-entity pairs the resolver would not decide: {self.entity_review}",
             (f"video: {self.videos} looked inside, "
@@ -181,6 +189,33 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
     catalog.write_relations(report.relations)
     stats.entity_review = len(report.needs_entity_review)
 
+    # How large the equivalence group around each asset is. §8 makes the group, not the
+    # frame, the unit of value: one of six near-identical shots is worth less on its own
+    # than the only photograph of an afternoon, and importance has to be able to see the
+    # difference.
+    group_size: Dict[str, int] = {}
+    for g in report.relations:
+        if g.kind != "same_moment":
+            continue
+        for member in g.members:
+            group_size[member] = max(group_size.get(member, 1), len(g.members))
+
+    # How often each named person turns up in the whole library. A face the user named
+    # and then photographed thirty times is somebody in their life; a face that appears
+    # once is somebody who was once in shot, and §16 forbids inferring anything further
+    # about either. This counts appearances and nothing else.
+    person_assets: Counter = Counter()
+    for c in classifications.values():
+        for path in getattr(c, "paths", ()):
+            if path.startswith("People > ") and path != "People > Groups":
+                person_assets[path] += 1
+
+    # §14, consulted at run time for the first time. `decide_action` has honoured a
+    # personal preference since the axis was built and nothing was ever passing one:
+    # the policy existed, was tested, and had no route into a real run. Derived once
+    # per run rather than per asset — it is a read over the whole decision log.
+    policy = catalog.personal_policy()
+
     for aid in unscored:
         a = by_id.get(aid)
         c = classifications.get(aid)
@@ -201,17 +236,39 @@ def run(assets: Sequence[AssetSignals], catalog: Catalog, *,
         if a.created_at is not None:
             now = datetime.now(a.created_at.tzinfo) if a.created_at.tzinfo else datetime.now()
             age_days = max(0.0, (now - a.created_at).total_seconds() / 86400)
+        in_group = (aid in report.near_duplicate_in_moment
+                    and aid not in report.protected_distinct)
+        recoverability = recoverability_of(risk)
+        preference = policy.preference_for(c.paths, risk)
+        signals = importance.ImportanceSignals(
+            paths=c.paths,
+            recoverability=recoverability,
+            people_recurrence=max(
+                (person_assets[p] for p in c.paths if p in person_assets), default=0),
+            group_size=group_size.get(aid, 1),
+            in_equivalence_group=in_group,
+            is_exact_duplicate=is_dup,
+            is_irreplaceable=(risk == Risk.R6_IRREPLACEABLE),
+            user_protects_category=bool(
+                preference and preference.action in (Action.PROTECT, Action.KEEP)),
+        )
+        assessment = importance.assess(signals)
         factors = Factors(
             risk=risk,
             lifecycle=lifecycle_of(c, age_days),
             confidence=c.primary.confidence if c.primary else 0.0,
-            recoverability=recoverability_of(risk),
-            in_equivalence_group=(aid in report.near_duplicate_in_moment
-                                  and aid not in report.protected_distinct),
+            recoverability=recoverability,
+            importance=assessment.level,
+            in_equivalence_group=in_group,
             is_exact_duplicate=is_dup,
+            personal_preference=preference.action if preference else None,
         )
         proposal = propose(c, factors, duplicate_of=report.exact_duplicate_of.get(aid))
-        catalog.upsert(a, c, risk, proposal)
+        catalog.upsert(a, c, risk, proposal, assessment=assessment)
+        stats.by_importance[int(assessment.level)] += 1
+        stats.by_asset_class[assessment.asset_class.name] += 1  # the report is for humans
+        if preference is not None:
+            stats.personal_preferences_applied += 1
         stats.by_risk[int(risk)] += 1
         stats.by_action[proposal.action.value] += 1
         stats.scored += 1

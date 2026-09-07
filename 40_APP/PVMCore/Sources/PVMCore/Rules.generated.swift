@@ -270,6 +270,7 @@ public enum Rules {
         ("People", 3),
         ("Travel", 3),
         ("Screenshots > Temporary", 1),
+        ("Screenshots > Errors", 1),
         ("Downloads", 0),
         ("Screenshots", 2),
         ("Objects", 2),

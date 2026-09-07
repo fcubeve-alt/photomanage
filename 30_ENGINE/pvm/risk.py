@@ -71,6 +71,22 @@ _DEFAULT_POLICY = {
 }
 
 
+class Importance(IntEnum):
+    """内容重要性 — §2 ("判断误处理的潜在损失和内容重要性"), §5, §18, §25 Layer 5.
+
+    A §5 factor scale, so it lives here beside the other four. **What the scale means,
+    why it is not a synonym for `Risk`, and how a level is arrived at are all in
+    `pvm/importance.py`**, which also implements §4's finer taxonomy. Only the ordering
+    is here, because `Factors` and `decide_action` need the type and `importance.py`
+    needs `Risk` — and one of the two imports has to come first.
+    """
+    I0_NONE = 0        # spent — a verification code that has been typed in
+    I1_LOW = 1         # replaceable from somewhere else, or nobody's memory
+    I2_ORDINARY = 2    # the ordinary content of a life, worth keeping, not irreplaceable
+    I3_MEANINGFUL = 3  # a person, a place, an occasion this user was actually part of
+    I4_TREASURED = 4   # would be mourned
+
+
 class Lifecycle(str, Enum):
     """§3 index dimension: Temporary / Active / Expired / Long-term. It decides *when*
     something may be acted on, which is a different question from how much it matters."""
@@ -110,6 +126,19 @@ class Action(str, Enum):
 # "高风险类别（R4-R6）零自动删除".
 NEVER_DELETE_AT_OR_ABOVE = Risk.R4_IMPORTANT
 
+# The same line drawn on the importance axis, and it does a different job. §6's floor
+# stops a *category* being deleted; this stops a §14 personal habit reaching content
+# that matters regardless of category. MEANINGFUL is where it sits because that is the
+# level a named recurring person or an occasion the user was part of reaches, and
+# neither is something a habit learned elsewhere should be allowed to speak for.
+NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE = Importance.I3_MEANINGFUL
+
+# §8. Above this, an equivalence group is not pruned at all — the near-identical
+# frames are all kept. One level higher than the deletion floor: offering to pick a
+# best shot of a meaningful occasion is reasonable, doing it to an irreplaceable one
+# is not, and `Proposal.__post_init__` already refuses the latter outright.
+NEVER_PRUNE_AT_OR_ABOVE_IMPORTANCE = Importance.I4_TREASURED
+
 # Actions that can cost the user content. ARCHIVE is deliberately NOT one: §6 makes
 # "Protect/Archive 优先" the *correct* default for R4, and archiving moves an asset out
 # of the way while keeping it fully present and searchable. Counting it as a lossy
@@ -133,6 +162,18 @@ RISK_BY_PATH_PREFIX = [
     ("People", Risk.R3_PERSONAL),
     ("Travel", Risk.R3_PERSONAL),
     ("Screenshots > Temporary", Risk.R1_LOW_VALUE),
+    # §4 names 一次性报错 in 临时信息 at 低 risk, and §6's R1 example is 过期临时截图.
+    # This row was missing until `tests/test_importance.py` cross-read the two sections
+    # against each other: the table had only the `Temporary` branch, so an error
+    # screenshot inherited `Screenshots` at R2 — one level above where both sections
+    # put it.
+    #
+    # The grade changes and the lifecycle deliberately does not. `lifecycle_of` still
+    # treats only `Screenshots > Temporary` as transient, so an error screenshot is
+    # never EXPIRED and never reaches the suggest-delete branch. §4 calling it 一次性
+    # is an argument that it *could* expire; it is not evidence that any particular one
+    # has, and R1 + never-expiring is the conservative half of that.
+    ("Screenshots > Errors", Risk.R1_LOW_VALUE),
     ("Downloads", Risk.R0_DISPOSABLE),
     ("Screenshots", Risk.R2_NORMAL),
     ("Objects", Risk.R2_NORMAL),
@@ -144,11 +185,24 @@ RISK_BY_PATH_PREFIX = [
 @dataclass
 class Factors:
     """The six inputs §5 names. Kept as one object so a policy decision can never be
-    made from a subset by accident."""
+    made from a subset by accident.
+
+        Category × Importance × Lifecycle × Confidence × Recoverability ×
+        Personal Preference → Action Policy
+
+    `risk` is Category-and-consequence; `importance` is 内容重要性. Until 2026-09-07
+    this class had five of the six and folded Importance into Category — see
+    `pvm/importance.py` for why that is not the same thing.
+
+    `importance` defaults to ORDINARY so that a caller that has not assessed it gets
+    the behaviour that existed before the axis did, rather than accidentally getting
+    the protections that only a real assessment should earn.
+    """
     risk: Risk
     lifecycle: Lifecycle
     confidence: float
     recoverability: Recoverability
+    importance: Importance = Importance.I2_ORDINARY
     in_equivalence_group: bool = False
     is_exact_duplicate: bool = False
     personal_preference: Optional[Action] = None
@@ -171,6 +225,12 @@ class Proposal:
             raise ValueError(
                 f"{self.factors.risk.name} may never be deleted automatically or "
                 "suggested for deletion (§6, Tier 2-A: 高风险类别 R4-R6 零自动删除)")
+        if self.action in REMOVING_ACTIONS \
+                and self.factors.importance >= NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE:
+            raise ValueError(
+                f"{self.factors.importance.name} content may not be removed or offered "
+                "for removal — §5 names Importance as a factor in its own right, and "
+                "§18 weights every error by it")
         if self.action in ACTING_ACTIONS \
                 and self.factors.recoverability == Recoverability.IRREPLACEABLE:
             raise ValueError(
@@ -267,7 +327,8 @@ def decide_action(f: Factors) -> Action:
         if f.personal_preference in (Action.PROTECT, Action.KEEP):
             # More careful is always allowed, at any risk.
             return f.personal_preference
-        if f.personal_preference is Action.SUGGEST_DELETE:
+        if f.personal_preference is Action.SUGGEST_DELETE \
+                and f.importance < NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE:
             # Less careful, only where acting is already permitted. Below R4 this turns
             # "ask the user again about a category they have answered the same way a
             # dozen times" into a proposal — §18's Human Review Burden falling for a
@@ -280,6 +341,12 @@ def decide_action(f: Factors) -> Action:
             # SUGGEST_DELETE is also the most aggressive thing a preference can ever
             # produce. AUTO_CLEAN is reachable only from byte-identical duplication,
             # which is evidence rather than taste.
+            #
+            # The importance floor above is the second half of the same argument. A
+            # user who deletes work screenshots every week has told the system
+            # something about work screenshots, and nothing at all about the photograph
+            # of their child that also sits below R4 — People is R3. Risk alone would
+            # have let the habit reach it.
             if f.risk < NEVER_DELETE_AT_OR_ABOVE:
                 return Action.SUGGEST_DELETE
 
@@ -307,9 +374,17 @@ def decide_action(f: Factors) -> Action:
         return Action.SUGGEST_DELETE if f.lifecycle == Lifecycle.EXPIRED else Action.KEEP
     if f.risk == Risk.R1_LOW_VALUE:
         return Action.SUGGEST_DELETE if f.lifecycle == Lifecycle.EXPIRED else Action.KEEP
-    if f.risk == Risk.R2_NORMAL:
-        return Action.SELECT_BEST if f.in_equivalence_group else Action.KEEP
-    # R3 Personal — §6 says 保守精选: select best is offered, never applied.
+    # §8: Equivalence 判断必须与 Risk Policy 联动；同样的相似度，在 Meme 和家庭照片上
+    # 采取不同策略. Similarity is the same measurement in both cases, so the thing that
+    # has to differ is what is done with it — and "meme versus family photograph" is a
+    # statement about value, not about consequence. Without the importance axis this
+    # clause had nothing to read: R2 and R3 both offered SELECT_BEST, so a meme and a
+    # family photograph got the same policy from the same similarity, which is the one
+    # outcome §8 names.
+    if f.in_equivalence_group and f.importance >= NEVER_PRUNE_AT_OR_ABOVE_IMPORTANCE:
+        return Action.KEEP
+    # R2 Normal and R3 Personal — §6 says 保守精选 for R3: select best is offered,
+    # never applied.
     return Action.SELECT_BEST if f.in_equivalence_group else Action.KEEP
 
 
@@ -357,4 +432,23 @@ def policy_table() -> str:
                                        is_exact_duplicate=(risk == Risk.R0_DISPOSABLE)))
             lines.append(f"| {risk.name} | {risk.meaning} | {risk.default_policy} | "
                          f"{lc.value} | {hi.value} | {lo.value} |")
+    return "\n".join(lines)
+
+
+def equivalence_table() -> str:
+    """§8's other half: the same similarity against every importance level.
+
+    Tier 2-A asks for a Policy Table, and a table with only one of §5's six axes on it
+    is a table that cannot show the clause §8 actually states — that a meme and a
+    family photograph must not get the same policy from the same measurement."""
+    lines = ["| importance | meaning | in an equivalence group | alone |",
+             "|---|---|---|---|"]
+    for imp in Importance:
+        grouped = decide_action(Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.9,
+                                        Recoverability.RECOVERABLE, importance=imp,
+                                        in_equivalence_group=True))
+        alone = decide_action(Factors(Risk.R2_NORMAL, Lifecycle.ACTIVE, 0.9,
+                                      Recoverability.RECOVERABLE, importance=imp))
+        from .importance import MEANING
+        lines.append(f"| {imp.name} | {MEANING[imp]} | {grouped.value} | {alone.value} |")
     return "\n".join(lines)

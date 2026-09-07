@@ -32,6 +32,7 @@ public struct RunStats {
     public var unfiled = 0
     public var byTier: [Tier: Int] = [:]
     public var byRisk: [Risk: Int] = [:]
+    public var byImportance: [Importance: Int] = [:]
     public var byAction: [Action: Int] = [:]
     public var wallSeconds: Double = 0
     public var context = LibraryContext()
@@ -120,6 +121,29 @@ public enum Pipeline {
                                    classifications: classifications)
         catalog.writeRelations(report.relations)
 
+        // How large the equivalence group around each asset is. §8 makes the group, not
+        // the frame, the unit of value: one of six near-identical shots is worth less on
+        // its own than the only photograph of an afternoon.
+        var groupSize: [String: Int] = [:]
+        for g in report.relations where g.kind == "same_moment" {
+            for member in g.members {
+                groupSize[member] = max(groupSize[member] ?? 1, g.members.count)
+            }
+        }
+
+        // How often each named person turns up in the whole library. A face the user
+        // named and then photographed thirty times is somebody in their life; a face
+        // that appears once is somebody who was once in shot, and §16 forbids inferring
+        // anything further about either. This counts appearances and nothing else.
+        var personAssets: [String: Int] = [:]
+        for (_, c) in classifications {
+            for path in c.paths where path.hasPrefix("People > ") && path != "People > Groups" {
+                personAssets[path, default: 0] += 1
+            }
+        }
+
+        let policy = catalog.personalPolicy()
+
         catalog.begin()
         for (assetID, c) in classifications {
             guard let a = byID[assetID] else { continue }
@@ -133,18 +157,34 @@ public enum Pipeline {
             if let when = a.createdAt {
                 ageDays = max(0, Date().timeIntervalSince(when) / 86400)
             }
+            let inGroup = report.nearDuplicateInMoment.contains(assetID)
+                && !report.protectedDistinct.contains(assetID)
+            let recoverability = RiskEngine.recoverability(risk)
+            let preference = policy.preference(for: c.paths, risk: risk)
+            let assessment = ImportanceEngine.assess(ImportanceSignals(
+                paths: c.paths,
+                recoverability: recoverability,
+                peopleRecurrence: c.paths.compactMap { personAssets[$0] }.max() ?? 0,
+                groupSize: groupSize[assetID] ?? 1,
+                inEquivalenceGroup: inGroup,
+                isExactDuplicate: isDuplicate,
+                isIrreplaceable: risk == .r6Irreplaceable,
+                userProtectsCategory: preference.map {
+                    $0.action == .protectAsset || $0.action == .keep } ?? false))
             let factors = Factors(
                 risk: risk,
                 lifecycle: RiskEngine.lifecycle(c, ageDays: ageDays),
                 confidence: c.primary?.confidence ?? 0,
-                recoverability: RiskEngine.recoverability(risk),
-                inEquivalenceGroup: report.nearDuplicateInMoment.contains(assetID)
-                    && !report.protectedDistinct.contains(assetID),
-                isExactDuplicate: isDuplicate)
+                recoverability: recoverability,
+                importance: assessment.level,
+                inEquivalenceGroup: inGroup,
+                isExactDuplicate: isDuplicate,
+                personalPreference: preference?.action)
             let proposal = RiskEngine.propose(c, factors,
                                               duplicateOf: report.exactDuplicateOf[assetID])
-            catalog.upsert(a, c, risk: risk, proposal: proposal)
+            catalog.upsert(a, c, risk: risk, proposal: proposal, assessment: assessment)
             stats.byRisk[risk, default: 0] += 1
+            stats.byImportance[assessment.level, default: 0] += 1
             if let p = proposal { stats.byAction[p.action, default: 0] += 1 }
             stats.scored += 1
         }

@@ -1,6 +1,8 @@
 {
  "burst-0": {
   "action": "select_best",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2026 > 04 April > 24 > 16:00"
@@ -9,6 +11,8 @@
  },
  "burst-1": {
   "action": "select_best",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2026 > 04 April > 24 > 16:00"
@@ -17,6 +21,8 @@
  },
  "burst-2": {
   "action": "select_best",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2026 > 04 April > 24 > 16:00"
@@ -25,6 +31,8 @@
  },
  "burst-3": {
   "action": "select_best",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2026 > 04 April > 24 > 16:00"
@@ -33,6 +41,8 @@
  },
  "burst-4": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2026 > 04 April > 24 > 16:00"
@@ -41,6 +51,8 @@
  },
  "buy-order": {
   "action": "archive",
+  "asset_class": "ordinary_screenshot",
+  "importance": 1,
   "paths": [
    "Purchases > Orders",
    "Screenshots",
@@ -50,6 +62,8 @@
  },
  "buy-receipt": {
   "action": "archive",
+  "asset_class": "transaction",
+  "importance": 2,
   "paths": [
    "Documents > Receipts",
    "Purchases > Receipts",
@@ -59,6 +73,8 @@
  },
  "doc-contract-1": {
   "action": "protect",
+  "asset_class": "legal_formal",
+  "importance": 2,
   "paths": [
    "Documents > Contracts",
    "Timeline > 2025 > 03 March > 02"
@@ -67,6 +83,8 @@
  },
  "doc-contract-2": {
   "action": "protect",
+  "asset_class": "legal_formal",
+  "importance": 2,
   "paths": [
    "Documents > Contracts",
    "Timeline > 2025 > 03 March > 02"
@@ -75,6 +93,8 @@
  },
  "doc-contract-3": {
   "action": "protect",
+  "asset_class": "legal_formal",
+  "importance": 2,
   "paths": [
    "Documents > Contracts",
    "Timeline > 2025 > 03 March > 02"
@@ -83,6 +103,8 @@
  },
  "doc-contract-4": {
   "action": "protect",
+  "asset_class": "legal_formal",
+  "importance": 2,
   "paths": [
    "Documents > Contracts",
    "Timeline > 2025 > 03 March > 02"
@@ -91,6 +113,8 @@
  },
  "doc-id-front": {
   "action": "protect",
+  "asset_class": "identity_financial",
+  "importance": 2,
   "paths": [
    "Documents > Identity > ID Cards",
    "Timeline > 2025 > 06 June > 18"
@@ -99,6 +123,8 @@
  },
  "doc-passport": {
   "action": "protect",
+  "asset_class": "identity_financial",
+  "importance": 2,
   "paths": [
    "Documents > Identity > Passports",
    "Timeline > 2025 > 06 June > 18"
@@ -107,6 +133,8 @@
  },
  "home-0": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 02"
@@ -115,6 +143,8 @@
  },
  "home-1": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 03"
@@ -123,6 +153,8 @@
  },
  "home-10": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 12"
@@ -131,6 +163,8 @@
  },
  "home-11": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 13"
@@ -139,6 +173,8 @@
  },
  "home-12": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 14"
@@ -147,6 +183,8 @@
  },
  "home-13": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 15"
@@ -155,6 +193,8 @@
  },
  "home-14": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 16"
@@ -163,6 +203,8 @@
  },
  "home-15": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 17"
@@ -171,6 +213,8 @@
  },
  "home-16": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 18"
@@ -179,6 +223,8 @@
  },
  "home-17": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 19"
@@ -187,6 +233,8 @@
  },
  "home-18": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 20"
@@ -195,6 +243,8 @@
  },
  "home-19": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 21"
@@ -203,6 +253,8 @@
  },
  "home-2": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 04"
@@ -211,6 +263,8 @@
  },
  "home-20": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 22"
@@ -219,6 +273,8 @@
  },
  "home-21": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 23"
@@ -227,6 +283,8 @@
  },
  "home-22": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 24"
@@ -235,6 +293,8 @@
  },
  "home-23": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 25"
@@ -243,6 +303,8 @@
  },
  "home-24": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 26"
@@ -251,6 +313,8 @@
  },
  "home-25": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 27"
@@ -259,6 +323,8 @@
  },
  "home-26": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 28"
@@ -267,6 +333,8 @@
  },
  "home-27": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 29"
@@ -275,6 +343,8 @@
  },
  "home-28": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 30"
@@ -283,6 +353,8 @@
  },
  "home-29": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 31"
@@ -291,6 +363,8 @@
  },
  "home-3": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 05"
@@ -299,6 +373,8 @@
  },
  "home-30": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 01"
@@ -307,6 +383,8 @@
  },
  "home-31": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 02"
@@ -315,6 +393,8 @@
  },
  "home-32": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 03"
@@ -323,6 +403,8 @@
  },
  "home-33": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 04"
@@ -331,6 +413,8 @@
  },
  "home-34": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 05"
@@ -339,6 +423,8 @@
  },
  "home-35": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 06"
@@ -347,6 +433,8 @@
  },
  "home-36": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 07"
@@ -355,6 +443,8 @@
  },
  "home-37": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 08"
@@ -363,6 +453,8 @@
  },
  "home-38": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 09"
@@ -371,6 +463,8 @@
  },
  "home-39": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 02 February > 10"
@@ -379,6 +473,8 @@
  },
  "home-4": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 06"
@@ -387,6 +483,8 @@
  },
  "home-5": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 07"
@@ -395,6 +493,8 @@
  },
  "home-6": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 08"
@@ -403,6 +503,8 @@
  },
  "home-7": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 09"
@@ -411,6 +513,8 @@
  },
  "home-8": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 10"
@@ -419,6 +523,8 @@
  },
  "home-9": {
   "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
   "paths": [
    "Places > United Kingdom > London",
    "Timeline > 2025 > 01 January > 11"
@@ -427,6 +533,8 @@
  },
  "meme-copy": {
   "action": "auto_clean",
+  "asset_class": "downloaded",
+  "importance": 0,
   "paths": [
    "Downloads > Memes",
    "Timeline > 2025 > 11 November > 20"
@@ -435,6 +543,8 @@
  },
  "meme-original": {
   "action": "keep",
+  "asset_class": "downloaded",
+  "importance": 1,
   "paths": [
    "Downloads > Memes",
    "Timeline > 2025 > 10 October > 16"
@@ -443,6 +553,8 @@
  },
  "mystery": {
   "action": "review",
+  "asset_class": "undescribed",
+  "importance": 2,
   "paths": [
    "Timeline > 2026 > 05 May > 05"
   ],
@@ -450,6 +562,8 @@
  },
  "person-anna-0": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -459,6 +573,8 @@
  },
  "person-anna-1": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -468,6 +584,8 @@
  },
  "person-anna-2": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -477,6 +595,8 @@
  },
  "person-anna-3": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -486,6 +606,8 @@
  },
  "person-anna-4": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -495,6 +617,8 @@
  },
  "person-anna-5": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Anna",
    "Places > United Kingdom > London",
@@ -504,6 +628,8 @@
  },
  "person-group": {
   "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
   "paths": [
    "People > Groups",
    "Timeline > 2025 > 09 September > 09"
@@ -512,6 +638,8 @@
  },
  "shot-chat": {
   "action": "keep",
+  "asset_class": "ordinary_screenshot",
+  "importance": 1,
   "paths": [
    "Screenshots > Chat",
    "Timeline > 2026 > 02 February > 02"
@@ -520,6 +648,8 @@
  },
  "shot-pickup-old": {
   "action": "suggest_delete",
+  "asset_class": "transient_info",
+  "importance": 0,
   "paths": [
    "Screenshots > Temporary > Pickup Codes",
    "Timeline > 2025 > 01 January > 06"
@@ -528,6 +658,8 @@
  },
  "shot-plain": {
   "action": "keep",
+  "asset_class": "ordinary_screenshot",
+  "importance": 1,
   "paths": [
    "Screenshots",
    "Timeline > 2026 > 02 February > 03"
@@ -536,6 +668,8 @@
  },
  "tokyo-0": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 11",
@@ -545,6 +679,8 @@
  },
  "tokyo-1": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 11",
@@ -554,6 +690,8 @@
  },
  "tokyo-10": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 16",
@@ -563,6 +701,8 @@
  },
  "tokyo-11": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 16",
@@ -572,6 +712,8 @@
  },
  "tokyo-2": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 12",
@@ -581,6 +723,8 @@
  },
  "tokyo-3": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 12",
@@ -590,6 +734,8 @@
  },
  "tokyo-4": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 13",
@@ -599,6 +745,8 @@
  },
  "tokyo-5": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 13",
@@ -608,6 +756,8 @@
  },
  "tokyo-6": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 14",
@@ -617,6 +767,8 @@
  },
  "tokyo-7": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 14",
@@ -626,6 +778,8 @@
  },
  "tokyo-8": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 15",
@@ -635,6 +789,8 @@
  },
  "tokyo-9": {
   "action": "keep",
+  "asset_class": "travel_event",
+  "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
    "Timeline > 2025 > 04 April > 15",

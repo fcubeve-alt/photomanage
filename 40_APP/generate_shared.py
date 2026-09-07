@@ -48,6 +48,7 @@ from pvm.risk import RISK_BY_PATH_PREFIX       # noqa: E402
 from pvm.classifier import SETTLE_AT           # noqa: E402
 from pvm.verdict import MAX_CONFIDENCE, REVIEW_FLOOR   # noqa: E402
 from pvm.catalog import Catalog                # noqa: E402
+from pvm import importance as IMP              # noqa: E402
 from pvm import pipeline as P                  # noqa: E402
 from pvm import taxonomy as TX                 # noqa: E402
 
@@ -187,8 +188,15 @@ def gen_expected() -> str:
     on the engine stops describing the product. The Swift test replays this and
     compares; whichever side moved is the one that fails.
 
-    Only the decisions are recorded — paths, risk, action — not confidences, which are
-    floating point and would turn a real conformance check into a flaky one.
+    Only the decisions are recorded — paths, risk, importance, §4 class, action — not
+    confidences, which are floating point and would turn a real conformance check into a
+    flaky one.
+
+    Importance is in here for the same reason risk is: §5 makes it a factor in the
+    action, §18 weights every error by it, and two implementations could agree on every
+    path and every action while disagreeing about what a photograph is worth. That
+    disagreement would be invisible in both test suites and visible only in a KPI
+    nobody could reproduce.
     """
     TX.reset_minted()
     assets = F.build()
@@ -199,11 +207,15 @@ def gen_expected() -> str:
         rows = {}
         for asset_id, path in catalog.db.execute(
                 "SELECT asset_id, path FROM assignments ORDER BY asset_id, path"):
-            rows.setdefault(asset_id, {"paths": [], "risk": None, "action": None})
+            rows.setdefault(asset_id, {"paths": [], "risk": None, "importance": None,
+                                       "asset_class": None, "action": None})
             rows[asset_id]["paths"].append(path)
-        for asset_id, risk in catalog.db.execute("SELECT asset_id, risk FROM assets"):
+        for asset_id, risk, imp, cls in catalog.db.execute(
+                "SELECT asset_id, risk, importance, asset_class FROM assets"):
             if asset_id in rows:
                 rows[asset_id]["risk"] = risk
+                rows[asset_id]["importance"] = imp
+                rows[asset_id]["asset_class"] = cls
         for asset_id, action in catalog.db.execute("SELECT asset_id, action FROM proposals"):
             if asset_id in rows:
                 rows[asset_id]["action"] = action
@@ -213,7 +225,72 @@ def gen_expected() -> str:
     return json.dumps(rows, indent=1, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-FILES = {"Taxonomy.generated.swift": gen_taxonomy, "Rules.generated.swift": gen_rules}
+
+
+def gen_importance() -> str:
+    """§4's thirteen 大类 and the constants `assess` reads.
+
+    Generated for the same reason the scene map is: a §4 table maintained by hand on
+    two sides is two products. The difference would show up as an app that prices a
+    family photograph differently from the engine that was measured — and §18 weights
+    every error by exactly that number, so the divergence would be invisible in both
+    test suites and visible only in the KPI nobody could reproduce.
+    """
+    lines = [BANNER.format(sources="importance.py, risk.py"), "import Foundation", "",
+             "/// One of §4's 大类. `prefixes` is empty for the two classes that are not",
+             "/// branches of the navigational tree — see `Importance.swift`.",
+             "public struct AssetClass: Equatable {",
+             "    public let key: String",
+             "    public let name: String",
+             "    public let examples: String",
+             "    public let defaultRiskLow: Int",
+             "    public let defaultRiskHigh: Int",
+             "    public let baselineImportance: Importance",
+             "    public let prefixes: [String]",
+             "}", "",
+             "public enum AssetClasses {", ""]
+
+    def emit(name: str, cls) -> None:
+        lo, hi = cls.default_risk
+        prefixes = ", ".join(swift_string(p) for p in cls.prefixes)
+        lines.append(f"    public static let {name} = AssetClass(")
+        lines.append(f"        key: {swift_string(cls.key)},")
+        lines.append(f"        name: {swift_string(cls.name)},")
+        lines.append(f"        examples: {swift_string(cls.examples)},")
+        lines.append(f"        defaultRiskLow: {int(lo)}, defaultRiskHigh: {int(hi)},")
+        lines.append(f"        baselineImportance: .{_imp_case(cls.baseline_importance)},")
+        lines.append(f"        prefixes: [{prefixes}])")
+        lines.append("")
+
+    for cls in IMP.ASSET_CLASSES:
+        emit(_swift_ident(cls.key), cls)
+    emit("undescribed", IMP.UNDESCRIBED)
+
+    lines.append("    /// §4's table, in §4's order. Scanned in order, longest prefix wins.")
+    lines.append("    public static let all: [AssetClass] = [")
+    for cls in IMP.ASSET_CLASSES:
+        lines.append(f"        {_swift_ident(cls.key)},")
+    lines.append("    ]\n")
+    lines.append(f"    /// How many other assets a named person must appear in before they")
+    lines.append(f"    /// read as somebody in this user's life rather than a passer-by.")
+    lines.append(f"    public static let recurringPerson = {IMP.RECURRING_PERSON}")
+    lines.append(f"    /// Where a considered set of shots becomes a held shutter.")
+    lines.append(f"    public static let burstSize = {IMP.BURST_SIZE}")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def _swift_ident(key: str) -> str:
+    head, *rest = key.split("_")
+    return head + "".join(w.capitalize() for w in rest)
+
+
+def _imp_case(level) -> str:
+    return _swift_ident(level.name.lower())
+
+
+FILES = {"Taxonomy.generated.swift": gen_taxonomy, "Rules.generated.swift": gen_rules,
+         "Importance.generated.swift": gen_importance}
 RESOURCE_FILES = {"fixture.json": gen_fixture, "expected.json": gen_expected}
 
 

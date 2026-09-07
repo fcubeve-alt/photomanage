@@ -51,7 +51,10 @@ from eval.adapter import ground_truth, load_manifest          # noqa: E402
 from pvm import kpi, pipeline, taxonomy                       # noqa: E402
 from pvm.catalog import Catalog                               # noqa: E402
 from pvm.risk import (ACTING_ACTIONS, Action,                 # noqa: E402
-                      NEVER_DELETE_AT_OR_ABOVE, Risk, policy_table)
+                      NEVER_DELETE_AT_OR_ABOVE, NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE,
+                      REMOVING_ACTIONS, Importance, Risk, equivalence_table,
+                      policy_table)
+from pvm import importance
 from pvm.signals import Tier                                  # noqa: E402
 
 # Roots the corpus carries a real signal for.
@@ -182,7 +185,19 @@ def safety_audit(catalog: Catalog) -> dict:
     irreversible = one("SELECT COUNT(*) FROM proposals WHERE reversible=0")
     unconfirmed = one(
         "SELECT COUNT(*) FROM proposals WHERE action='suggest_delete' AND requires_confirmation=0")
+    # The same red line on the other §5 axis. `Proposal.__post_init__` refuses this in
+    # code; checking it against the rows that were actually written is a different
+    # claim, and a red line enforced only where it is enforced is not a red line.
+    removing = ",".join("?" * len(REMOVING_ACTIONS))
+    meaningful_removals = one(
+        f"SELECT COUNT(*) FROM assets a JOIN proposals p USING(asset_id) "
+        f"WHERE a.importance>=? AND p.action IN ({removing})",
+        int(NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE),
+        *[a.value for a in REMOVING_ACTIONS])
     return {
+        "meaningful_removals": meaningful_removals,
+        "meaningful_assets": one("SELECT COUNT(*) FROM assets WHERE importance>=?",
+                                 int(NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE)),
         "protected_removals": protected_removals,
         "unexplained_assignments": unexplained,
         "irreversible_proposals": irreversible,
@@ -307,7 +322,14 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     k = kpi.report(catalog, library_size=len(truth), errors_by_asset=errors)
     w("## Constitution §18 KPIs\n\n")
     w(k.as_markdown())
-    w("\nWeighted Error Cost here is **outcome**: it prices the real mistakes against "
+    w("\nWeighted Error Cost is priced by §18's own formula — 错误 × 内容重要性 × "
+      "不可恢复程度. It previously used the risk class as a stand-in for 内容重要性 "
+      "and then multiplied it again by an irrecoverability derived from that same "
+      "class, cubing one axis and never reading the other. The number moved because "
+      "the formula was corrected, not because the engine's behaviour changed: every "
+      "classification, risk grade and action in this report is identical to the run "
+      "before it.\n\n"
+      "Weighted Error Cost here is **outcome**: it prices the real mistakes against "
       "the labels. On a real library there are no labels, so the field number is "
       "*exposure* — what it would cost if every acting proposal were wrong — and the "
       "two must never be reported as the same quantity.\n\n")
@@ -324,6 +346,9 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
          f"{audit['irreversible_proposals']} found"),
         ("every removal requires confirmation", audit["removals_without_confirmation"] == 0,
          f"{audit['removals_without_confirmation']} found"),
+        ("nothing MEANINGFUL or above was offered for removal (§5 Importance, §18 "
+         "Weighted Error Cost)", audit["meaningful_removals"] == 0,
+         f"{audit['meaningful_removals']} of {audit['meaningful_assets']:,} such assets"),
     ]
     for name, ok, detail in checks:
         w(f"- {'PASS' if ok else 'FAIL'} — {name} ({detail})\n")
@@ -331,9 +356,64 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w(f"- proposals the engine considers safe to apply without asking "
       f"(exact byte-duplicates only): {audit['auto_applicable']:,}\n\n")
 
+    # ---- §4 and §5's sixth factor ---------------------------------------
+    w("## §4 精细 Visual Asset Taxonomy and §5 Importance\n\n")
+    w("§4 is a different scheme from the navigational tree: the tree is where a user "
+      "browses, §4 exists to 改变整理、风险、生命周期和动作策略. Two of its thirteen "
+      "classes are not branches at all — 珍贵记忆 is a property of one asset and "
+      "连拍/同一时刻 is a relation between assets.\n\n")
+    w(importance.class_table())
+    w("\n\n### What this library actually is, by §4 class\n\n")
+    w("| §4 大类 | assets | share | median importance |\n|---|--:|--:|:--|\n")
+    # A true median, not a rounded mean. The mean of a class that is half I0 and half
+    # I4 is I2, which no asset in it actually is — and the whole column exists to say
+    # what a class typically *is*.
+    class_rows = list(catalog.db.execute(
+        "SELECT asset_class, COUNT(*) FROM assets WHERE asset_class IS NOT NULL "
+        "GROUP BY asset_class ORDER BY COUNT(*) DESC"))
+    for key, n in class_rows:
+        cls = importance.BY_KEY.get(key)
+        values = sorted(r[0] for r in catalog.db.execute(
+            "SELECT importance FROM assets WHERE asset_class=? AND importance IS NOT NULL",
+            (key,)))
+        # `is not None`, not truthiness: I0_NONE is 0 and is a real level. The first
+        # version of this line printed "n/a" for every asset the engine had correctly
+        # graded as worthless, which is the one row a reader would look at hardest.
+        level = Importance(values[len(values) // 2]) if values else None
+        w(f"| {cls.name if cls else key} | {n:,} | {n/total*100:.1f}% | "
+          f"{level.name if level is not None else 'n/a'} |\n")
+    if not class_rows:
+        w("| *(nothing assessed)* | 0 | 0.0% | n/a |\n")
+
+    w("\n### Importance against risk\n\n")
+    w("The two axes §5 keeps apart. If this table were diagonal, one of them would be "
+      "redundant and §5 would be wrong to name both.\n\n")
+    grid = {}
+    for r, i, n in catalog.db.execute(
+            "SELECT risk, importance, COUNT(*) FROM assets "
+            "WHERE importance IS NOT NULL GROUP BY risk, importance"):
+        grid[(r, i)] = n
+    levels = [i for i in Importance if any((r, int(i)) in grid for r in range(7))]
+    w("| risk \\ importance | " + " | ".join(i.name for i in levels) + " |\n")
+    w("|---" * (len(levels) + 1) + "|\n")
+    for r in range(7):
+        row = [grid.get((r, int(i)), 0) for i in levels]
+        if not any(row):
+            continue
+        w(f"| {Risk(r).name} | " + " | ".join(f"{n:,}" if n else "·" for n in row) + " |\n")
+    off = sum(n for (r, i), n in grid.items() if abs(r - i) >= 2)
+    w(f"\n**{off:,} assets ({off/total*100:.1f}%) sit two or more levels apart on the "
+      "two axes** — the assets a single-axis engine would have graded wrongly, in one "
+      "direction or the other.\n\n")
+
     # ---- the policy table Tier 2-A requires -----------------------------
     w("## Risk policy table (§5 / §6, generated from the code it documents)\n\n")
     w(policy_table())
+    w("\n\n")
+    w("### §8 Equivalence Margin against Importance\n\n")
+    w("同样的相似度，在 Meme 和家庭照片上采取不同策略 — the same measurement, two "
+      "policies. Generated from `decide_action`, so the table cannot drift from it.\n\n")
+    w(equivalence_table())
     w("\n\n")
 
     # ---- ablation -------------------------------------------------------
@@ -412,10 +492,67 @@ def selftest() -> int:
     if s2["leaf"]["right_root"] != 1:
         fails.append("a wrong leaf under the right root was scored as a wrong root")
 
+    fails.extend(_selftest_safety_audit())
+
     for msg in fails:
         print("FAIL:", msg)
     print(f"\nselftest: {len(fails)} failure(s)")
     return 1 if fails else 0
+
+
+def _selftest_safety_audit() -> List[str]:
+    """Every red line, made to fail on purpose.
+
+    `safety_audit` reads the catalogue rather than the code, and its whole value is
+    that it would catch a violation the constructor guards missed. That claim is worth
+    nothing until each query has actually been shown to return non-zero — a red line
+    whose failure path has never executed is a red line nobody has tested. So the rows
+    below are written with raw SQL, deliberately bypassing `Proposal.__post_init__`,
+    which is the only way to produce the state this audit exists to detect.
+    """
+    import shutil as _shutil
+    import tempfile as _tempfile
+
+    fails: List[str] = []
+    directory = _tempfile.mkdtemp()
+    try:
+        catalog = Catalog(os.path.join(directory, "selftest.sqlite"))
+        db = catalog.db
+        rows = [
+            # (asset_id, risk, importance, action) — one violation per red line.
+            ("risk_violation", int(NEVER_DELETE_AT_OR_ABOVE), 0, "suggest_delete"),
+            ("importance_violation", 0, int(NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE),
+             "suggest_delete"),
+        ]
+        for asset_id, risk, imp, action in rows:
+            db.execute(
+                "INSERT INTO assets(asset_id,signals_fp,engine_fp,risk,importance) "
+                "VALUES(?,'fp','fp',?,?)", (asset_id, risk, imp))
+            db.execute(
+                "INSERT INTO proposals(asset_id,action,risk,reversible,"
+                "requires_confirmation,auto_applicable,note,why) "
+                "VALUES(?,?,?,0,0,0,'','')", (asset_id, action, risk))
+        db.execute("INSERT INTO assets(asset_id,signals_fp,engine_fp,risk,importance) "
+                   "VALUES('unexplained','fp','fp',2,2)")
+        db.execute("INSERT INTO assignments(asset_id,path,confidence,is_primary) "
+                   "VALUES('unexplained','Places',0.9,1)")
+        db.commit()
+
+        audit = safety_audit(catalog)
+        expected = {
+            "protected_removals": "an R4+ removal in the rows was not detected",
+            "meaningful_removals": "a MEANINGFUL+ removal in the rows was not detected",
+            "unexplained_assignments": "an assignment with no evidence was not detected",
+            "irreversible_proposals": "an irreversible proposal was not detected",
+            "removals_without_confirmation":
+                "a removal that needs no confirmation was not detected",
+        }
+        for key, message in expected.items():
+            if audit.get(key, 0) < 1:
+                fails.append(f"{message} (audit reported {audit.get(key)!r})")
+    finally:
+        _shutil.rmtree(directory, ignore_errors=True)
+    return fails
 
 
 def main() -> int:

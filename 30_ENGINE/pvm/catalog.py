@@ -37,7 +37,7 @@ from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def _sqlite_int64(value):
@@ -109,12 +109,22 @@ class Catalog:
           media_type TEXT NOT NULL DEFAULT 'image',
           tier_used INTEGER,
           risk INTEGER,
+          -- §5 names Importance as a factor separate from Category, and §18 weights
+          -- every error by it. Stored rather than re-derived because the review queue
+          -- and the KPI report both need to order by it, and re-deriving it on read
+          -- would mean two answers to one question.
+          importance INTEGER,
+          -- §4's 大类. The tree in `assignments` is where a user browses; this is the
+          -- coarser scheme §4 says exists to 改变整理、风险、生命周期和动作策略.
+          asset_class TEXT,
+          importance_why TEXT,
           needs_review INTEGER,
           notes TEXT,
           classified_at REAL
         );
         CREATE INDEX IF NOT EXISTS idx_assets_hash ON assets(content_hash);
         CREATE INDEX IF NOT EXISTS idx_assets_risk ON assets(risk);
+        CREATE INDEX IF NOT EXISTS idx_assets_importance ON assets(importance);
 
         CREATE TABLE IF NOT EXISTS assignments(
           asset_id TEXT NOT NULL REFERENCES assets(asset_id) ON DELETE CASCADE,
@@ -276,19 +286,27 @@ class Catalog:
         return len(ids)
 
     # -- writes ------------------------------------------------------------
-    def upsert(self, asset, c: Classification, risk: Risk, proposal: Optional[Proposal]) -> None:
+    def upsert(self, asset, c: Classification, risk: Risk, proposal: Optional[Proposal],
+               assessment=None) -> None:
         aid = c.asset_id
         self.db.execute("DELETE FROM assignments WHERE asset_id=?", (aid,))
         self.db.execute("DELETE FROM evidence WHERE asset_id=?", (aid,))
         self.db.execute(
             """INSERT OR REPLACE INTO assets
                (asset_id,signals_fp,engine_fp,created_at,content_hash,dhash,
-                media_type,tier_used,risk,needs_review,notes,classified_at)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                media_type,tier_used,risk,importance,asset_class,importance_why,
+                needs_review,notes,classified_at)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (aid, signals_fingerprint(asset), self._engine,
              asset.created_at.timestamp() if asset.created_at else None,
              asset.content_hash, _sqlite_int64(asset.dhash), asset.media_type,
              int(c.tier_used), int(risk),
+             int(assessment.level) if assessment else None,
+             # The KEY, not the 大类 name. Both implementations write this column and a
+             # query filters on it; two vocabularies in one column is a filter that
+             # silently matches half the library.
+             assessment.asset_class.key if assessment else None,
+             "; ".join(assessment.reasons) if assessment else None,
              int(c.needs_review), json.dumps(c.notes, ensure_ascii=False), time.time()))
 
         for a in c.assignments:
