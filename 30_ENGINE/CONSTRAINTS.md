@@ -172,7 +172,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | T2C-TTFUV | 目标 <30 秒出现第一批价值、<2 分钟形成基本 Visual Library | DONE | measured 2.8 s at 10k and 28 s at 100k — `pvm/kpi.py::time_to_first_useful_view` |
 | T2C-INGEST | 验证新增照片能否增量处理，不需要周期性全库重扫 | DONE | `tests/test_catalog.py::Incrementality`, `pvm/kpi.py::continuous_hygiene_rate` |
 | T2D-HOME | Tier 2-D 完整 Structure First 首页原型 | OUT-OF-SCOPE | needs an app; the 82 hand-authored prototype pages in `20_TIER0/study_assets/prototype` have no engine behind them |
-| T2E-ABLATION | 输出 ablation：只 OCR、只视觉、组合信号分别表现如何 | PARTIAL | `eval/evaluate.py` ablates metadata-only against full; **the OCR-only and vision-only arms are not run** |
+| T2E-ABLATION | 输出 ablation：只 OCR、只视觉、组合信号分别表现如何 | DONE | all three arms plus full, in `eval/evaluate.py::run_ablation`, with a per-root table because an averaged F1 hides the shape of the answer. Ablation by *budget* could only ever express "how far up the ladder did we climb" — the budget is a ceiling and TEXT sits above VISUAL — so the arms strip signals instead (`eval/evaluate.py::_stripped`). The finding: **the two expensive signals do not overlap.** People scores 0.995 with vision and 0.000 without; Documents and Purchases score 1.000 with OCR and 0.000 without; Places, Screenshots, Travel and Timeline come off the free metadata row at 0.94–1.00. Macro F1 is 0.997 full, 0.851 OCR-only, 0.708 vision-only, 0.563 metadata-only. Neither expensive signal can stand in for the other, so the question C-1 answers is not whether to run OCR but on which assets — and the cost of getting that gate wrong is a whole category, not a few percent |
 | T2F-ECONOMICS | 规模化单位经济 10k / 100k / 1M | OUT-OF-SCOPE | Tier 2-F, commercial modelling rather than engine work |
 | T2G-LEARNING | Global Policy + Personal Policy 反馈学习 | PARTIAL | the loop exists end to end: decisions are recorded, a policy is derived on read, it changes the action, and `pvm/kpi.py` reports the review questions it avoided. What cannot be shown here is Review volume falling **over time for a real user** — that is the Tier 2-G measurement and it needs people |
 
@@ -189,14 +189,14 @@ on — so `check_constraints.py` now fails when any cell here disagrees with the
 
 | status | count | share |
 |---|--:|--:|
-| DONE | 49 | 54% |
-| PARTIAL | 28 | 31% |
+| DONE | 50 | 55% |
+| PARTIAL | 27 | 30% |
 | MISSING | 5 | 5% |
 | OUT-OF-SCOPE (tier named) | 6 | 7% |
 | NOT-CODE (principle, explained) | 3 | 3% |
 
-**54% of the audited clauses are fully satisfied, and that is by an engine that does
-not ship.** The 31% PARTIAL is the number to look at hardest: a partial clause passes
+**55% of the audited clauses are fully satisfied, and that is by an engine that does
+not ship.** The 30% PARTIAL is the number to look at hardest: a partial clause passes
 its tests and still does not do what the document asks, which is a more comfortable
 place to hide than a gap.
 

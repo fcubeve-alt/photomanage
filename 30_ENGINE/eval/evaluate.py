@@ -78,9 +78,12 @@ def prf(tp: int, fp: int, fn: int) -> Tuple[float, float, float]:
     return p, r, f
 
 
-def evaluate(library: str, catalog_path: str, budget: Tier = Tier.TEXT):
+def evaluate(library: str, catalog_path: str, budget: Tier = Tier.TEXT,
+             strip: Optional[str] = None):
     assets = load_manifest(library)
     truth = ground_truth(library)
+    if strip:
+        assets = _stripped(assets, strip)
 
     for suffix in ("", "-wal", "-shm"):
         try:
@@ -452,14 +455,65 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
 
     # ---- ablation -------------------------------------------------------
     if ablation:
-        w("## Ablation — metadata only, no OCR, no faces, no scene labels\n\n")
-        w("What the free signals alone are worth. The gap is what the expensive tiers buy.\n\n")
-        w("| | full | metadata only |\n|---|--:|--:|\n")
-        w(f"| macro F1 (scored roots) | {sum(macro)/len(macro):.3f} | {ablation['macro_f1']:.3f} |\n")
-        w(f"| leaf exact | {leaf['exact']/max(1,leaf['total'])*100:.1f}% | "
-          f"{ablation['leaf_exact_pct']:.1f}% |\n")
-        w(f"| filed only on the timeline | {stats.unfiled/total*100:.1f}% | "
-          f"{ablation['unfiled_pct']:.1f}% |\n\n")
+        arms = ablation.get("arms") or {"metadata only": ablation}
+        w("## Ablation — 只 OCR、只视觉、组合信号分别表现如何 (Tier 2-E)\n\n")
+        w("Each arm names what it KEEPS. Metadata is never stripped: it is free, it is "
+          "always there, and a run without a capture date has no timeline to be scored "
+          "against. So these answer *which expensive signal earns its cost*, which is "
+          "the question Tier 2-E is asking.\n\n")
+        for label, _, describes in ABLATION_ARMS:
+            w(f"- **{label}** — {describes}\n")
+        w("\n| | " + " | ".join(["full"] + [a for a, _, _ in ABLATION_ARMS]) + " |\n")
+        w("|---" * (len(ABLATION_ARMS) + 2) + "|\n")
+
+        full_macro = sum(macro) / len(macro)
+        row = [f"{full_macro:.3f}"] + [f"{arms[a]['macro_f1']:.3f}"
+                                       for a, _, _ in ABLATION_ARMS]
+        w("| macro F1 (scored roots) | " + " | ".join(row) + " |\n")
+        row = [f"{leaf['exact']/max(1,leaf['total'])*100:.1f}%"] + \
+              [f"{arms[a]['leaf_exact_pct']:.1f}%" for a, _, _ in ABLATION_ARMS]
+        w("| leaf exact | " + " | ".join(row) + " |\n")
+        row = [f"{stats.unfiled/total*100:.1f}%"] + \
+              [f"{arms[a]['unfiled_pct']:.1f}%" for a, _, _ in ABLATION_ARMS]
+        w("| filed only on the timeline | " + " | ".join(row) + " |\n\n")
+
+        w("### Per root — where each signal actually does the work\n\n")
+        w("An overall F1 hides the shape of the answer: a signal that carries one root "
+          "entirely and touches nothing else looks the same, averaged, as one that "
+          "helps everywhere a little.\n\n")
+        w("| root | full | " + " | ".join(a for a, _, _ in ABLATION_ARMS) + " |\n")
+        w("|---" * (len(ABLATION_ARMS) + 2) + "|\n")
+        for root in SCORED_ROOTS:
+            c = scores["per_root"][root]
+            cells = [f"{prf(c['tp'], c['fp'], c['fn'])[2]:.3f}"]
+            cells += [f"{arms[a]['per_root'][root]:.3f}" for a, _, _ in ABLATION_ARMS]
+            w(f"| {root} | " + " | ".join(cells) + " |\n")
+        w("\n")
+
+        # The reading, because the numbers do not say it out loud and this is the one
+        # thing the ablation was run to find out.
+        vision_only = arms.get("+ vision only", {}).get("per_root", {})
+        ocr_only = arms.get("+ OCR only", {}).get("per_root", {})
+        metadata = arms.get("metadata only", {}).get("per_root", {})
+        needs_vision = sorted(r for r in SCORED_ROOTS
+                              if vision_only.get(r, 0) - ocr_only.get(r, 0) > 0.5)
+        needs_ocr = sorted(r for r in SCORED_ROOTS
+                           if ocr_only.get(r, 0) - vision_only.get(r, 0) > 0.5)
+        free = sorted(r for r in SCORED_ROOTS if metadata.get(r, 0) > 0.9)
+        w("**The two expensive signals do not overlap.** ")
+        if needs_vision and needs_ocr:
+            w(f"{', '.join(needs_vision)} is carried entirely by vision and scores zero "
+              f"without it; {', '.join(needs_ocr)} likewise for OCR. Neither signal can "
+              "stand in for the other on the roots the other owns, so there is no "
+              "cheaper subset here — the question C-1 answers is not *whether* to run "
+              "OCR but on which assets, and this says the cost of getting that gate "
+              "wrong is a whole category rather than a few percent.\n\n")
+        else:
+            w("the per-root split above is the evidence; read it directly.\n\n")
+        if free:
+            w(f"**{', '.join(free)} come off the free PhotoKit row** and are not worth "
+              "spending anything on. Every point of macro F1 the expensive tiers buy is "
+              "bought on the roots they alone can reach.\n\n")
 
     failed = [name for name, ok, _ in checks if not ok]
     if failed:
@@ -468,18 +522,67 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     return 0
 
 
-def run_ablation(library: str, catalog_path: str) -> dict:
-    assets, truth, predicted, catalog, stats = evaluate(library, catalog_path, budget=Tier.METADATA)
+def _stripped(assets, what: str):
+    """A copy of the library with one family of signals removed.
+
+    Ablation by *budget* can only answer "how far up the ladder did we climb", which
+    makes "metadata only" expressible and "OCR but no vision" not — the budget is a
+    ceiling and TEXT sits above VISUAL and FACES. Tier 2-E asks for 只 OCR、只视觉,
+    which are questions about which signal is present, so the arms strip signals
+    instead. Metadata is never stripped: it is free, it is always there, and a run
+    without a capture date has no timeline to be scored against.
+    """
+    import copy
+    out = []
+    for a in assets:
+        b = copy.copy(a)
+        if what in ("ocr", "all"):
+            b.ocr_ran, b.ocr_text = False, ""
+        if what in ("vision", "all"):
+            b.scene_labels, b.face_clusters = [], []
+        out.append(b)
+    return out
+
+
+#: Tier 2-E: 输出 ablation：只 OCR、只视觉、组合信号分别表现如何.
+#:
+#: Each arm names what it KEEPS, because that is the question — "what is this signal
+#: worth" — and a list of what was removed reads backwards at a glance.
+ABLATION_ARMS = [
+    ("metadata only", "all",
+     "capture date, dimensions, provenance, GPS — the free PhotoKit row"),
+    ("+ vision only", "ocr",
+     "metadata plus scene labels and face clusters; no text at all"),
+    ("+ OCR only", "vision",
+     "metadata plus recognised text; no scene labels, no faces"),
+]
+
+
+def _arm_scores(library: str, catalog_path: str, strip: str, total: int) -> dict:
+    assets, truth, predicted, catalog, stats = evaluate(
+        library, catalog_path, strip=strip)
     scores = score(truth, predicted)
-    macro = []
-    for root in SCORED_ROOTS:
-        c = scores["per_root"][root]
-        macro.append(prf(c["tp"], c["fp"], c["fn"])[2])
+    macro = [prf(scores["per_root"][r]["tp"], scores["per_root"][r]["fp"],
+                 scores["per_root"][r]["fn"])[2] for r in SCORED_ROOTS]
     leaf = scores["leaf"]
     out = {"macro_f1": sum(macro) / len(macro),
            "leaf_exact_pct": leaf["exact"] / max(1, leaf["total"]) * 100,
-           "unfiled_pct": stats.unfiled / max(1, len(truth)) * 100}
+           "unfiled_pct": stats.unfiled / max(1, total) * 100,
+           "per_root": {r: prf(scores["per_root"][r]["tp"], scores["per_root"][r]["fp"],
+                               scores["per_root"][r]["fn"])[2] for r in SCORED_ROOTS}}
     catalog.close()
+    return out
+
+
+def run_ablation(library: str, catalog_path: str) -> dict:
+    """All three arms. The metadata-only arm keeps its old key so the existing table
+    still renders from the same dict."""
+    total = len(ground_truth(library))
+    arms = {}
+    for label, strip, _ in ABLATION_ARMS:
+        arms[label] = _arm_scores(library, catalog_path, strip, total)
+    out = dict(arms["metadata only"])
+    out["arms"] = arms
     return out
 
 
