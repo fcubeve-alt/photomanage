@@ -365,6 +365,29 @@ public final class Catalog: @unchecked Sendable {
     /// a trip — so a partial update would leave conclusions standing on assets that
     /// have since been deleted. The catalogue rows are the durable thing; the memory is
     /// derived from them and cheap to derive again.
+    /// Prepare a statement, and refuse to fail quietly.
+    ///
+    /// This is the lesson from the `media_type` bug. `Intent.search` built a WHERE
+    /// clause naming a column the app's schema did not have; `sqlite3_prepare_v2`
+    /// returned an error, the unchecked `st` stayed nil, `sqlite3_step(nil)` returned
+    /// something that is not SQLITE_ROW, and the search reported "no matches" to a
+    /// question it had never asked. A wrong answer that looks like a valid one is the
+    /// failure mode this whole project keeps running into.
+    ///
+    /// In debug and in tests this trips an assertion, so a schema mismatch is loud
+    /// where it is cheap to find. In release it returns nil and the caller yields an
+    /// empty result — a search that cannot run must not take the app down with it.
+    func prepared(_ sql: String) -> OpaquePointer? {
+        var st: OpaquePointer?
+        let rc = sqlite3_prepare_v2(db, sql, -1, &st, nil)
+        if rc != SQLITE_OK {
+            let message = String(cString: sqlite3_errmsg(db))
+            assertionFailure("SQL did not prepare: \(message)\n\(sql)")
+            return nil
+        }
+        return st
+    }
+
     /// A text column, or "" when it is NULL. Callers that need to tell those apart
     /// check `sqlite3_column_type` first — this is only for the columns declared
     /// NOT NULL, where an empty string would already mean the row is wrong.
@@ -678,8 +701,7 @@ public final class Catalog: @unchecked Sendable {
         if !clauses.isEmpty { sql += " WHERE " + clauses.joined(separator: " AND ") }
         sql += " GROUP BY assets.asset_id ORDER BY assets.created_at DESC LIMIT ?;"
 
-        var st: OpaquePointer?
-        sqlite3_prepare_v2(db, sql, -1, &st, nil)
+        guard let st = prepared(sql) else { return [] }
         var index: Int32 = 1
         for text in texts {
             sqlite3_bind_text(st, index, text, -1, Catalog.SQLITE_TRANSIENT)
