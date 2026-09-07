@@ -36,6 +36,7 @@ import argparse
 import io
 import os
 import sys
+import time
 from collections import Counter, defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -51,7 +52,8 @@ from eval.adapter import ground_truth, load_manifest          # noqa: E402
 from pvm import kpi, pipeline, taxonomy                       # noqa: E402
 from pvm.catalog import Catalog                               # noqa: E402
 from pvm.verdict import Assignment, Classification, Evidence  # noqa: E402
-from pvm.risk import (ACTING_ACTIONS, Action, classify_risk,  # noqa: E402
+from pvm.risk import (ACTING_ACTIONS, Action, Factors, classify_risk,  # noqa: E402
+                      decide_action, lifecycle_of, recoverability_of,
                       NEVER_DELETE_AT_OR_ABOVE, NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE,
                       REMOVING_ACTIONS, Importance, Risk, equivalence_table,
                       policy_table)
@@ -276,6 +278,75 @@ def risk_evaluation(truth, catalog) -> dict:
             "acted_below_true_floor": acted_below_true_floor, "blind": blind,
             "acted": len(acted),
             "matrix": matrix, "skipped_duplicates": len(duplicates)}
+
+
+def action_evaluation(truth, catalog) -> dict:
+    """Tier 1-C: 重点是 Suggest Delete 的 False Positive.
+
+    The rate has never been measured, and the register said so for as long as it has
+    existed. It is derivable the same way §19's risk grading is, and by the same
+    argument: the action is a function of the factors, the factors are a function of
+    the category, and the corpus labels categories. So the counterfactual is *what the
+    policy would have proposed given a perfect classification* — `decide_action` run
+    over the true category's risk and lifecycle rather than the predicted one's.
+
+    A Suggest Delete is a false positive when the engine offers to remove something
+    that a correctly-classified library would have kept, protected or archived. That is
+    the number Tier 1-C is about, and it is a statement about the *classifier* reaching
+    the *policy*, which is why it cannot be measured inside either one alone.
+
+    Held constant across both sides, deliberately:
+
+    * **Confidence.** The counterfactual is a perfect classification, so it is 1.0 —
+      otherwise this would measure the confidence gate rather than the mistake.
+    * **Byte identity and capture date.** Both are measured metadata rather than
+      classification outputs, so they are the same fact on both sides. Withholding the
+      date was the first version of this function and it made the number meaningless:
+      `lifecycle_of` with no age returns TEMPORARY rather than EXPIRED, so every
+      expired screenshot the engine correctly offered to remove came back as a false
+      positive and the rate read 85.7%. A counterfactual that changes more than the one
+      thing being tested is not a counterfactual.
+    """
+    duplicates = {r[0] for r in catalog.db.execute(
+        "SELECT asset_id FROM proposals WHERE action='auto_clean'")}
+    proposed = dict(catalog.db.execute("SELECT asset_id, action FROM proposals"))
+    created = dict(catalog.db.execute("SELECT asset_id, created_at FROM assets"))
+    now = time.time()
+
+    false_positives, true_positives, missed = [], [], []
+    for aid, action in proposed.items():
+        t = truth.get(aid)
+        if not t:
+            continue
+        paths = [p for p in (t.get("paths") or []) if taxonomy.is_node(p)]
+        if not paths:
+            continue
+        c = Classification(aid, [Assignment(p, [Evidence("truth", Tier.METADATA, 1.0,
+                                                         "ground truth")]) for p in paths])
+        want_risk = classify_risk(c, is_exact_duplicate=aid in duplicates,
+                                  has_person=any(p.startswith("People") for p in paths))
+        when = created.get(aid)
+        age_days = max(0.0, (now - when) / 86400) if when else None
+        want = decide_action(Factors(
+            risk=want_risk,
+            lifecycle=lifecycle_of(c, age_days),
+            confidence=1.0,
+            recoverability=recoverability_of(want_risk),
+            importance=importance.assess(importance.ImportanceSignals(
+                paths=paths, recoverability=recoverability_of(want_risk),
+                is_irreplaceable=want_risk == Risk.R6_IRREPLACEABLE)).level,
+            is_exact_duplicate=aid in duplicates))
+
+        offered = action in {a.value for a in REMOVING_ACTIONS}
+        should = want in REMOVING_ACTIONS
+        if offered and not should:
+            false_positives.append((aid, action, want.value, want_risk.name))
+        elif offered and should:
+            true_positives.append(aid)
+        elif should and not offered:
+            missed.append((aid, action, want.value))
+    return {"false_positives": false_positives, "true_positives": true_positives,
+            "missed": missed, "proposals": len(proposed)}
 
 
 def safety_audit(catalog: Catalog) -> dict:
@@ -525,6 +596,42 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
                 cells.append(f"**{count:,}**" if have == want else (f"{count:,}" if count else "·"))
             w(f"| {want.name} | " + " | ".join(cells) + " |\n")
         w("\n")
+
+    # ---- Tier 1-C's own number ------------------------------------------
+    actions = action_evaluation(truth, catalog)
+    offered = len(actions["false_positives"]) + len(actions["true_positives"])
+    w("## Tier 1-C — Suggest Delete 的 False Positive\n\n")
+    w("Derivable by the same argument as §19 above: the action is a function of the "
+      "factors, the factors are a function of the category, and the corpus labels "
+      "categories. So the counterfactual is what `decide_action` would have proposed "
+      "given a *perfect* classification. A false positive is the engine offering to "
+      "remove something a correctly-classified library would have kept. Confidence is "
+      "held at 1.0 on the counterfactual side — otherwise this would measure the "
+      "confidence gate rather than the mistake — and byte identity and the capture date "
+      "are the same facts on both sides, because both are measured metadata rather "
+      "than classification outputs.\n\n")
+    w(f"- assets offered for removal: **{offered:,}** of {total:,} "
+      f"({offered/total*100:.2f}%)\n")
+    w(f"- of those, ones a perfect classification would also have removed: "
+      f"**{len(actions['true_positives']):,}**\n")
+    w(f"- **Suggest Delete false positives: {len(actions['false_positives']):,}**"
+      + (f" ({len(actions['false_positives'])/offered*100:.1f}% of what was offered)"
+         if offered else "") + "\n")
+    w(f"- removals a perfect classification would have offered and this one did not: "
+      f"{len(actions['missed']):,} — the cost of caution, in automation not taken\n")
+    w(f"\n**Read this the way §19's top of the scale should be read.** {offered:,} "
+      f"offers out of {total:,} assets is a very conservative engine, and a 0% false "
+      "positive rate over that many offers is evidence that the policy table and the "
+      "classifier agree — it is not a rate anyone should quote at a larger scale. The "
+      "same corpus that makes the engine cautious here is the one that gives it no "
+      "signal for a third of its own library.\n\n" if not actions["false_positives"]
+      else "\n")
+    if actions["false_positives"]:
+        w("\n| asset | offered | a perfect classification would | true risk |\n")
+        w("|---|---|---|---|\n")
+        for aid, got, want, risk in sorted(actions["false_positives"])[:15]:
+            w(f"| {aid} | {got} | {want} | {risk} |\n")
+    w("\n")
 
     # ---- Tier 1-D's six indexes -----------------------------------------
     coverage = catalog.index_coverage()
@@ -881,7 +988,7 @@ def _selftest_report_renders() -> List[str]:
             text = buf.getvalue()
             for heading in ("Root-level classification", "Constitution §18 KPIs",
                             "Safety red lines", "Tier 1-D", "§11", "§4 精细",
-                            "§19", "Risk policy table"):
+                            "§19", "Tier 1-C", "Risk policy table"):
                 if heading not in text:
                     fails.append(f"report() omitted the {heading!r} section")
             if ablation and "Ablation" not in text:
