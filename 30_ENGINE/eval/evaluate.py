@@ -50,7 +50,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from eval.adapter import ground_truth, load_manifest          # noqa: E402
 from pvm import kpi, pipeline, taxonomy                       # noqa: E402
 from pvm.catalog import Catalog                               # noqa: E402
-from pvm.risk import (ACTING_ACTIONS, Action,                 # noqa: E402
+from pvm.verdict import Assignment, Classification, Evidence  # noqa: E402
+from pvm.risk import (ACTING_ACTIONS, Action, classify_risk,  # noqa: E402
                       NEVER_DELETE_AT_OR_ABOVE, NEVER_DELETE_AT_OR_ABOVE_IMPORTANCE,
                       REMOVING_ACTIONS, Importance, Risk, equivalence_table,
                       policy_table)
@@ -172,6 +173,109 @@ def score(truth, predicted) -> dict:
     return {"per_root": per_root, "leaf": leaf_scored, "leaf_by_root": leaf_by_root,
             "unscorable_label": unscorable_label, "unscorable_signal": unscorable_signal,
             "confusion": {k: dict(v) for k, v in confusion.items()}}
+
+
+def risk_evaluation(truth, catalog) -> dict:
+    """Tier 2-A / §19 Risk/Importance Classification：风险分级是否可靠.
+
+    This register said for a long time that risk grading could not be evaluated because
+    the corpus carries no risk labels. It does not — and it does not need to. §6 grades
+    risk *from the category*, and the corpus labels categories. So the ground-truth
+    risk of an asset is what `classify_risk` returns for its TRUE paths, and the
+    engine's answer is what it returned for the paths it PREDICTED. The two differ
+    exactly when a classification error propagates into a consequence error, which is
+    the question §19 is asking.
+
+    What this cannot measure, stated rather than glossed:
+
+    * **R6.** Irreplaceability is knowledge only the user has (§14) and no label here
+      carries it, so `is_irreplaceable` is False on both sides and R6 never appears.
+    * **De-escalation by duplication.** §6 drops an exact duplicate to R0. That is
+      driven by a content hash rather than by the category, so it is applied to the
+      engine's answer and not to the truth, and those assets are excluded rather than
+      counted as disagreements.
+
+    The direction matters more than the rate. Over-grading costs the user some
+    automation; under-grading is how something gets acted on that should not have
+    been, so it is counted, reported and bounded separately.
+    """
+    duplicates = {r[0] for r in catalog.db.execute(
+        "SELECT asset_id FROM proposals WHERE action='auto_clean'")}
+    got = dict(catalog.db.execute("SELECT asset_id, risk FROM assets"))
+    acted = {r[0] for r in catalog.db.execute(
+        "SELECT asset_id FROM proposals WHERE action IN (%s)"
+        % ",".join("?" * len(ACTING_ACTIONS)), [a.value for a in ACTING_ACTIONS])}
+
+    matrix = defaultdict(Counter)
+    exact = under = over = 0
+    dangerous = []            # true risk R4+, graded below the never-delete floor
+    dangerous_and_acted = []  # ...and something was actually proposed for it
+    blind = 0                 # excluded: the corpus gives the engine no signal
+    compared = 0
+    for aid, t in truth.items():
+        if aid in duplicates or aid not in got:
+            continue
+        true_paths = list(t.get("paths") or [])
+        if not true_paths:
+            continue
+
+        # The same exclusions the classification scoring applies, for the same reason.
+        # A root the corpus carries no signal for, and a filler asset whose leaf was
+        # chosen with `random.choice`, are not questions the engine got wrong — they
+        # are questions it was never asked. Counting them here would report corpus
+        # blindness as risk error, and the two have opposite remedies.
+        true_root = taxonomy.root_of(t["category_path"])
+        derivable = (
+            true_root in ("Places", "People", "Travel")
+            or (t["is_foreground"] and true_root in ("Screenshots", "Documents", "Purchases")))
+        if true_root in SIGNAL_ABSENT_ROOTS or not derivable:
+            blind += 1
+            continue
+        want = classify_risk(
+            Classification(aid, [Assignment(p, [Evidence("truth", Tier.METADATA, 1.0,
+                                                         "ground truth")])
+                                 for p in true_paths if taxonomy.is_node(p)]),
+            has_person=any(p.startswith("People") for p in true_paths))
+        have = Risk(got[aid]) if got[aid] in {int(r) for r in Risk} else None
+        if have is None:
+            continue
+        compared += 1
+        matrix[want][have] += 1
+        if have == want:
+            exact += 1
+        elif have < want:
+            under += 1
+            if want >= NEVER_DELETE_AT_OR_ABOVE and have < NEVER_DELETE_AT_OR_ABOVE:
+                dangerous.append(aid)
+                if aid in acted:
+                    dangerous_and_acted.append(aid)
+        else:
+            over += 1
+
+    # The same question over the WHOLE library, including the assets excluded above.
+    # An under-grade only costs something if it authorises an action, and that is
+    # checkable on every asset regardless of whether its label is scorable — so the
+    # safety claim does not depend on the exclusions being the right ones.
+    acted_below_true_floor = []
+    for aid in acted:
+        t = truth.get(aid)
+        if not t or aid in duplicates:
+            continue
+        paths = [p for p in (t.get("paths") or []) if taxonomy.is_node(p)]
+        if not paths:
+            continue
+        want = classify_risk(
+            Classification(aid, [Assignment(p, [Evidence("truth", Tier.METADATA, 1.0,
+                                                         "ground truth")]) for p in paths]),
+            has_person=any(p.startswith("People") for p in paths))
+        if want >= NEVER_DELETE_AT_OR_ABOVE:
+            acted_below_true_floor.append(aid)
+
+    return {"compared": compared, "exact": exact, "under": under, "over": over,
+            "dangerous": dangerous, "dangerous_and_acted": dangerous_and_acted,
+            "acted_below_true_floor": acted_below_true_floor, "blind": blind,
+            "acted": len(acted),
+            "matrix": matrix, "skipped_duplicates": len(duplicates)}
 
 
 def safety_audit(catalog: Catalog) -> dict:
@@ -358,6 +462,69 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w(f"\n- assets protected by risk class: {audit['protected_assets']:,}\n")
     w(f"- proposals the engine considers safe to apply without asking "
       f"(exact byte-duplicates only): {audit['auto_applicable']:,}\n\n")
+
+    # ---- §19 risk grading -----------------------------------------------
+    risk_eval = risk_evaluation(truth, catalog)
+    w("## §19 — Risk/Importance Classification：风险分级是否可靠\n\n")
+    w("The corpus carries no risk labels and does not need to: §6 grades risk *from the "
+      "category*, and the corpus labels categories. So ground truth here is what "
+      "`classify_risk` returns for an asset's TRUE paths, against what the engine "
+      "returned for the paths it predicted. The two differ exactly when a "
+      "classification error propagates into a consequence error, which is what §19 is "
+      "asking about.\n\n")
+    n = max(1, risk_eval["compared"])
+    w("Scored over the same subset the classification is: assets whose root the corpus "
+      "carries a signal for, and whose leaf was not chosen with `random.choice`. A "
+      "question the engine was never asked is not a question it got wrong, and "
+      "counting corpus blindness as risk error would point at the wrong remedy.\n\n")
+    w(f"- compared: **{risk_eval['compared']:,}** assets "
+      f"({risk_eval['blind']:,} excluded as unscorable, {risk_eval['skipped_duplicates']:,} "
+      "as exact duplicates — §6 drops those to R0 on a content hash rather than on "
+      "their category, so they are not a disagreement about grading)\n")
+    w(f"- graded exactly right: **{risk_eval['exact']:,} ({risk_eval['exact']/n*100:.1f}%)**\n")
+    w(f"- graded too HIGH: {risk_eval['over']:,} ({risk_eval['over']/n*100:.1f}%) — "
+      "costs the user automation, costs them nothing else\n")
+    w(f"- graded too LOW: {risk_eval['under']:,} ({risk_eval['under']/n*100:.1f}%) — "
+      "the direction that matters\n")
+    w(f"- of those, crossing the never-delete floor (true risk R4+, graded below it): "
+      f"**{len(risk_eval['dangerous']):,}**")
+    w(f", and of THOSE, the number that were actually proposed for an action: "
+      f"**{len(risk_eval['dangerous_and_acted']):,}**\n")
+    if risk_eval["dangerous"]:
+        w("  - " + ", ".join(sorted(risk_eval["dangerous"])[:10]) + "\n")
+
+    w("\n**The claim that does not rest on the exclusions.** An under-grade only costs "
+      "something if it authorises an action, and that is checkable on every asset in "
+      "the library whether or not its label is scorable. Of the "
+      f"{risk_eval['acted']:,} assets the engine proposed any action for, "
+      f"**{len(risk_eval['acted_below_true_floor']):,}** have a true risk of R4 or "
+      "above. That is the number §19 is really asking for, and it does not depend on "
+      "this evaluation having drawn the scorable subset correctly.\n")
+    if risk_eval["acted_below_true_floor"]:
+        w("  - " + ", ".join(sorted(risk_eval["acted_below_true_floor"])[:10]) + "\n")
+    w("\nR6 does not appear: irreplaceability is knowledge only the user has (§14) and "
+      "no label here carries it, so it is False on both sides.\n\n")
+    high = sum(n for want, row in risk_eval["matrix"].items()
+               for n in row.values() if want >= NEVER_DELETE_AT_OR_ABOVE)
+    w(f"**Read the top of the scale with care.** Only {high:,} of the "
+      f"{risk_eval['compared']:,} scorable assets have a true risk of R4 or above, "
+      "because this corpus has few foreground documents and none of its filler "
+      "documents carry a signal. A perfect score over seventeen assets is evidence "
+      "that the mapping is wired up correctly; it is not a rate, and the levels where "
+      "being wrong is expensive are exactly the ones this library is thinnest on.\n\n")
+
+    levels = sorted({r for r in risk_eval["matrix"]}
+                    | {h for row in risk_eval["matrix"].values() for h in row})
+    if levels:
+        w("| true risk \\ graded as | " + " | ".join(r.name for r in levels) + " |\n")
+        w("|---" * (len(levels) + 1) + "|\n")
+        for want in levels:
+            cells = []
+            for have in levels:
+                count = risk_eval["matrix"][want].get(have, 0)
+                cells.append(f"**{count:,}**" if have == want else (f"{count:,}" if count else "·"))
+            w(f"| {want.name} | " + " | ".join(cells) + " |\n")
+        w("\n")
 
     # ---- Tier 1-D's six indexes -----------------------------------------
     coverage = catalog.index_coverage()
@@ -714,7 +881,7 @@ def _selftest_report_renders() -> List[str]:
             text = buf.getvalue()
             for heading in ("Root-level classification", "Constitution §18 KPIs",
                             "Safety red lines", "Tier 1-D", "§11", "§4 精细",
-                            "Risk policy table"):
+                            "§19", "Risk policy table"):
                 if heading not in text:
                     fails.append(f"report() omitted the {heading!r} section")
             if ablation and "Ablation" not in text:

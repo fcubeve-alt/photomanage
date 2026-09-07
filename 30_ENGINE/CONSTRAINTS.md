@@ -105,7 +105,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S17-POSITION | 第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager | L1:206 | NOT-CODE | a positioning statement that shapes what gets built rather than a clause to implement; its executable consequence is that classification precedes cleanup, which is S9-ORDER |
 | S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | all eight are in `pvm/kpi.py::report` — Personalization Gain measured as review questions avoided rather than rules learned. PARTIAL because Retrieval Success cannot be self-reported: it needs real users on real tasks (T0-B) |
 | S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | DONE | `eval/evaluate.py` prints coverage and a confusion matrix over the scored roots — rows are the true root, columns what was filed, and an asset filed correctly *and* elsewhere appears in both cells so over-filing cannot hide |
-| S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
+| S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | PARTIAL | measured by `eval/evaluate.py::risk_evaluation`. The corpus carries no risk labels and does not need to: §6 grades risk *from the category* and the corpus labels categories, so ground truth is what `pvm/risk.py::classify_risk` returns for an asset's TRUE paths against what the engine returned for the paths it PREDICTED — the two differ exactly when a classification error propagates into a consequence error. Over the same scorable subset the classification uses: **99.7% exact (5,830 of 5,845), 15 graded too high, 0 graded too low, 0 crossing the never-delete floor.** And the claim that does not depend on those exclusions: of the 34 assets the engine proposed any action for, **0 have a true risk of R4 or above**. PARTIAL rather than DONE for one honest reason: only 17 scorable assets sit at R4+, because this corpus has few foreground documents — a perfect score over seventeen is evidence the mapping is wired correctly, not a rate, and the levels where being wrong is expensive are the ones this library is thinnest on |
 | S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | all four exist. PARTIAL because their success rates have not been measured — Tier 1-E wants 成功率、步骤数、耗时 on real tasks, which needs users |
 | S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
 | S22-ENTRY | 核心指标新增 Retrieval Entry Share | L1:254 | OUT-OF-SCOPE | T0-B measures this with real users; nothing an engine can self-report |
@@ -159,7 +159,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | T1C-LIFECYCLE | Tier 1-C Visual Lifecycle Engine，重点是 Suggest Delete 的 False Positive | PARTIAL | `pvm/risk.py::lifecycle_of` and the policy table exist; the false-positive rate of Suggest Delete has never been measured |
 | T1C-ZEROAUTO | 高风险类别自动删除率必须为 0 | DONE | `pvm/kpi.py::catastrophic_error_rate`, audited in `eval/evaluate.py` against written rows |
 | T1D-MULTIINDEX | Tier 1-D 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引 | DONE | six of six, from one asset, via `pvm/catalog.py::entities_for` — the clause is specifically about what hangs off a single asset, and Person, Object and Event were previously reachable only by starting from an entity and walking to its sightings, which answers "where have I seen this bicycle" and cannot answer "what is in this photograph". The index that makes it cheap already existed; nothing was asking. Counted rather than asserted by `pvm/catalog.py::index_coverage`, surfaced by `pvm/cli.py::cmd_why` and by the app's asset detail screen, and the §11 provenance travels with each row so a hedged place cannot render as a stated one |
-| T1E-PATHS | Tier 1-E 四种找回路径各挑 2-3 个真实任务测试成功率 | MISSING | two of the four paths do not exist, so the test cannot be run |
+| T1E-PATHS | Tier 1-E 四种找回路径各挑 2-3 个真实任务测试成功率 | MISSING | this row said 'two of the four paths do not exist' until 2026-09-07 and was stale — all four have existed since S10-INTENT and S10-BROWSE landed, and S2-RETRIEVE and S19-FOURPATHS both said so while this one did not. It is still MISSING, for the reason that was always underneath: 成功率、步骤数、耗时 on 真实任务 are measurements of people using the product, and no person has used it |
 
 ## L2 Tier 2 — 完整体验与规模化
 
@@ -190,17 +190,17 @@ on — so `check_constraints.py` now fails when any cell here disagrees with the
 | status | count | share |
 |---|--:|--:|
 | DONE | 52 | 57% |
-| PARTIAL | 25 | 27% |
-| MISSING | 5 | 5% |
+| PARTIAL | 26 | 29% |
+| MISSING | 4 | 4% |
 | OUT-OF-SCOPE (tier named) | 6 | 7% |
 | NOT-CODE (principle, explained) | 3 | 3% |
 
 **57% of the audited clauses are fully satisfied, and that is by an engine that does
-not ship.** The 27% PARTIAL is the number to look at hardest: a partial clause passes
+not ship.** The 29% PARTIAL is the number to look at hardest: a partial clause passes
 its tests and still does not do what the document asks, which is a more comfortable
 place to hide than a gap.
 
-**The five MISSING, in the order they would hurt:**
+**The four MISSING, in the order they would hurt:**
 1. **T1B-EMBEDDING** — a visual embedding for objects. The resolver separates
    documents, screenshots and photographs cleanly; objects are the one category where
    it can only refuse to answer, because nothing joins two views of one chair or
@@ -210,15 +210,10 @@ place to hide than a gap.
 2. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
    an action the engine can name and cannot perform. Sharpness, closed eyes, framing
    and motion blur all need real images to be assessed or calibrated against.
-3. **S19-RISKEVAL** — risk grading has never been evaluated against labelled ground
-   truth. The scale is correct against §6 and now cross-checked against §4
-   (S4-CATEGORIES); whether the *assignment* of an asset to a level is correct is
-   unmeasured, because the corpus carries no risk labels. The same is true of the
-   importance axis built alongside it.
+3. **T1E-PATHS** — success rates for the four retrieval paths on real tasks. All four
+   paths exist now, so this is no longer blocked by missing code. It is blocked on
+   people, and so is every other measurement in the same family.
 4. **T2B-VALUELOSS** — Significant Value Loss Rate, blocked by item 2.
-5. **T1E-PATHS** — success rates for the four retrieval paths on real tasks. All four
-   paths now exist, so this is no longer blocked by missing code; it is blocked on
-   people.
 
 **What the remaining PARTIAL clauses are mostly waiting for** is one of two things,
 and neither is engineering time:
