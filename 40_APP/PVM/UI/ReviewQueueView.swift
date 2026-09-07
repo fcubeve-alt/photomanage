@@ -99,6 +99,18 @@ struct ReviewQueueView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.note).font(.callout)
                             Text(item.why).font(.caption).foregroundStyle(.secondary)
+                            // §5's Importance, shown only where it changes what the
+                            // user should do. A badge on every row would be noise; a
+                            // badge on the rows that matter is the point of ordering
+                            // the queue by it in the first place.
+                            if let level = item.importance, level >= .i3Meaningful {
+                                Text(level == .i4Treasured
+                                     ? "This one matters — \(level.meaning)"
+                                     : level.meaning)
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                                    .accessibilityIdentifier("importance-\(item.assetID)")
+                            }
                         }
                     }
                     answers(for: item)

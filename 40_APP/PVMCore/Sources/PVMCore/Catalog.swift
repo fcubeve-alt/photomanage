@@ -913,28 +913,43 @@ public final class Catalog: @unchecked Sendable {
         /// one teaches nothing — it would be a fact about a single photo the user is
         /// probably about to stop owning.
         public let path: String
+        /// §5's sixth factor, carried so the queue can be ordered by what is actually
+        /// at stake. Nil for a row written before the axis existed.
+        public let importance: Importance?
     }
 
+    /// §12 wants this queue 极小. It is not always going to be, so the second-best
+    /// thing is that whatever the user has patience for is spent on the questions that
+    /// matter — which is a statement about importance, not about recency.
+    ///
+    /// Ordered by importance first and date second. The previous ordering was date
+    /// alone, which put a screenshot from this morning above a photograph of someone's
+    /// family from last year: strictly worse for a person who will answer the first
+    /// five and close the app.
     public func reviewQueue(limit: Int = 100) -> [ReviewItem] {
         var out: [ReviewItem] = []
-        var st: OpaquePointer?
-        sqlite3_prepare_v2(db, """
+        guard let st = prepared("""
             SELECT a.asset_id, p.action, p.note, p.why,
                    COALESCE((SELECT s.path FROM assignments s
                              WHERE s.asset_id = a.asset_id
-                             ORDER BY s.is_primary DESC, s.confidence DESC LIMIT 1), '')
+                             ORDER BY s.is_primary DESC, s.confidence DESC LIMIT 1), ''),
+                   a.importance
             FROM assets a JOIN proposals p ON p.asset_id = a.asset_id
             WHERE a.needs_review = 1 OR p.action = 'review'
-            ORDER BY a.created_at DESC LIMIT ?;
-            """, -1, &st, nil)
+            ORDER BY COALESCE(a.importance, 2) DESC, a.created_at DESC LIMIT ?;
+            """) else { return [] }
         sqlite3_bind_int(st, 1, Int32(limit))
         while sqlite3_step(st) == SQLITE_ROW {
             guard let a = sqlite3_column_text(st, 0), let b = sqlite3_column_text(st, 1),
                   let c = sqlite3_column_text(st, 2), let d = sqlite3_column_text(st, 3)
             else { continue }
+            var importance: Importance?
+            if sqlite3_column_type(st, 5) != SQLITE_NULL {
+                importance = Importance(rawValue: Int(sqlite3_column_int(st, 5)))
+            }
             out.append(ReviewItem(assetID: String(cString: a), action: String(cString: b),
                                   note: String(cString: c), why: String(cString: d),
-                                  path: Catalog.text(st, 4)))
+                                  path: Catalog.text(st, 4), importance: importance))
         }
         sqlite3_finalize(st)
         return out
