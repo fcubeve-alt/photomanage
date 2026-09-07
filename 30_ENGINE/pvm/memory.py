@@ -282,6 +282,18 @@ def build(assets: Sequence[AssetSignals],
         # and quietly dropped from the rest.
         place_source = "measured" if (asset.geo is None or asset.geo.source == "exif") \
             else "inferred"
+        # §11's inference (`pvm/infer.py`) lives in the context rather than on the
+        # asset, because the assets are the caller's and the engine does not rewrite
+        # them. Without this the memory would have had no place for these assets at
+        # all — which is safe — but the moment the classifier started filing them under
+        # `Places`, a graph that said nothing about where they were would have been
+        # answering "where did I last see this" from a smaller library than the one the
+        # user browses.
+        if place_name is None and context is not None:
+            guess = context.inferred_place_for(asset.asset_id)
+            if guess is not None:
+                place_name = guess.place.city or guess.place.country
+                place_source = "inferred"
 
         _people(asset, c, place_name, place_source, graph)
         _places(asset, c, place_name, place_source, graph)

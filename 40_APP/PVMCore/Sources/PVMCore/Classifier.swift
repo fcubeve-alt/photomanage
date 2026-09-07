@@ -175,25 +175,75 @@ public struct Classifier {
     /// not belong on the Places shelf next to the holiday photos.
     private static let notPlaces: Set<String> = ["Documents", "Purchases", "Screenshots", "Downloads"]
 
+    /// A measured GPS fix is the single strongest cheap signal in a camera roll, and it
+    /// is already in the metadata row.
+    ///
+    /// §11 also allows the location to be *inferred* from 相邻时间照片 as long as the
+    /// confidence is kept, so when there is no fix `PlaceInference` gets a turn. The
+    /// two paths are kept visibly apart rather than merged behind one variable: the
+    /// weight differs, the signal name differs, and the reason shown to the user says
+    /// outright that nothing was saved with the photo. A measured fix and a good guess
+    /// must never be able to look the same on the screen.
     private func places(_ a: AssetSignals, _ c: inout Classification) {
-        guard let geo = a.geo, geo.source == .exif else { return }
-        guard let place = a.place, let country = place.country else { return }
         if c.assignments.contains(where: { Classifier.notPlaces.contains(TaxonomyRuntime.root(of: $0.path)) }) {
             return
         }
-        var parts = ["Places", country]
-        var reason = "the location saved with the photo is in \(country)"
-        if let city = place.city {
-            parts.append(city)
-            reason = "the location saved with the photo is in \(city), \(country)"
+
+        let measured = a.geo?.source == .exif
+        let place: PlaceName
+        let signal: String
+        let weight: Double
+        let reason: String
+
+        if measured, let geo = a.geo, let p = a.place, let country = p.country {
+            place = p
+            signal = "geo"
+            weight = min(0.92, 0.55 + 0.40 * p.confidence) * geo.confidence
+            reason = p.city.map { "the location saved with the photo is in \($0), \(country)" }
+                ?? "the location saved with the photo is in \(country)"
+        } else if !measured, let guess = context.inferredPlace(for: a.assetID) {
+            // Minimum Necessary Inference applied to the ACTION and not only to the
+            // claim: the guess is still recorded and reaches the memory graph, the
+            // catalogue and search, but it does not go on the `Places` shelf when the
+            // asset already has a home in the tree. Measured rather than argued —
+            // filing every inference cost 279 `Places` false positives on the 10k
+            // library and gained no recall.
+            if Classifier.alreadyPlaced(c) { return }
+            place = guess.place
+            signal = "geo:inferred"
+            // The inference's own confidence IS the weight. Anything that lifted it
+            // here would be laundering: §11 says the confidence must be kept, and
+            // keeping it in a field while using a different number is not keeping it.
+            weight = guess.confidence
+            reason = guess.reason
+        } else {
+            return
         }
-        guard let path = TaxonomyRuntime.ensure(parts.joined(separator: Taxonomy.separator)) else { return }
-        let weight = min(0.92, 0.55 + 0.40 * place.confidence) * geo.confidence
-        let isPrimary = !c.assignments.contains { $0.isPrimary }
-        if let e = Evidence(signal: "geo", tier: .metadata, weight: weight, reason: reason),
+
+        guard let country = place.country else { return }
+        var parts = ["Places", country]
+        if let city = place.city { parts.append(city) }
+        guard let path = TaxonomyRuntime.ensure(parts.joined(separator: Taxonomy.separator))
+        else { return }
+
+        // An inferred place is never the primary category. The primary is what the
+        // asset most *is*, and "probably Tokyo" is not a stronger statement about a
+        // photograph than anything the engine actually measured about it.
+        let isPrimary = measured && !c.assignments.contains { $0.isPrimary }
+        if let e = Evidence(signal: signal, tier: .metadata, weight: weight, reason: reason),
            let assignment = Assignment(path: path, evidence: [e], isPrimary: isPrimary) {
             c.add(assignment)
         }
+    }
+
+    /// Does this asset have a home in the tree yet?
+    ///
+    /// `Timeline` does not count: every asset is on it, so it is an index rather than
+    /// somewhere the user browses *to*. `places` runs after the scene, face and text
+    /// rules and before `travel`, so by the time this is asked the answer is complete
+    /// for every root that can compete with a location.
+    private static func alreadyPlaced(_ c: Classification) -> Bool {
+        c.assignments.contains { TaxonomyRuntime.root(of: $0.path) != "Timeline" }
     }
 
     /// Travel is a library-level judgement, not a per-photo one: a run of days spent

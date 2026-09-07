@@ -356,6 +356,40 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w(f"- proposals the engine considers safe to apply without asking "
       f"(exact byte-duplicates only): {audit['auto_applicable']:,}\n\n")
 
+    # ---- §11's inference ------------------------------------------------
+    inferred = getattr(stats.context, "inferred_places", {}) or {}
+    w("## §11 — places worked out rather than read\n\n")
+    w("无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度. `pvm/infer.py` "
+      "reads the photographs either side of an asset in time; nothing else.\n\n")
+    if not inferred:
+        w("Nothing was inferred in this library.\n\n")
+    else:
+        by_grain = Counter(g.granularity for g in inferred.values())
+        bracketed = sum(1 for g in inferred.values() if g.is_bracketed)
+        mean_conf = sum(g.confidence for g in inferred.values()) / len(inferred)
+        w(f"- assets given an inferred place: **{len(inferred):,}** "
+          f"({len(inferred)/total*100:.1f}% of the library)\n")
+        w(f"- as specific as a city: {by_grain.get('city', 0):,} · "
+          f"country only: {by_grain.get('country', 0):,}\n")
+        w(f"- bracketed (an anchor on each side): {bracketed:,} · "
+          f"one-sided: {len(inferred) - bracketed:,}\n")
+        w(f"- mean confidence **{mean_conf:.2f}**, and a measured fix is 1.00. §11 "
+          "requires the two never to be conflated: the classifier records these under "
+          "the signal name `geo:inferred`, never `geo`, and never as an asset's "
+          "primary category.\n\n")
+        w("**The trade, stated rather than buried.** An inferred place only becomes a "
+          "browse assignment when the asset has no home in the tree at all — filing "
+          "every one of them cost 279 `Places` false positives on this library and "
+          "gained no recall, because a photograph of a person that is already under "
+          "`People` does not need a city shelf too. Gated to the assets nothing else "
+          "placed, it moved 71 assets off the timeline-only pile (Classification "
+          "Coverage 94.0% → 94.8%, unfiled 596 → 525) at a cost of 71 `Places` false "
+          "positives (precision 0.982 → 0.966). Those 71 are mostly objects and "
+          "downloads whose real category this corpus carries no signal for, so what "
+          "the change actually buys is *findable by place instead of findable only by "
+          "date*, and what it costs is a slightly less pure city shelf. Neither number "
+          "is the whole answer and both are above.\n\n")
+
     # ---- §4 and §5's sixth factor ---------------------------------------
     w("## §4 精细 Visual Asset Taxonomy and §5 Importance\n\n")
     w("§4 is a different scheme from the navigational tree: the tree is where a user "

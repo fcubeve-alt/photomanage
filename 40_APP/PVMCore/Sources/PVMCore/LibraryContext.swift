@@ -60,6 +60,10 @@ public struct LibraryContext {
     /// neighbours: a lone photograph is not a session, and inventing one would put a
     /// browse entry in front of the user for every stray shot they ever took.
     public var moments: [String: Moment] = [:]
+    /// §11 无 GPS 时可以利用相邻时间照片…推断，但必须保存置信度. assetID → the place
+    /// worked out from the photographs either side of it in time. Absent for every
+    /// asset the evidence did not reach, which is most of them.
+    public var inferredPlaces: [String: InferredPlace] = [:]
     public var assetCount: Int = 0
 
     public init() {}
@@ -75,6 +79,10 @@ public struct LibraryContext {
     }
 
     public func moment(for assetID: String) -> Moment? { moments[assetID] }
+
+    public func inferredPlace(for assetID: String) -> InferredPlace? {
+        inferredPlaces[assetID]
+    }
 
     public func trip(for when: Date?, geo: GeoFix?) -> Trip? {
         guard let w = when, isAway(geo) else { return nil }
@@ -195,6 +203,11 @@ public enum LibraryContextBuilder {
 
         ctx.trips = findTrips(located, home: ctx.home, calendar: cal)
         ctx.moments = findMoments(assets)
+        // §11. Last, because it reads only the assets and not the rest of the context.
+        // Keeping the dependency one-way makes it obvious that home and trips are
+        // derived from MEASURED fixes only — an inferred place feeding the home
+        // cluster would be the system learning from itself.
+        ctx.inferredPlaces = PlaceInference.inferPlaces(assets)
         return ctx
     }
 

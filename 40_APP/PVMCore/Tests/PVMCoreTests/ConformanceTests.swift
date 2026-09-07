@@ -122,7 +122,7 @@ final class ConformanceTests: XCTestCase {
     /// The number of assets the fixture is known to contain. A conformance test that
     /// silently compares nothing and passes is the exact failure this file exists to
     /// prevent, so it is guarded against itself.
-    private static let expectedFixtureSize = 78
+    private static let expectedFixtureSize = 81
 
     func testTheFixtureAndTheExpectationsAreActuallyThere() throws {
         let assets = try loadFixture()
@@ -195,6 +195,51 @@ final class ConformanceTests: XCTestCase {
 
             \(mismatches.prefix(12).joined(separator: "\n"))
             """)
+    }
+
+    /// §11's inference, named explicitly rather than left inside the generic path
+    /// comparison. The clause is as much about what is refused as about what is
+    /// claimed, and "assets are filed differently" is not a useful failure message
+    /// when the thing that differs is whether the app invented a location.
+    func testTheAppInfersAndRefusesPlacesTheSameWayTheEngineDoes() throws {
+        TaxonomyRuntime.resetMinted()
+        let assets = try loadFixture()
+        let context = LibraryContextBuilder.build(assets)
+
+        // 1. Bracketed by two Tokyo photos half an hour either side, and nothing else
+        //    places it, so the guess becomes a shelf.
+        let inferred = try XCTUnwrap(context.inferredPlace(for: "nogps-inferred"),
+                                     "the engine infers Tokyo here; the app inferred nothing")
+        XCTAssertEqual(inferred.place.city, "Tokyo")
+        XCTAssertEqual(inferred.granularity, "city")
+        XCTAssertTrue(inferred.isBracketed)
+        XCTAssertLessThan(inferred.confidence, 1.0,
+                          "§11: an inferred fix may never claim as much as a measured one")
+
+        // 2. A face already places it. The inference is still made and must not add a
+        //    city shelf on top.
+        let alsoInferred = try XCTUnwrap(context.inferredPlace(for: "nogps-already-placed"))
+        XCTAssertEqual(alsoInferred.place.city, "Tokyo")
+
+        // 3. Hours from the nearest fix. Nothing may be claimed.
+        XCTAssertNil(context.inferredPlace(for: "nogps-too-far"),
+                     "the app invented a location the engine refused to")
+
+        let classifier = Classifier(context: context)
+        for asset in assets where asset.assetID == "nogps-inferred" {
+            let c = classifier.classify(asset)
+            let places = c.assignments.filter { $0.path.hasPrefix("Places") }
+            XCTAssertEqual(places.count, 1)
+            XCTAssertEqual(places.first?.evidence.first?.signal, "geo:inferred",
+                           "a guess must not be able to look like a measurement")
+            XCTAssertFalse(places.first?.isPrimary ?? true,
+                           "an inferred place is never the primary category")
+        }
+        for asset in assets where asset.assetID == "nogps-already-placed" {
+            let c = classifier.classify(asset)
+            XCTAssertFalse(c.assignments.contains { $0.path.hasPrefix("Places") },
+                           "an asset that already has a home does not need a guessed one")
+        }
     }
 
     /// The risk level and the action are the decisions that authorise doing something

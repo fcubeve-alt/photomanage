@@ -256,8 +256,20 @@ public enum MemoryBuilder {
             // Established once and carried by every observation this asset produces.
             // Attaching the hedge to one entity kind and not the rest is how a place
             // becomes a fact by omission.
-            let placeSource: Observation.Source =
+            var placeSource: Observation.Source =
                 (asset.geo == nil || asset.geo!.source == .exif) ? .measured : .inferred
+            // §11's inference lives in the context rather than on the asset, because
+            // the assets are the caller's and the engine does not rewrite them.
+            // Without this the graph would have said nothing about where these assets
+            // were, while the classifier was filing them under `Places` — so "where
+            // did I last see this" would have answered from a smaller library than the
+            // one the user browses.
+            if placeName == nil, let ctx = context,
+               let guess = ctx.inferredPlace(for: asset.assetID),
+               let n = guess.place.city ?? guess.place.country, !n.isEmpty {
+                placeName = n
+                placeSource = .inferred
+            }
 
             people(asset, placeName, placeSource, &graph)
             places(asset, placeName, placeSource, &graph)

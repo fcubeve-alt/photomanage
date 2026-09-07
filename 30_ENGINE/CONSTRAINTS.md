@@ -1,9 +1,17 @@
 # FULL AUDIT — every authority document, clause by clause, against what is built
 
-**Read this first: there is no app.** What exists is a Python classification engine
-(`30_ENGINE/`) and a Swift stopwatch (`20_TIER0/harness/`). No iOS application, no user
-interface, nothing that installs on a phone. Every "DONE" below means *a clause is
-satisfied by an engine that does not ship*, never that the product does it.
+**Read this first: nothing here has run on a phone.** This line said "there is no
+app" until 2026-09-07 and by then that was false — `40_APP/` holds a SwiftUI application
+with a Structure-First home, category browse, asset detail, search, memory and a review
+queue, plus `PVMCore`, a port of the engine that CI compiles and tests on Linux and on
+Apple's Foundation, and a conformance test that replays the engine's own answers and
+fails if the two disagree.
+
+What is still true, and is the thing to hold on to: **it has never run on a physical
+device and no real person has ever used it.** CI builds it for the Simulator and takes
+screenshots; the UI test suite has not yet had a fully green run. So PF-01 stands —
+there are no device claims in this file — and every "DONE" below means *a clause is
+satisfied by code that has been measured on a desk*, never that a user experienced it.
 
 **Why this file exists (PF-12).** On 2026-09-06 the Owner had to point out that design
 requirements I was presenting as findings were already mandatory in L1 §24 and L1-B §4.
@@ -80,7 +88,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | 年月日 all work now (S3-TIME), as do city and trip; the missing piece is a *named place* within a city, which needs a place database this build does not have — S3-PLACE |
 | S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | PARTIAL | `pvm/intent.py` resolves a sentence against what the library actually indexes — categories, people, places, remembered entities, exact time windows, media type, and 正反面 — in Chinese and English, and `pvm/cli.py::cmd_find` answers the Constitution's first worked example. It cannot answer the second, 找所有有气球的照片, because there is no open-vocabulary visual index; it names 气球 as a term it cannot search and **refuses to answer broadly** rather than returning the whole library. `tests/test_intent.py` (18 tests) is mostly about that refusal |
 | S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | PARTIAL | `pvm/memory.py::MemoryGraph.history` goes from a person, object, purchase or trip to its assets and `pvm/cli.py::cmd_remember` exposes it. What is missing is the join: from a receipt to the warranty document, or from an order screenshot to the delivery photo — that needs the entity resolution T1B-RESOLVER tracks |
-| S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/signals.py::GeoFix` carries `source` and `confidence` and the classifier refuses to use an inferred fix as if measured — but **nothing actually infers**, so assets without GPS get no place at all |
+| S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/infer.py::infer_places` reads the photographs either side of an asset in time and claims the most specific thing they support: a city when both anchors agree on one, a country when they agree only on that, nothing when they disagree or are more than 25 km apart. 必须保存置信度 is a field on `pvm/infer.py::InferredPlace`, and the classifier records it under the signal name `geo:inferred`, never as an asset's primary category, and never at more than 0.80. On the 10k library it reaches 429 assets at mean confidence 0.53. `tests/test_infer.py` (27 tests) is mostly about the refusals. PARTIAL because 地标 — the other signal §11 names — needs vision and is not built, and because an inferred place does not yet join an asset to a Trip, so a photo without GPS taken during the Tokyo trip is filed under the city and not the trip |
 | S11-EVENT | 时间 + 地点 + 人物 + 内容可以自动形成 Event / Trip 候选 | L1:162 | PARTIAL | Trip only (`pvm/context.py::_find_trips`); no other event type is derived |
 | S12-INDEXALL | 扫描全库并建立多维索引 | L1:166 | DONE | `pvm/pipeline.py::run` |
 | S12-CANDIDATES | 建立 Exact / Near Duplicate / Same Moment / Same Entity 候选 | L1:168 | DONE | `pvm/dedup.py::analyse` |
@@ -101,7 +109,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | all four exist. PARTIAL because their success rates have not been measured — Tier 1-E wants 成功率、步骤数、耗时 on real tasks, which needs users |
 | S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
 | S22-ENTRY | 核心指标新增 Retrieval Entry Share | L1:254 | OUT-OF-SCOPE | T0-B measures this with real users; nothing an engine can self-report |
-| S23-STRUCTURE | 首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流 | L1:259 | PARTIAL | the engine produces the counts and the tree a Structure-First home needs; **there is no home, because there is no app** |
+| S23-STRUCTURE | 首页首先展示秩序和目录，而不是再次展示一条无限滚动的照片流 | L1:259 | PARTIAL | there is a home now: `40_APP/PVM/UI/HomeView.swift` opens on the tree and the counts — roots, review queue, search, memory — and there is no photo stream on it anywhere. This row said "there is no home, because there is no app" until 2026-09-07 and was stale. PARTIAL because §23's claim is about what a user experiences on first open, and nobody has opened it: the screen exists and is screenshotted by CI, the 首次全库自动编目与分类体验 §19 asks for has not been observed |
 
 ## L1 §24 — 四个生死关卡
 

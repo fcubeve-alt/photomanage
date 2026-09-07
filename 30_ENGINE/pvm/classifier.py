@@ -184,24 +184,80 @@ class Classifier:
 
     def _places(self, a: AssetSignals, c: Classification) -> None:
         """A measured GPS fix is the single strongest cheap signal in a camera roll,
-        and it is already in the metadata row. §11: an inferred fix is not this."""
-        if a.geo is None or a.geo.source != "exif":
-            return
-        if a.place is None or not a.place.country:
-            return
+        and it is already in the metadata row.
+
+        §11 also allows the location to be *inferred* from 相邻时间照片 as long as the
+        confidence is kept — so when there is no fix, `pvm/infer.py` gets a turn. The
+        two paths are kept visibly apart here rather than merged behind one variable:
+        the weight differs, the signal name differs, and the reason shown to the user
+        says outright that nothing was saved with the photo. A measured fix and a good
+        guess must never be able to look the same on the screen.
+        """
         if any(taxonomy.root_of(x.path) in self._NOT_PLACES for x in c.assignments):
             return
 
-        parts = ["Places", a.place.country]
-        reason = f"the location saved with the photo is in {a.place.country}"
-        if a.place.city:
-            parts.append(a.place.city)
-            reason = f"the location saved with the photo is in {a.place.city}, {a.place.country}"
+        measured = a.geo is not None and a.geo.source == "exif"
+        if measured:
+            if a.place is None or not a.place.country:
+                return
+            place, signal = a.place, "geo"
+            weight = min(0.92, 0.55 + 0.40 * a.place.confidence) * a.geo.confidence
+            reason = f"the location saved with the photo is in {a.place.country}"
+            if a.place.city:
+                reason = (f"the location saved with the photo is in "
+                          f"{a.place.city}, {a.place.country}")
+        else:
+            guess = self.ctx.inferred_place_for(a.asset_id)
+            if guess is None:
+                return
+            place, signal = guess.place, "geo:inferred"
+            # The inference's own confidence IS the weight — no floor, no rescaling.
+            # Anything that lifted it here would be laundering: §11 says the confidence
+            # must be kept, and keeping it in a field while using a different number is
+            # not keeping it.
+            weight = guess.confidence
+            reason = guess.reason
+
+        parts = ["Places", place.country]
+        if place.city:
+            parts.append(place.city)
         path = taxonomy.ensure_node(taxonomy.SEP.join(parts))
 
-        weight = min(0.92, 0.55 + 0.40 * a.place.confidence) * a.geo.confidence
-        is_primary = not any(x.is_primary for x in c.assignments)
-        c.add(Assignment(path, [Evidence("geo", Tier.METADATA, weight, reason)], is_primary=is_primary))
+        if not measured and self._already_placed(c):
+            # Minimum Necessary Inference applied to the ACTION and not only to the
+            # claim. The guess is still recorded — it reaches the memory graph, the
+            # catalogue and search — but it does not go on the `Places` shelf when the
+            # asset already has a home in the tree.
+            #
+            # This is measured rather than argued. Letting every inference file under
+            # `Places` cost 279 false positives on the 10k library and gained nothing:
+            # precision 0.982 → 0.922, recall unchanged at 1.000, mostly photographs of
+            # people that were already correctly filed under `People` and now also
+            # appeared on a city shelf. The corpus cannot reward the inference — it
+            # derives its own Places labels from GPS, so no asset lacking GPS is ever
+            # labelled Places — so the honest reading is that the benefit is unmeasured
+            # here and the cost is real. Where an asset has no home at all, the trade
+            # reverses: a photograph filed nowhere is one the user cannot find, and a
+            # 77%-confidence city is better than the timeline alone.
+            return
+
+        # An inferred place is never the primary category. The primary is what the
+        # asset most *is*, and "probably Tokyo" is not a stronger statement about a
+        # photograph than anything the engine actually measured about it.
+        is_primary = measured and not any(x.is_primary for x in c.assignments)
+        c.add(Assignment(path, [Evidence(signal, Tier.METADATA, weight, reason)],
+                         is_primary=is_primary))
+
+    @staticmethod
+    def _already_placed(c: Classification) -> bool:
+        """Does this asset have a home in the tree yet?
+
+        `Timeline` does not count: every asset is on it, so it is an index rather than
+        a place the user browses *to*. `_places` runs after the scene, face and text
+        rules and before `_travel`, so by the time this is asked the answer is complete
+        for every root that can compete with a location.
+        """
+        return any(taxonomy.root_of(x.path) != "Timeline" for x in c.assignments)
 
     def _travel(self, a: AssetSignals, c: Classification) -> None:
         """Travel is a library-level judgement, not a per-photo one: a run of days

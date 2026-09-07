@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from . import infer
 from .signals import AssetSignals, GeoFix
 
 # A capture this far from the home cluster is somewhere else, not a longer walk.
@@ -98,6 +99,10 @@ class LibraryContext:
     #: neighbours, because a lone photograph is not a session and inventing one would
     #: put a browse entry in front of the user for every stray shot they ever took.
     moments: Dict[str, "Moment"] = field(default_factory=dict)
+    #: §11 无 GPS 时可以利用相邻时间照片…推断，但必须保存置信度. asset_id → the place
+    #: worked out from the photographs either side of it in time. Absent for every
+    #: asset the evidence did not reach, which is most of them.
+    inferred_places: Dict[str, "infer.InferredPlace"] = field(default_factory=dict)
     asset_count: int = 0
 
     @property
@@ -115,6 +120,9 @@ class LibraryContext:
 
     def moment_for(self, asset_id: str) -> Optional["Moment"]:
         return self.moments.get(asset_id)
+
+    def inferred_place_for(self, asset_id: str) -> Optional["infer.InferredPlace"]:
+        return self.inferred_places.get(asset_id)
 
     def trip_for(self, when: Optional[datetime], geo: Optional[GeoFix]) -> Optional[Trip]:
         if when is None or not self.is_away(geo):
@@ -210,6 +218,11 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
 
     ctx.trips = _find_trips(located, ctx)
     ctx.moments = find_moments(assets)
+    # §11. Last, because it reads only the assets and not the rest of the context —
+    # putting it here rather than earlier keeps the dependency one-way and makes it
+    # obvious that home and trips are derived from MEASURED fixes only. An inferred
+    # place feeding the home cluster would be the system learning from itself.
+    ctx.inferred_places = infer.infer_places(assets)
     return ctx
 
 

@@ -115,6 +115,25 @@ def build() -> List[AssetSignals]:
     add("meme-copy", created_at=_at(2025, 11, 20), source="downloaded",
         content_hash="sha::meme", scene_labels=[SceneLabel("meme", 0.9)])
 
+    # §11 — the location inferred from 相邻时间照片. Three cases, because the clause is
+    # as much about what is refused as about what is claimed, and a fixture that only
+    # carries the success would let the two implementations disagree about the refusals
+    # with both suites green.
+    #
+    # `tokyo-0` and `tokyo-1` are on 2025-04-11 at 10:00 and 11:00, so an asset at
+    # 10:30 is bracketed with a 30-minute reach on each side.
+    #
+    # 1. Nothing else places it, so the inference files it under Places > Japan > Tokyo.
+    add("nogps-inferred", created_at=_at(2025, 4, 11, 10).replace(minute=30),
+        source="camera")
+    # 2. A face already places it. The inference is still made and recorded, and it
+    #    must NOT add a city shelf — the whole of the gate in `classifier._places`.
+    add("nogps-already-placed", created_at=_at(2025, 4, 11, 10).replace(minute=40),
+        source="camera", face_clusters=[FaceCluster("c-anna", "Anna", 0.3)])
+    # 3. Hours from the nearest fix, on a day with no anchors at all. Nothing may be
+    #    claimed about where this was taken.
+    add("nogps-too-far", created_at=_at(2025, 4, 20, 15), source="camera")
+
     # An asset nothing can place. The engine must say so rather than invent a home.
     add("mystery", created_at=_at(2026, 5, 5))
     return out

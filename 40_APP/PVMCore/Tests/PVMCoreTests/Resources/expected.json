@@ -560,6 +560,35 @@
   ],
   "risk": 2
  },
+ "nogps-already-placed": {
+  "action": "keep",
+  "asset_class": "people_family",
+  "importance": 3,
+  "paths": [
+   "People > Anna",
+   "Timeline > 2025 > 04 April > 11 > 10:30"
+  ],
+  "risk": 3
+ },
+ "nogps-inferred": {
+  "action": "keep",
+  "asset_class": "everyday_photo",
+  "importance": 2,
+  "paths": [
+   "Places > Japan > Tokyo",
+   "Timeline > 2025 > 04 April > 11 > 10:30"
+  ],
+  "risk": 2
+ },
+ "nogps-too-far": {
+  "action": "review",
+  "asset_class": "undescribed",
+  "importance": 2,
+  "paths": [
+   "Timeline > 2025 > 04 April > 20"
+  ],
+  "risk": 2
+ },
  "person-anna-0": {
   "action": "keep",
   "asset_class": "people_family",
@@ -683,7 +712,7 @@
   "importance": 3,
   "paths": [
    "Places > Japan > Tokyo",
-   "Timeline > 2025 > 04 April > 11",
+   "Timeline > 2025 > 04 April > 11 > 10:30",
    "Travel > Tokyo · Apr 2025"
   ],
   "risk": 3
