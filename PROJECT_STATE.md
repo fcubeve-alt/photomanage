@@ -1,6 +1,6 @@
 # PROJECT STATE
 **Read this file first, every session.** Canonical runtime state (Playbook E-03).
-Last updated: 2026-09-06 · Session 003 — first measured T0-A data (simulator ceiling) and the classification engine built on Owner instruction (DEC-028)
+Last updated: 2026-09-07 · Session 004 — Importance and §4 as axes of their own, §11 place inference, §10's Browse person level and Relations join, §11's other Event candidates, and three things measured for the first time (Tier 2-E ablation arms, §19 risk grading, Tier 1-C's Suggest Delete false-positive rate)
 
 ## Coordinates
 - Project: Personal Visual Memory Engine (智能照片管理系统)
@@ -33,7 +33,7 @@ Full map: `DOCUMENTATION_MAP.md`. Decisions: `DECISIONS.md`. Rules: `OPERATING_R
 - **The classification engine is built** (DEC-028, Owner instruction). `30_ENGINE/` — signal contract, escalating classifier, R0–R6 risk policy, duplicate / same-entity handling, SQLite catalogue with checkpoint-resume and incremental update, CLI, 55 tests, evaluation harness. Measured on the 10,000-asset labelled library: root macro **F1 0.998**, leaf exact **99.8%** where derivable, **0** wrong roots, 4/4 safety red lines audited. **PF-11 still applies to everything else** — this is one engine, not a product.
 - **Ingestion is paced and processing is change-driven** (DEC-029, Owner rulings). Breadth pass measured at **0.17 ms/asset with no pixels decoded** — a 100k library is browsable in under 30 seconds; depth is paced over days with the user offered the options. Change-driven frame selection saves **61–88%** of per-frame work. **Consequence for the gate: A1 is no longer a kill question, and A3 + A4 are now the whole of it** — pacing makes survivability more critical, not less.
 - **Binding constraints are now a CI check, not a memory** (DEC-030 / PF-12). `30_ENGINE/CONSTRAINTS.md` audits the engine against every clause of L1 and L1-B: **34 clauses — 21 DONE, 6 PARTIAL, 4 MISSING**, gaps named. `check_constraints.py` fails the build if a clause is paraphrased or claims DONE with nothing behind it. The engine now also reports the **§18 KPIs** — Automation Ratio 94.0%, Human Review Burden 60/1,000, Catastrophic Error Rate 0, Coverage 94.0%, TTFUV 2.8 s — which outrank F1 where they disagree.
-- **Full audit against every authority document** (DEC-031). L1 §1–26 + L1-B + L2 Tier 0/1/2, **90 clauses: 36 DONE (40%), 34 PARTIAL (38%), 11 MISSING**. Found two defects in already-passing code: the R0–R6 risk scale did not match §6 (R6 meant "unknown" where the Constitution means "irreplaceable"), and byte-identical duplicates were gated behind classification confidence so the one automatable action never fired. Both fixed and pinned by tests. Largest gap: **the Visual Memory Graph (§2 Remember / L1-B §4) does not exist** — the catalogue files photos, it does not make them evidence about people, objects and events.
+- **Full audit against every authority document** (DEC-031). L1 §1–26 + L1-B + L2 Tier 0/1/2, **91 clauses: 52 DONE (57%), 26 PARTIAL (29%), 4 MISSING (4%)** as of 2026-09-07 — and the summary table in that file is now checked against its own rows by `check_constraints.py`, because it claimed to be generated, was typed, and had drifted to 36/34/11 while the rows said otherwise. Originally **90 clauses: 36 DONE (40%), 34 PARTIAL (38%), 11 MISSING**. Found two defects in already-passing code: the R0–R6 risk scale did not match §6 (R6 meant "unknown" where the Constitution means "irreplaceable"), and byte-identical duplicates were gated behind classification confidence so the one automatable action never fired. Both fixed and pinned by tests. Largest gap at the time: **the Visual Memory Graph (§2 Remember / L1-B §4) does not exist**. Built since (`30_ENGINE/pvm/memory.py`), along with Intent Search, the four retrieval paths, per-category entity resolution, Personal Policy, the Importance axis, §11 place inference and §10's cross-category join. The four that remain are blocked on evidence rather than effort — see the register.
 - **M0 Bootstrap complete.** 11 source documents audited, authority levels assigned, 4 superseded/duplicate files archived, 5 conflicts resolved (C-1…C-5), Money OS package sealed out of scope.
 - Persistent state established: MISSION_SPEC, MASTER_PLAN, PROJECT_STATE, OPERATING_RULES, DECISIONS, FAILURE_PATTERNS, SESSION_HANDOFF, DOCUMENTATION_MAP, VALIDATION_MATRIX. No pre-existing equivalents were duplicated — the folder contained zero markdown files.
 - Validation matrix built for all three tiers with measurable pass criteria.
@@ -50,8 +50,20 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 **`NO DATA` is never a soft PASS** — a workstream not run leaves the gate INCOMPLETE, and Tier 1 may not begin on partial evidence.
 
 ## Doing now
-> ### Nothing of the product is built. Zero lines. (PF-11)
-> ~1,650 lines of Swift = a stopwatch that times photo reads. 82 prototype pages = hand-authored, no engine. ~3,100 lines of Python = generators and analyzers that never ship. **The classifier, taxonomy engine, entity resolver, lifecycle engine and risk policy engine are at zero lines and still LOCKED.** Green test results are evidence about tools, never about the product.
+> ### The engine and the app exist. Nothing has run on a phone, and nobody has used it. (PF-11, restated)
+> This block said *"Nothing of the product is built. Zero lines"* and listed the
+> classifier, taxonomy engine, entity resolver, lifecycle engine and risk policy engine
+> as **LOCKED at zero lines**. That was true when it was written and stopped being true
+> on 2026-09-06. All five exist, are tested, and are measured against the 10,000-asset
+> labelled library; the app in `40_APP/` browses, searches, remembers and asks.
+>
+> **PF-11's point survives the correction, and is the reason to keep this block.**
+> Green tests are evidence about code, never about a product. What has NOT happened:
+> nothing has run on a physical device (no thermal, no jetsam, no real photo library,
+> no PhotoKit write of any kind), and no real person has used any of it. Every number
+> in this repository was measured on a desk. The two things every remaining gap in
+> `30_ENGINE/CONSTRAINTS.md` is waiting for are **real photographs** and **real users**,
+> and neither is engineering time.
 
 **Owner decisions 2026-09-06:**
 - **T0-C and T0-D cancelled; the product is a GO** (DEC-026).
