@@ -91,8 +91,16 @@ final class CascadeTests: XCTestCase {
         XCTAssertEqual(c.paths.count, Set(c.paths).count)
     }
 
+    /// §3 asks for Year → Month → Day → Moment, and only the deepest node is held:
+    /// the browse tree rolls counts up, so the year still shows the right total while
+    /// the asset is counted once rather than four times inside its own parent.
     func testEveryAssetReachesTheTimeline() {
-        XCTAssertTrue(classify(asset()).paths.contains("Timeline > 2025"))
+        let paths = classify(asset()).paths
+        let timeline = paths.filter { $0.hasPrefix("Timeline") }
+        XCTAssertEqual(1, timeline.count, "expected one timeline entry, got \(timeline)")
+        XCTAssertTrue(timeline[0].hasPrefix("Timeline > 2025 > "), timeline[0])
+        XCTAssertTrue(TaxonomyRuntime.ancestors(of: timeline[0]).contains("Timeline > 2025"),
+                      "browsing by year must still reach it")
     }
 
     func testAnAssetWithNoDateSaysSoInsteadOfGuessingOne() {

@@ -51,11 +51,18 @@ final class DeltaGateTests: XCTestCase {
     /// on a slow pan: every adjacent pair is similar, so nothing is ever processed,
     /// while frame 1 and frame 500 are different scenes entirely.
     func testDriftIsMeasuredFromTheLastFrameActuallyLookedAt() {
-        // One bit flips every ten frames — invisible pairwise, obvious cumulatively.
-        var hash: UInt64 = 0
-        let frames = (0..<400).map { i -> Frame in
-            if i % 10 == 0, i > 0 { hash |= (1 << UInt64(i / 10 % 63)) }
-            return Frame(index: i, dhash: hash | 1, timestampSeconds: Double(i) / 30)
+        // One bit flips every two frames — invisible pairwise, obvious cumulatively.
+        //
+        // The pan has to drift faster than `maxSkipRun`, which was the flaw in the
+        // first version of this test: at one bit per ten frames the periodic sample
+        // fired at thirty frames and reset the keyframe before eight bits of drift had
+        // ever accumulated, so "drifted" never appeared and the test failed against
+        // correct code. A pan slower than the sampling cap is a case the cap exists to
+        // cover, not a case the drift rule is meant to catch.
+        var hash: UInt64 = 1
+        let frames = (0..<200).map { i -> Frame in
+            if i % 2 == 0, i > 0 { hash |= (1 << UInt64((i / 2) % 63)) }
+            return Frame(index: i, dhash: hash, timestampSeconds: Double(i) / 30)
         }
         let result = Deltas.selectKeyframes(frames)
         let drifted = result.decisions.filter { $0.reason.hasPrefix("drifted") }

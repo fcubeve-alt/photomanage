@@ -67,6 +67,9 @@ public final class Catalog: @unchecked Sendable {
           created_at REAL,
           content_hash TEXT,
           dhash INTEGER,
+          -- Needed to answer "找视频" without opening every asset. A retrieval path
+          -- that has to re-derive what something is has not been indexed.
+          media_type TEXT NOT NULL DEFAULT 'image',
           tier_used INTEGER,
           risk INTEGER,
           needs_review INTEGER,
@@ -283,8 +286,8 @@ public final class Catalog: @unchecked Sendable {
         sqlite3_prepare_v2(db, """
             INSERT OR REPLACE INTO assets
             (asset_id,signals_fp,engine_fp,created_at,content_hash,dhash,
-             tier_used,risk,needs_review,notes,classified_at)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?);
+             media_type,tier_used,risk,needs_review,notes,classified_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?);
             """, -1, &st, nil)
         sqlite3_bind_text(st, 1, a.assetID, -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 2, Catalog.signalsFingerprint(a), -1, Catalog.SQLITE_TRANSIENT)
@@ -293,11 +296,12 @@ public final class Catalog: @unchecked Sendable {
         else { sqlite3_bind_null(st, 4) }
         sqlite3_bind_text(st, 5, a.contentHash ?? "", -1, Catalog.SQLITE_TRANSIENT)
         sqlite3_bind_int64(st, 6, Int64(bitPattern: a.dhash ?? 0))
-        sqlite3_bind_int(st, 7, Int32(c.tierUsed.rawValue))
-        sqlite3_bind_int(st, 8, Int32(risk.rawValue))
-        sqlite3_bind_int(st, 9, c.needsReview ? 1 : 0)
-        sqlite3_bind_text(st, 10, c.notes.joined(separator: " | "), -1, Catalog.SQLITE_TRANSIENT)
-        sqlite3_bind_double(st, 11, Date().timeIntervalSince1970)
+        sqlite3_bind_text(st, 7, a.isVideo ? "video" : "image", -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_int(st, 8, Int32(c.tierUsed.rawValue))
+        sqlite3_bind_int(st, 9, Int32(risk.rawValue))
+        sqlite3_bind_int(st, 10, c.needsReview ? 1 : 0)
+        sqlite3_bind_text(st, 11, c.notes.joined(separator: " | "), -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_double(st, 12, Date().timeIntervalSince1970)
         sqlite3_step(st); sqlite3_finalize(st)
 
         for assignment in c.assignments {
