@@ -61,6 +61,12 @@ jobs:
       # The summary is reprinted at the bottom, where it can actually be read.
       - name: Test
         working-directory: 40_APP/PVMCore
+        # Explicitly bash. Steps inside a container run under the image's `sh`, which
+        # for swift:5.10-jammy is dash — and `${PIPESTATUS[0]}` is a bash array, so the
+        # step written to make failures visible failed with "Bad substitution" and made
+        # them less visible. Four CI-plumbing bugs in this area now, all the same shape:
+        # the thing that reports never gets tested by the thing it reports on.
+        shell: bash
         run: |
           set +e
           swift test 2>&1 | tee test.log
