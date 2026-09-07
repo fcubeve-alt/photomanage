@@ -48,6 +48,45 @@ public struct Moment {
     }
 }
 
+/// One day away from home with enough photographs in it to be an occasion.
+///
+/// Deliberately not a `Trip`: the browse tree treats Travel as a run of days, and
+/// calling a Saturday afternoon a trip would put it on the same shelf as a fortnight
+/// in Japan. This is an *event* — it reaches the memory graph and mints no folder.
+public struct DayOut {
+    public let day: Date
+    public let city: String?
+    public let country: String?
+    public let assetCount: Int
+
+    public var label: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "d MMM yyyy"
+        return "\(city ?? country ?? "Away") · \(f.string(from: day))"
+    }
+}
+
+/// One capture session with several named people in it — §11's 时间 + 人物.
+///
+/// Two people who are both in the library are a photograph of two people; two people
+/// photographed together across a session is an occasion, and it is the only kind of
+/// event this engine can derive without knowing what a birthday is.
+public struct Gathering {
+    public let start: Date
+    public let people: [String]
+    public let assetCount: Int
+
+    public var label: String {
+        var names = people.prefix(3).joined(separator: ", ")
+        if people.count > 3 { names += " and \(people.count - 3) more" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "d MMM yyyy"
+        return "\(names) · \(f.string(from: start))"
+    }
+}
+
 public struct LibraryContext {
     public var home: GeoFix?
     public var homeCity: String?
@@ -64,6 +103,10 @@ public struct LibraryContext {
     /// worked out from the photographs either side of it in time. Absent for every
     /// asset the evidence did not reach, which is most of them.
     public var inferredPlaces: [String: InferredPlace] = [:]
+    /// §11's other Event candidates. Trips are `trips`; these are the occasions that
+    /// are not trips.
+    public var daysOut: [DayOut] = []
+    public var gatherings: [Gathering] = []
     public var assetCount: Int = 0
 
     public init() {}
@@ -137,6 +180,16 @@ public enum LibraryContextBuilder {
     /// single captures, burying the one real nine-day trip. A folder the user has to
     /// read past costs more attention than it saves.
     public static let minTripAssets = 8
+
+    /// A day away from home that is NOT long enough to be a trip. The bar is high for
+    /// the reason `minTripAssets` is: the first trip detector produced 53 "trips" of
+    /// two photos each and buried the one real trip in noise.
+    public static let minDayOutAssets = 6
+    /// How many named people make a session a gathering rather than a photograph that
+    /// happens to have two faces in it.
+    public static let minGatheringPeople = 2
+    /// ...and how many photographs. One frame of two people is not an occasion.
+    public static let minGatheringAssets = 4
     /// ~1 km. Coarse enough that GPS jitter does not split one home into four, fine
     /// enough that the next town does not merge into it.
     public static let grid = 0.01
@@ -208,7 +261,80 @@ public enum LibraryContextBuilder {
         // derived from MEASURED fixes only — an inferred place feeding the home
         // cluster would be the system learning from itself.
         ctx.inferredPlaces = PlaceInference.inferPlaces(assets)
+        // §11: 时间 + 地点 + 人物 + 内容 可以自动形成 Event / Trip 候选. Trip was the
+        // only one derived; these are the others the metadata pass supports honestly.
+        ctx.daysOut = findDaysOut(located, home: ctx.home, trips: ctx.trips, calendar: cal)
+        ctx.gatherings = findGatherings(assets, moments: ctx.moments)
         return ctx
+    }
+
+    /// Days away from home that no trip already covers.
+    ///
+    /// Subtracts what `findTrips` claimed, because a day inside a twelve-day trip is
+    /// part of the trip; surfacing it separately would put the same photographs under
+    /// two events and make both mean less.
+    static func findDaysOut(_ located: [(Date, GeoFix, String?, String?)],
+                            home: GeoFix?, trips: [Trip],
+                            calendar cal: Calendar) -> [DayOut] {
+        guard let home = home else { return [] }
+        var claimed: Set<Date> = []
+        for trip in trips {
+            var day = cal.startOfDay(for: trip.start)
+            let end = cal.startOfDay(for: trip.end)
+            while day <= end {
+                claimed.insert(day)
+                guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
+                day = next
+            }
+        }
+
+        var away: [Date: [String: Int]] = [:]
+        for (when, geo, country, city) in located where geo.km(to: home) > awayKm {
+            let day = cal.startOfDay(for: when)
+            guard !claimed.contains(day) else { continue }
+            away[day, default: [:]]["\(country ?? "")|\(city ?? "")", default: 0] += 1
+        }
+
+        var out: [DayOut] = []
+        for day in away.keys.sorted() {
+            let names = away[day] ?? [:]
+            let total = names.values.reduce(0, +)
+            guard total >= minDayOutAssets,
+                  let top = names.max(by: { $0.value < $1.value }) else { continue }
+            let parts = top.key.components(separatedBy: "|")
+            out.append(DayOut(day: day,
+                              city: parts.count > 1 && !parts[1].isEmpty ? parts[1] : nil,
+                              country: parts.first?.isEmpty == false ? parts[0] : nil,
+                              assetCount: total))
+        }
+        return out
+    }
+
+    /// Capture sessions with several named people in them.
+    ///
+    /// Built on `moments` rather than clock hours for the same reason `findMoments` is:
+    /// an occasion does not end at six o'clock. Only NAMED faces count — an unnamed
+    /// cluster is a face the user has not identified, and §16 forbids inferring
+    /// anything further about who they are, including that they were somewhere
+    /// together.
+    static func findGatherings(_ assets: [AssetSignals],
+                               moments: [String: Moment]) -> [Gathering] {
+        guard !moments.isEmpty else { return [] }
+        var byMoment: [Date: [AssetSignals]] = [:]
+        for asset in assets {
+            guard let moment = moments[asset.assetID] else { continue }
+            byMoment[moment.start, default: []].append(asset)
+        }
+
+        var out: [Gathering] = []
+        for start in byMoment.keys.sorted() {
+            let members = byMoment[start] ?? []
+            guard members.count >= minGatheringAssets else { continue }
+            let people = Set(members.flatMap { $0.faceClusters.compactMap { $0.name } }).sorted()
+            guard people.count >= minGatheringPeople else { continue }
+            out.append(Gathering(start: start, people: people, assetCount: members.count))
+        }
+        return out
     }
 
     /// A trip is a run of consecutive days spent away from home. A one-day gap is

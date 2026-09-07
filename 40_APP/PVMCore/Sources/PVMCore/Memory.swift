@@ -464,6 +464,50 @@ public enum MemoryBuilder {
                     reason: "taken during \(trip.label)"))
             }
         }
+
+        // §11 names Trip as one Event candidate among several. These are the other two
+        // the metadata pass supports honestly: a day away from home that no trip
+        // covers, and a capture session with several named people in it. Neither mints
+        // a browse folder — Travel is a run of days, and putting a Saturday afternoon
+        // on that shelf would make the shelf mean less.
+        let calendar = Calendar(identifier: .gregorian)
+        for day in context.daysOut {
+            let id = "event:" + slug(day.label)
+            guard let e = Evidence(signal: "geo+created_at", tier: .metadata, weight: 0.7,
+                                   reason: "\(day.assetCount) photos in one day away from home"),
+                  let entity = Entity(entityID: id, kind: .event, name: day.label, evidence: [e])
+            else { continue }
+            graph.add(entity)
+            for asset in byID.values.sorted(by: { $0.assetID < $1.assetID }) {
+                guard let when = asset.createdAt,
+                      calendar.isDate(when, inSameDayAs: day.day) else { continue }
+                graph.observe(Observation(
+                    entityID: id, assetID: asset.assetID, when: when,
+                    place: day.city ?? day.country, confidence: 0.7,
+                    reason: "taken on \(day.label)"))
+            }
+        }
+
+        for gathering in context.gatherings {
+            let id = "event:" + slug(gathering.label)
+            let who = gathering.people.joined(separator: ", ")
+            guard let e = Evidence(
+                    signal: "faces+created_at", tier: .faces, weight: 0.7,
+                    reason: "\(who) were photographed together across "
+                            + "\(gathering.assetCount) photos in one session"),
+                  let entity = Entity(entityID: id, kind: .event,
+                                      name: gathering.label, evidence: [e])
+            else { continue }
+            graph.add(entity)
+            for asset in byID.values.sorted(by: { $0.assetID < $1.assetID }) {
+                guard let moment = context.moment(for: asset.assetID),
+                      moment.start == gathering.start else { continue }
+                graph.observe(Observation(
+                    entityID: id, assetID: asset.assetID, when: asset.createdAt,
+                    place: nil, confidence: 0.7,
+                    reason: "part of \(gathering.label)"))
+            }
+        }
     }
 
     /// Mark the sightings that add no new information, without discarding any.

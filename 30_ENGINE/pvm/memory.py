@@ -459,6 +459,38 @@ def _events(context: LibraryContext, by_id, graph) -> None:
                     trip.city or trip.country, 0.8,
                     f"taken during {trip.label}"))
 
+    # §11 names Trip as one Event candidate among several. These are the other two the
+    # metadata pass can support honestly: a day away from home that no trip covers,
+    # and a capture session with several named people in it. Neither mints a browse
+    # folder — Travel is a run of days and putting a Saturday afternoon on that shelf
+    # would make the shelf mean less. They live in the memory graph, which is where
+    # §10's Relations path enters from.
+    for day in getattr(context, "days_out", []):
+        entity_id = f"event:{_slug(day.label)}"
+        graph.add_entity(Entity(
+            entity_id, EntityKind.EVENT, day.label,
+            [Evidence("geo+created_at", Tier.METADATA, 0.7,
+                      f"{day.asset_count} photos in one day away from home")]))
+        for asset in by_id.values():
+            if asset.created_at and asset.created_at.date() == day.day:
+                graph.observe(Observation(
+                    entity_id, asset.asset_id, asset.created_at,
+                    day.city or day.country, 0.7, f"taken on {day.label}"))
+
+    for gathering in getattr(context, "gatherings", []):
+        entity_id = f"event:{_slug(gathering.label)}"
+        graph.add_entity(Entity(
+            entity_id, EntityKind.EVENT, gathering.label,
+            [Evidence("faces+created_at", Tier.FACES, 0.7,
+                      f"{', '.join(gathering.people)} were photographed together "
+                      f"across {gathering.asset_count} photos in one session")]))
+        for asset in by_id.values():
+            moment = context.moment_for(asset.asset_id) if context else None
+            if moment is not None and moment.start == gathering.start:
+                graph.observe(Observation(
+                    entity_id, asset.asset_id, asset.created_at, None, 0.7,
+                    f"part of {gathering.label}"))
+
 
 def _mark_repeats(groups, by_id, graph) -> None:
     """Mark the sightings that add no new information, without discarding any.

@@ -64,6 +64,17 @@ class Trip:
         return self.start <= when.date() <= self.end
 
 
+# A day spent away from home that is NOT long enough to be a trip. §11 names
+# 时间 + 地点 as enough to form an Event candidate, and Trip was the only one the engine
+# derived — so a Saturday in Brighton with twenty photographs had no event at all, and
+# the only thing the library could say about it was the date.
+#
+# The bar is high on purpose, and the reason is written into MIN_TRIP_ASSETS above: the
+# first trip detector produced 53 "trips" of two photos each from a scatter of single
+# captures and buried the one real trip in noise. A folder the user has to read past
+# costs more attention than it saves.
+MIN_DAY_OUT_ASSETS = 6
+
 #: Photographs taken further apart than this are two occasions, not one. Chosen for
 #: the same reason SEPARATE_OCCASION is: it has to survive someone taking a break in
 #: the middle of the same event without splitting it, and has to split lunch from
@@ -72,6 +83,53 @@ class Trip:
 MOMENT_GAP = timedelta(minutes=20)
 #: A single photograph is a photograph, not a session worth its own browse entry.
 MIN_MOMENT_ASSETS = 2
+
+
+@dataclass(frozen=True)
+class DayOut:
+    """One day away from home, with enough photographs in it to be an occasion.
+
+    Deliberately not a `Trip`: §6 and the browse tree both treat Travel as a run of
+    days, and calling a Saturday afternoon a trip would put it on the same shelf as a
+    fortnight in Japan. This is an *event* — it reaches the memory graph and the Event
+    index, and it mints no browse folder.
+    """
+    day: date
+    city: Optional[str]
+    country: Optional[str]
+    asset_count: int
+
+    @property
+    def label(self) -> str:
+        where = self.city or self.country or "Away"
+        return f"{where} · {self.day.strftime('%-d %b %Y')}"
+
+
+@dataclass(frozen=True)
+class Gathering:
+    """One capture session with several named people in it.
+
+    §11's 时间 + 人物. Two people who are both in the library are a photograph of two
+    people; two people photographed together across a session is an occasion, and it is
+    the only kind of event this engine can derive without knowing what a birthday is.
+    """
+    start: datetime
+    people: Tuple[str, ...]
+    asset_count: int
+
+    @property
+    def label(self) -> str:
+        names = ", ".join(self.people[:3])
+        if len(self.people) > 3:
+            names += f" and {len(self.people) - 3} more"
+        return f"{names} · {self.start.strftime('%-d %b %Y')}"
+
+
+#: How many named people have to be in one session before it reads as a gathering
+#: rather than a photograph that happens to have two faces in it.
+MIN_GATHERING_PEOPLE = 2
+#: ...and how many photographs. One frame of two people is not an occasion.
+MIN_GATHERING_ASSETS = 4
 
 
 @dataclass(frozen=True)
@@ -103,6 +161,10 @@ class LibraryContext:
     #: worked out from the photographs either side of it in time. Absent for every
     #: asset the evidence did not reach, which is most of them.
     inferred_places: Dict[str, "infer.InferredPlace"] = field(default_factory=dict)
+    #: §11's other Event candidates. Trips are `trips`; these are the occasions that
+    #: are not trips — see `DayOut` and `Gathering`.
+    days_out: List["DayOut"] = field(default_factory=list)
+    gatherings: List["Gathering"] = field(default_factory=list)
     asset_count: int = 0
 
     @property
@@ -223,7 +285,71 @@ def build_context(assets: Iterable[AssetSignals]) -> LibraryContext:
     # obvious that home and trips are derived from MEASURED fixes only. An inferred
     # place feeding the home cluster would be the system learning from itself.
     ctx.inferred_places = infer.infer_places(assets)
+    # §11: 时间 + 地点 + 人物 + 内容 可以自动形成 Event / Trip 候选. Trip was the only
+    # one derived. These two are the others the metadata pass can support honestly.
+    ctx.days_out = find_days_out(located, ctx)
+    ctx.gatherings = find_gatherings(assets, ctx)
     return ctx
+
+
+def find_days_out(located, ctx: LibraryContext) -> List[DayOut]:
+    """Days away from home that no trip already covers.
+
+    Runs after `_find_trips` and subtracts what it claimed, because a day inside a
+    twelve-day trip is part of the trip; surfacing it separately would put the same
+    photographs under two events and make both mean less.
+    """
+    if ctx.home is None:
+        return []
+    claimed = {d for trip in ctx.trips
+               for d in _dates_between(trip.start, trip.end)}
+
+    away: Dict[date, Counter] = defaultdict(Counter)
+    for when, geo, country, city in located:
+        if geo.km_to(ctx.home) > AWAY_KM and when.date() not in claimed:
+            away[when.date()][(country, city)] += 1
+
+    out: List[DayOut] = []
+    for day, names in sorted(away.items()):
+        total = sum(names.values())
+        if total < MIN_DAY_OUT_ASSETS:
+            continue
+        (country, city), _ = names.most_common(1)[0]
+        out.append(DayOut(day=day, city=city, country=country, asset_count=total))
+    return out
+
+
+def _dates_between(start: date, end: date) -> List[date]:
+    span = (end - start).days
+    return [start + timedelta(days=i) for i in range(span + 1)]
+
+
+def find_gatherings(assets: Iterable[AssetSignals], ctx: LibraryContext) -> List[Gathering]:
+    """Capture sessions with several named people in them.
+
+    Built on `moments` rather than on clock hours for the same reason `find_moments` is:
+    an occasion does not end at six o'clock. Only NAMED faces count — an unnamed
+    cluster is a face the user has not identified, and §16 forbids inferring anything
+    further about who they are, including that they were at an occasion together.
+    """
+    if not ctx.moments:
+        return []
+    by_moment: Dict[datetime, List[AssetSignals]] = defaultdict(list)
+    for asset in assets:
+        moment = ctx.moments.get(asset.asset_id)
+        if moment is not None:
+            by_moment[moment.start].append(asset)
+
+    out: List[Gathering] = []
+    for start, members in sorted(by_moment.items()):
+        if len(members) < MIN_GATHERING_ASSETS:
+            continue
+        people = sorted({f.name for a in members for f in a.face_clusters if f.name})
+        if len(people) < MIN_GATHERING_PEOPLE:
+            continue
+        out.append(Gathering(start=start, people=tuple(people),
+                             asset_count=len(members)))
+    return out
 
 
 def _find_trips(located, ctx: LibraryContext) -> List[Trip]:
