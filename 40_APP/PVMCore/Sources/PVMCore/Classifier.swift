@@ -382,13 +382,13 @@ public struct Classifier {
     /// also appears under the holder's name, which is §10's ordering. §3 blesses the
     /// shape — 同一 asset 可以出现在多个入口，但保留一个原始归属.
     ///
-    /// The name is READ, not inferred. `Resolver.holderNames` requires an explicit
+    /// The name is READ, not inferred. `EntityResolver.holderNames` requires an explicit
     /// NAME / SURNAME / HOLDER / 姓名 label followed by capitals, so this is
     /// transcription of what is printed on the document. §16 forbids inferring
     /// sensitive attributes; it does not forbid reading a field, and nothing here
     /// derives anything further about the person.
     private func documentHolder(_ a: AssetSignals, _ c: inout Classification) {
-        guard a.ocrRan, let text = a.ocrText, !text.isEmpty else { return }
+        guard a.ocrRan, !a.ocrText.isEmpty else { return }
         let identity = c.assignments.filter {
             $0.path.hasPrefix("Documents > Identity" + Taxonomy.separator)
                 && $0.confidence >= Classifier.holderFloor
@@ -399,7 +399,7 @@ public struct Classifier {
         // understand — a second signatory, or an OCR error that produced a name from a
         // caption. Filing it under both puts a stranger's name on a shelf of the
         // user's own papers.
-        let names = Resolver.holderNames(in: text).sorted()
+        let names = EntityResolver.holderNames(in: a.ocrText).sorted()
         guard names.count == 1, let raw = names.first else { return }
         let holder = raw.split(separator: " ").map { $0.capitalized }.joined(separator: " ")
 

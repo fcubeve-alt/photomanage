@@ -12,6 +12,13 @@
 # `download.swift.org` is blocked by the egress policy), an Apple platform, or a device.
 # `swift-core.yml` covers Swift on Linux; `app-build.yml` covers the app; neither is a
 # device result (PF-01).
+#
+# **So the order to run CI in is swift-core FIRST, and app-build only once it is green.**
+# On 2026-09-07 an app-build run was dispatched at the same moment as the push and died
+# in 38 seconds on two Swift compile errors — a wrong type name and an Optional binding
+# on a non-Optional — on a macOS runner billed at ten times the Linux rate. The Linux
+# job compiles the same sources in about a minute and would have said the same thing.
+# Nothing here can catch that class of error; sequencing the two jobs can.
 
 set -u
 cd "$(dirname "$0")"
