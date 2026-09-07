@@ -359,6 +359,32 @@ def report(truth, predicted, catalog, stats, scores, ablation, out) -> int:
     w(f"- proposals the engine considers safe to apply without asking "
       f"(exact byte-duplicates only): {audit['auto_applicable']:,}\n\n")
 
+    # ---- Tier 1-D's six indexes -----------------------------------------
+    coverage = catalog.index_coverage()
+    w("## Tier 1-D — 一个 Asset 同时挂载 Content / Time / Place / Person / Object / "
+      "Event 索引\n\n")
+    w("Counted from the rows rather than asserted: \"the asset is on six indexes\" is a "
+      "claim about what was written, and a claim about rows should be counted from "
+      "them. Reachable in both directions — from an entity to its sightings "
+      "(`pvm/catalog.py::sightings`) and from one asset to everything it is indexed "
+      "under (`pvm/catalog.py::entities_for`).\n\n")
+    w("| index | assets carrying it | share |\n|---|--:|--:|\n")
+    for name in ("content", "time", "place", "person", "object", "event"):
+        n = coverage.get(name, 0)
+        w(f"| {name.title()} | {n:,} | {n/total*100:.1f}% |\n")
+    w("\n")
+    if not coverage.get("object"):
+        # A zero here reads as a broken index. It is not, and saying which it is costs
+        # one sentence and saves the next reader an afternoon.
+        blind = sum(1 for row in truth.values()
+                    if str(row.get("category_path", "")).startswith("Objects"))
+        w(f"**Object is 0% because this corpus carries no scene labels for its {blind:,} "
+          "object assets**, not because the index is missing: `pvm/memory.py::_objects` "
+          "builds an object entity from a scene label and `tests/test_memory.py` covers "
+          "it. It is the same corpus blindness the coverage section above reports for "
+          "Downloads, Clothing and Objects, and the same reason T1B-EMBEDDING is "
+          "blocked — an object index needs photographs of objects.\n\n")
+
     # ---- §11's inference ------------------------------------------------
     inferred = getattr(stats.context, "inferred_places", {}) or {}
     w("## §11 — places worked out rather than read\n\n")
@@ -630,11 +656,73 @@ def selftest() -> int:
         fails.append("a wrong leaf under the right root was scored as a wrong root")
 
     fails.extend(_selftest_safety_audit())
+    fails.extend(_selftest_report_renders())
 
     for msg in fails:
         print("FAIL:", msg)
     print(f"\nselftest: {len(fails)} failure(s)")
     return 1 if fails else 0
+
+
+def _selftest_report_renders() -> List[str]:
+    """Render a whole report over a tiny library and check it came out.
+
+    The self-test exercised the scorer and, later, the safety audit, and never called
+    `report`. So a `NameError` in a section of the report — which is what happened on
+    2026-09-07, in the section added minutes earlier — passed `--selftest`, passed
+    `verify.sh`, and failed only on a full evaluation run that takes minutes. That is
+    this project's recurring shape for the fourth time: the thing that reports is never
+    exercised by the thing it reports on.
+
+    This does not check what the report SAYS — the numbers come from a three-asset
+    library and mean nothing. It checks that every branch of it executes and produces
+    text, which is the failure mode that keeps recurring.
+    """
+    import io as _io
+    import shutil as _shutil
+    import tempfile as _tempfile
+    from pvm import fixture as F, pipeline as P, taxonomy as TX
+
+    fails: List[str] = []
+    directory = _tempfile.mkdtemp()
+    try:
+        TX.reset_minted()
+        assets = F.build()
+        catalog = Catalog(os.path.join(directory, "report.sqlite"))
+        stats = P.run(assets, catalog, reconcile_deletions=False)
+        truth = {a.asset_id: {"category_path": "Places > Japan > Tokyo",
+                              "paths": ["Places > Japan > Tokyo"],
+                              "is_foreground": False, "hard_negative": None,
+                              "exact_duplicate_of": None}
+                 for a in assets}
+        predicted = defaultdict(list)
+        for aid, path in catalog.db.execute("SELECT asset_id, path FROM assignments"):
+            predicted[aid].append(path)
+        scores = score(truth, predicted)
+        # Both shapes of the ablation argument: absent, and present with all its arms.
+        arms = {label: {"macro_f1": 0.5, "leaf_exact_pct": 50.0, "unfiled_pct": 5.0,
+                        "per_root": {r: 0.5 for r in SCORED_ROOTS}}
+                for label, _, _ in ABLATION_ARMS}
+        for ablation in (None, {"macro_f1": 0.5, "leaf_exact_pct": 50.0,
+                                "unfiled_pct": 5.0, "arms": arms}):
+            buf = _io.StringIO()
+            try:
+                report(truth, predicted, catalog, stats, scores, ablation, buf)
+            except Exception as exc:                      # noqa: BLE001 — that is the point
+                fails.append(f"report() raised {type(exc).__name__}: {exc}")
+                continue
+            text = buf.getvalue()
+            for heading in ("Root-level classification", "Constitution §18 KPIs",
+                            "Safety red lines", "Tier 1-D", "§11", "§4 精细",
+                            "Risk policy table"):
+                if heading not in text:
+                    fails.append(f"report() omitted the {heading!r} section")
+            if ablation and "Ablation" not in text:
+                fails.append("report() omitted the ablation section it was given")
+        catalog.close()
+    finally:
+        _shutil.rmtree(directory, ignore_errors=True)
+    return fails
 
 
 def _selftest_safety_audit() -> List[str]:

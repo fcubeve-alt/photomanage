@@ -576,3 +576,65 @@ class ByteIdentityIsNotAClassificationGuess(unittest.TestCase):
     def test_and_byte_identity_never_overrides_an_escalation(self):
         c = classify(asset(ocr_ran=True, ocr_text="PASSPORT"))
         self.assertEqual(classify_risk(c, is_exact_duplicate=True), Risk.R5_CRITICAL)
+
+
+class TierOneDMultiIndex(unittest.TestCase):
+    """Tier 1-D: 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引.
+
+    Four of the six were readable from one asset and two were not: Person, Object and
+    Event could only be reached by starting from an entity and walking to its sightings,
+    which answers "where have I seen this bicycle" and cannot answer "what is in this
+    photograph". `idx_obs_asset` already existed to make the reverse cheap; nothing was
+    asking for it.
+    """
+
+    def _library(self):
+        import tempfile
+        from pvm import fixture as F, pipeline as P, taxonomy as T
+        from pvm.catalog import Catalog
+        T.reset_minted()
+        directory = tempfile.mkdtemp()
+        catalog = Catalog(os.path.join(directory, "multiindex.sqlite"))
+        P.run(F.build(), catalog, reconcile_deletions=False)
+        return catalog
+
+    def test_an_asset_can_name_the_entities_it_is_indexed_under(self):
+        catalog = self._library()
+        try:
+            rows = catalog.entities_for("person-anna-0")
+            self.assertTrue(rows, "a photo of a named person is indexed under nobody")
+            kinds = {r[1] for r in rows}
+            self.assertIn("person", kinds)
+            names = {r[2] for r in rows}
+            self.assertIn("Anna", names)
+        finally:
+            catalog.close()
+
+    def test_the_inference_flags_travel_with_the_row(self):
+        """§11. A caller that renders this without them turns a hedge into a fact."""
+        catalog = self._library()
+        try:
+            for row in catalog.entities_for("person-anna-0"):
+                self.assertIn(row[7], ("measured", "inferred"))   # place_source
+                self.assertIn(row[8], ("measured", "inferred"))   # source
+        finally:
+            catalog.close()
+
+    def test_an_unknown_asset_returns_nothing_rather_than_raising(self):
+        catalog = self._library()
+        try:
+            self.assertEqual(catalog.entities_for("no-such-asset"), [])
+        finally:
+            catalog.close()
+
+    def test_index_coverage_counts_all_six(self):
+        catalog = self._library()
+        try:
+            coverage = catalog.index_coverage()
+            self.assertEqual(set(coverage),
+                             {"content", "time", "place", "person", "object", "event"})
+            self.assertGreater(coverage["time"], 0, "every asset is on the timeline")
+            self.assertGreater(coverage["person"], 0)
+            self.assertGreater(coverage["event"], 0, "the fixture holds a twelve-day trip")
+        finally:
+            catalog.close()

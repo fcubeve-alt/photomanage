@@ -36,7 +36,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 |---|---|---|---|
 | S2-UNDERSTAND | Understand：理解照片/视频内容 | PARTIAL | the engine consumes OCR text, scene labels and face clusters via `pvm/signals.py`, but produces none of them — Vision lives in `20_TIER0/harness`, and video is not understood at all |
 | S2-CLASSIFY | Classify：尽可能细地归入有实际决策意义的类别 | DONE | `pvm/classifier.py`, `pvm/rules.py`, `eval/evaluate.py` |
-| S2-INDEX | Index：内容、时间、地点、人物、物品、事件、风险多维索引 | PARTIAL | content/time/place/person/risk are indexed in `pvm/catalog.py`; object-entity and event indexes exist only as relation rows, not as traversable indexes |
+| S2-INDEX | Index：内容、时间、地点、人物、物品、事件、风险多维索引 | DONE | all seven, in `pvm/catalog.py`: content and time and place from the assignments table, person and object and event from the entities and observations tables, risk and importance as their own indexed columns. Traversable in both directions — `pvm/catalog.py::sightings` from an entity to its assets, `pvm/catalog.py::entities_for` from one asset to everything it is indexed under. `pvm/catalog.py::index_coverage` counts each of them from the rows, and `eval/evaluate.py` prints the table: Time 100%, Content 94.8%, Place 44.1%, Person 15.4%, Event 9.2%, Object 0% — that last one because this corpus carries no scene labels for its 205 object assets, not because the index is missing |
 | S2-RISK | Assess Risk：判断误处理的潜在损失和内容重要性 | DONE | the clause names two outputs and the engine produces both: 误处理的潜在损失 is `pvm/risk.py::classify_risk` (§6 R0–R6), 内容重要性 is `pvm/importance.py::assess` (I0–I4). They are genuinely different axes rather than one renamed — on the 10k library 1,102 assets (11.0%) sit two or more levels apart, a passport photograph grading R5/ORDINARY and a recurring person R3/TREASURED |
 | S2-DECIDE | Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作 | DONE | `pvm/risk.py::decide_action`, `pvm/risk.py::policy_table` |
 | S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
@@ -158,7 +158,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | T1B-EMBEDDING | Product/Object：同一设备、商品、家中物品的不同角度…视觉 embedding + attribute + temporal evidence | MISSING | there is no visual embedding, so two views of one chair cannot be joined and one chair on two days cannot be told from two identical chairs. `pvm/resolver.py::_resolve_object` answers UNCERTAIN in both cases rather than guessing — Tier 1's 「Review Queue 优先」 downgrade taken deliberately: object recall 33%, object false merges 0. **Blocked on evidence, not on effort**: wiring `VNGenerateImageFeaturePrintRequest` into `AssetSignals.embedding` is a day's work, and choosing the distance at which two feature prints are the same object is not, because there is nothing here to measure it against. `20_TIER0/study_assets/library` holds a manifest and PIL-drawn placeholder images, not photographs, and a threshold fitted to flat rendered rectangles would not survive contact with a real camera. Shipping an unmeasured threshold on the category where a false merge is expensive is the trade Tier 1-B exists to prevent, so this waits for real images — which is also what T0-A and T0-B need |
 | T1C-LIFECYCLE | Tier 1-C Visual Lifecycle Engine，重点是 Suggest Delete 的 False Positive | PARTIAL | `pvm/risk.py::lifecycle_of` and the policy table exist; the false-positive rate of Suggest Delete has never been measured |
 | T1C-ZEROAUTO | 高风险类别自动删除率必须为 0 | DONE | `pvm/kpi.py::catastrophic_error_rate`, audited in `eval/evaluate.py` against written rows |
-| T1D-MULTIINDEX | Tier 1-D 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引 | PARTIAL | four of six; Object and Event are relations rather than indexes |
+| T1D-MULTIINDEX | Tier 1-D 一个 Asset 同时挂载 Content / Time / Place / Person / Object / Event 索引 | DONE | six of six, from one asset, via `pvm/catalog.py::entities_for` — the clause is specifically about what hangs off a single asset, and Person, Object and Event were previously reachable only by starting from an entity and walking to its sightings, which answers "where have I seen this bicycle" and cannot answer "what is in this photograph". The index that makes it cheap already existed; nothing was asking. Counted rather than asserted by `pvm/catalog.py::index_coverage`, surfaced by `pvm/cli.py::cmd_why` and by the app's asset detail screen, and the §11 provenance travels with each row so a hedged place cannot render as a stated one |
 | T1E-PATHS | Tier 1-E 四种找回路径各挑 2-3 个真实任务测试成功率 | MISSING | two of the four paths do not exist, so the test cannot be run |
 
 ## L2 Tier 2 — 完整体验与规模化
@@ -189,14 +189,14 @@ on — so `check_constraints.py` now fails when any cell here disagrees with the
 
 | status | count | share |
 |---|--:|--:|
-| DONE | 50 | 55% |
-| PARTIAL | 27 | 30% |
+| DONE | 52 | 57% |
+| PARTIAL | 25 | 27% |
 | MISSING | 5 | 5% |
 | OUT-OF-SCOPE (tier named) | 6 | 7% |
 | NOT-CODE (principle, explained) | 3 | 3% |
 
-**55% of the audited clauses are fully satisfied, and that is by an engine that does
-not ship.** The 30% PARTIAL is the number to look at hardest: a partial clause passes
+**57% of the audited clauses are fully satisfied, and that is by an engine that does
+not ship.** The 27% PARTIAL is the number to look at hardest: a partial clause passes
 its tests and still does not do what the document asks, which is a more comfortable
 place to hide than a gap.
 

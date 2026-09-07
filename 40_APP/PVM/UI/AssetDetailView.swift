@@ -14,6 +14,23 @@ struct AssetDetailView: View {
         coordinator.catalog?.why(assetID) ?? []
     }
 
+    /// Tier 1-D's other three indexes. The sections above render Content, Time and
+    /// Place, which come off `assignments`; Person, Object and Event hang off the
+    /// memory graph and were reachable only by starting from an entity.
+    private var indexedUnder: [Catalog.IndexedEntity] {
+        coordinator.catalog?.entities(for: assetID) ?? []
+    }
+
+    private func describe(_ entity: Catalog.IndexedEntity) -> String {
+        var line = entity.name
+        if let place = entity.place {
+            // §11: a hedged place must not render as a stated one.
+            line += entity.placeIsInferred ? " — probably \(place)" : " — \(place)"
+        }
+        if entity.isInferred { line += " (inferred)" }
+        return line
+    }
+
     var body: some View {
         List {
             Section {
@@ -28,6 +45,19 @@ struct AssetDetailView: View {
                         Label(reason, systemImage: "checkmark.circle")
                             .font(.callout)
                             .labelStyle(.titleAndIcon)
+                    }
+                }
+            }
+
+            if !indexedUnder.isEmpty {
+                Section("Also indexed under") {
+                    ForEach(indexedUnder, id: \.entityID) { entity in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(describe(entity)).font(.callout)
+                            Text("\(entity.kind) · \(entity.reason)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        .accessibilityIdentifier("indexed-\(entity.entityID)")
                     }
                 }
             }

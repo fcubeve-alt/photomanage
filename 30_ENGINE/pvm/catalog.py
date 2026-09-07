@@ -387,6 +387,50 @@ class Catalog:
                ORDER BY seen_at IS NULL, seen_at LIMIT ?""",
             (entity_id, limit)).fetchall()
 
+    def entities_for(self, asset_id: str, limit: int = 100):
+        """The other direction: what is this ONE asset indexed under?
+
+        Tier 1-D asks for 一个 Asset 同时挂载 Content / Time / Place / Person / Object /
+        Event 索引 — six indexes hanging off a single asset. Content, Time and Place
+        were readable from `assignments`; Person, Object and Event were only reachable
+        by starting from an entity and walking to its sightings, which answers "where
+        have I seen this bicycle" and cannot answer "what is in this photograph".
+        `idx_obs_asset` already existed to make this cheap; nothing was asking.
+
+        The inference flags travel with the row (§11): a caller that renders this
+        without them would turn a hedged place into a stated one.
+        """
+        return self.db.execute(
+            """SELECT e.entity_id, e.kind, e.name, e.category_path,
+                      o.confidence, o.reason, o.place, o.place_source, o.source, o.repeats
+               FROM observations o JOIN entities e USING(entity_id)
+               WHERE o.asset_id=?
+               ORDER BY e.kind, o.confidence DESC LIMIT ?""",
+            (asset_id, limit)).fetchall()
+
+    def index_coverage(self):
+        """How many assets carry each of Tier 1-D's six indexes.
+
+        Reported rather than asserted: "the asset is on six indexes" is a claim about
+        the rows, and a claim about rows should be counted from them.
+        """
+        one = lambda sql, *a: self.db.execute(sql, a).fetchone()[0]
+        by_kind = dict(self.db.execute(
+            "SELECT e.kind, COUNT(DISTINCT o.asset_id) FROM observations o "
+            "JOIN entities e USING(entity_id) GROUP BY e.kind").fetchall())
+        on_root = lambda root: one(
+            "SELECT COUNT(DISTINCT asset_id) FROM assignments "
+            "WHERE path = ? OR path LIKE ?", root, root + " > %")
+        return {
+            "content": one("SELECT COUNT(DISTINCT asset_id) FROM assignments "
+                           "WHERE path NOT LIKE 'Timeline%'"),
+            "time": on_root("Timeline"),
+            "place": on_root("Places"),
+            "person": by_kind.get("person", 0),
+            "object": by_kind.get("object", 0),
+            "event": by_kind.get("event", 0),
+        }
+
     def write_video_record(self, record, frames_seen: int) -> None:
         self.db.execute(
             """INSERT OR REPLACE INTO video_records(asset_id,date,place,people,objects,

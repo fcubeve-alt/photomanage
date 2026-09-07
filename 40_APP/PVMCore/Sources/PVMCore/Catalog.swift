@@ -955,6 +955,57 @@ public final class Catalog: @unchecked Sendable {
         return out
     }
 
+    public struct IndexedEntity {
+        public let entityID: String
+        public let kind: String
+        public let name: String
+        public let categoryPath: String?
+        public let confidence: Double
+        public let reason: String
+        public let place: String?
+        /// §11 travels with the row. Rendering a hedged place as a stated one is how a
+        /// guess becomes a fact.
+        public let placeIsInferred: Bool
+        public let isInferred: Bool
+        public let repeats: String?
+    }
+
+    /// The other direction: what is this ONE asset indexed under?
+    ///
+    /// Tier 1-D asks for 一个 Asset 同时挂载 Content / Time / Place / Person / Object /
+    /// Event 索引. Content, Time and Place are readable from `assignments`; Person,
+    /// Object and Event were only reachable by starting from an entity and walking to
+    /// its sightings, which answers "where have I seen this bicycle" and cannot answer
+    /// "what is in this photograph". `idx_obs_asset` already existed to make this
+    /// cheap; nothing was asking.
+    public func entities(for assetID: String, limit: Int = 100) -> [IndexedEntity] {
+        guard let st = prepared("""
+            SELECT e.entity_id, e.kind, e.name, e.category_path,
+                   o.confidence, o.reason, o.place, o.place_source, o.source, o.repeats
+            FROM observations o JOIN entities e USING(entity_id)
+            WHERE o.asset_id = ?
+            ORDER BY e.kind, o.confidence DESC LIMIT ?;
+            """) else { return [] }
+        sqlite3_bind_text(st, 1, assetID, -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_int(st, 2, Int32(limit))
+        var out: [IndexedEntity] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append(IndexedEntity(
+                entityID: Catalog.text(st, 0), kind: Catalog.text(st, 1),
+                name: Catalog.text(st, 2),
+                categoryPath: sqlite3_column_type(st, 3) == SQLITE_NULL
+                    ? nil : Catalog.text(st, 3),
+                confidence: sqlite3_column_double(st, 4),
+                reason: Catalog.text(st, 5),
+                place: sqlite3_column_type(st, 6) == SQLITE_NULL ? nil : Catalog.text(st, 6),
+                placeIsInferred: Catalog.text(st, 7) != "measured",
+                isInferred: Catalog.text(st, 8) != "measured",
+                repeats: sqlite3_column_type(st, 9) == SQLITE_NULL ? nil : Catalog.text(st, 9)))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
     /// The stored decisions for one asset. Used by the conformance test, which needs
     /// the exact row rather than whatever a browse query happens to return first.
     public func decision(for assetID: String)

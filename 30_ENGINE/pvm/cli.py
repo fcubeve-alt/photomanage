@@ -122,6 +122,24 @@ def cmd_why(args) -> int:
         print(f"  {path}")
         for r in rs:
             print(f"      · {r}")
+
+    # Tier 1-D: the other three of the six indexes an asset hangs off. `assignments`
+    # above covers Content, Time and Place; these are Person, Object and Event, and
+    # until `entities_for` existed they were reachable only by starting from an entity.
+    rows = catalog.entities_for(args.asset)
+    if rows:
+        print("  also indexed under")
+        for _, kind, name, _, _, reason, place, place_source, source, repeats in rows:
+            line = f"      · {kind}: {name}"
+            if place:
+                # §11 travels with the row. Rendering a hedged place as a stated one is
+                # how a guess becomes a fact.
+                line += f" — {place}" if place_source == "measured" else f" — probably {place}"
+            if source != "measured":
+                line += " (inferred)"
+            if repeats:
+                line += f" (repeats {repeats})"
+            print(line)
     catalog.close()
     return 0
 
