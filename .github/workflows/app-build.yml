@@ -165,13 +165,6 @@ jobs:
             echo "::warning::no screenshots were captured — the UI run produced nothing to look at"
           fi
 
-      - name: Summarise errors
-        if: failure()
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          echo "===== ERRORS ====="
-          grep -E "error:" build.log unit.log ui.log 2>/dev/null | sort -u | head -60 || true
-
       - name: Upload logs and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -184,3 +177,26 @@ jobs:
             ${{ env.PROJECT_DIR }}/screens
           retention-days: 30
           if-no-files-found: warn
+
+      # LAST, deliberately. This step existed before and sat in the middle, so its
+      # output was buried under the artifact upload's forty lines of progress — and the
+      # log viewer shows the end. Three separate runs were spent unable to read which
+      # UI tests failed, on a runner billed at ten times the Linux rate.
+      #
+      # `if: always()` so it reports on a green run too: the screen text is the only way
+      # this UI gets looked at from a machine with no Mac, and it is worth having when
+      # everything passes as much as when it does not.
+      - name: What failed, and what the app showed
+        if: always()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "===== UI TEST FAILURES ====="
+          grep -E "error:|XCTAssert.*failed" ui.log unit.log build.log 2>/dev/null \
+            | sed 's/.*photomanage\///' | sort -u | head -40 || true
+          echo "===== WHAT THE APP SHOWED ====="
+          for f in screens/*.txt; do
+            [ -e "$f" ] || continue
+            echo "--- $f ---"
+            cat "$f"
+          done
+          echo "===== END ====="
