@@ -638,6 +638,89 @@ public final class Catalog: @unchecked Sendable {
         public let needsReview: Bool
     }
 
+    /// §10 Intent Search, executed against rows that already exist.
+    ///
+    /// Takes the resolved constraints rather than a sentence: parsing belongs in
+    /// `Intent`, and a catalogue that parsed language would be a second place for the
+    /// vocabulary to live. Every clause is ANDed, and results are grouped per asset —
+    /// one photo filed on three shelves is one result, not three.
+    public func search(paths: [String] = [], entityNameGroups: [[String]] = [],
+                       mediaType: String? = nil, yearRange: (Double, Double)? = nil,
+                       limit: Int = 50) -> [(assetID: String, paths: String)] {
+        var clauses: [String] = []
+        var texts: [String] = []          // bound in order, after the LIKE pairs
+        if !paths.isEmpty {
+            let ors = paths.map { _ in "(a2.path = ? OR a2.path LIKE ?)" }
+            clauses.append("(" + ors.joined(separator: " OR ") + ")")
+            for path in paths { texts.append(path); texts.append(path + Taxonomy.separator + "%") }
+        }
+        for group in entityNameGroups where !group.isEmpty {
+            let marks = group.map { _ in "?" }.joined(separator: ",")
+            clauses.append("""
+                assets.asset_id IN (SELECT o.asset_id FROM observations o \
+                JOIN entities e ON e.entity_id = o.entity_id WHERE e.name IN (\(marks)))
+                """)
+            texts.append(contentsOf: group)
+        }
+        if let mediaType {
+            clauses.append("assets.media_type = ?")
+            texts.append(mediaType)
+        }
+        var sql = """
+            SELECT assets.asset_id, GROUP_CONCAT(a2.path, ' | ') FROM assets
+            JOIN assignments a2 ON a2.asset_id = assets.asset_id
+            """
+        if yearRange != nil { clauses.append("assets.created_at >= ? AND assets.created_at < ?") }
+        if !clauses.isEmpty { sql += " WHERE " + clauses.joined(separator: " AND ") }
+        sql += " GROUP BY assets.asset_id ORDER BY assets.created_at DESC LIMIT ?;"
+
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, sql, -1, &st, nil)
+        var index: Int32 = 1
+        for text in texts {
+            sqlite3_bind_text(st, index, text, -1, Catalog.SQLITE_TRANSIENT)
+            index += 1
+        }
+        if let yearRange {
+            sqlite3_bind_double(st, index, yearRange.0); index += 1
+            sqlite3_bind_double(st, index, yearRange.1); index += 1
+        }
+        sqlite3_bind_int(st, index, Int32(limit))
+
+        var out: [(assetID: String, paths: String)] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append((assetID: Catalog.text(st, 0), paths: Catalog.text(st, 1)))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+    /// The other sides or pages of the same document.
+    ///
+    /// Read from the relations the Category-Specific Entity Resolver already wrote,
+    /// never recomputed here — 正反面 is a question about entity identity, and §24
+    /// Gate 2 says that answer has exactly one home.
+    public func sameEntityGroups(containing assetIDs: [String]) -> [[String]] {
+        guard !assetIDs.isEmpty else { return [] }
+        let marks = assetIDs.map { _ in "?" }.joined(separator: ",")
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            SELECT group_key, asset_id FROM relations
+            WHERE kind = 'same_entity' AND group_key IN (
+              SELECT group_key FROM relations
+              WHERE kind = 'same_entity' AND asset_id IN (\(marks)));
+            """, -1, &st, nil)
+        for (i, id) in assetIDs.enumerated() {
+            sqlite3_bind_text(st, Int32(i + 1), id, -1, Catalog.SQLITE_TRANSIENT)
+        }
+        var groups: [String: [String]] = [:]
+        while sqlite3_step(st) == SQLITE_ROW {
+            groups[Catalog.text(st, 0), default: []].append(Catalog.text(st, 1))
+        }
+        sqlite3_finalize(st)
+        return groups.values.filter { $0.count > 1 }.map { $0.sorted() }
+    }
+
     public func assets(under path: String, limit: Int = 300) -> [AssetRow] {
         var out: [AssetRow] = []
         var st: OpaquePointer?

@@ -25,6 +25,7 @@ struct HomeView: View {
                     Section { ProgressView("Reading your library…") }
                 default:
                     statusSection
+                    searchSection
                     categoriesSection
                     memorySection
                     maintenanceSection
@@ -99,6 +100,24 @@ struct HomeView: View {
                 // product failure; this says what the row *is*.
                 .accessibilityIdentifier("browse-\(entry.path)")
             }
+        }
+    }
+
+    /// §10 Intent Search. Above Browse and Memory because it is the path a user takes
+    /// when they already know what they want — §23 is about seeing the catalogue, not
+    /// about making them walk it every time.
+    private var searchSection: some View {
+        Section {
+            NavigationLink {
+                SearchView(coordinator: coordinator)
+            } label: {
+                HStack {
+                    Image(systemName: "magnifyingglass").frame(width: 28)
+                        .foregroundStyle(.tint)
+                    Text("Find something")
+                }
+            }
+            .accessibilityIdentifier("search")
         }
     }
 

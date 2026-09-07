@@ -41,6 +41,7 @@ RESOURCES = os.path.join(HERE, "PVMCore", "Tests", "PVMCoreTests", "Resources")
 
 sys.path.insert(0, ENGINE)
 from pvm import fixture as F                   # noqa: E402
+from pvm import intent as I
 from pvm import rules as R                     # noqa: E402
 from pvm import taxonomy as T                  # noqa: E402
 from pvm.risk import RISK_BY_PATH_PREFIX       # noqa: E402
@@ -132,6 +133,32 @@ def gen_rules() -> str:
         lines.append(f"        {swift_string(k)}: {swift_string(R.SCENE_MAP[k])},")
     lines.append("    ]\n")
     lines.append(f"    public static let sceneFloor: Double = {R.SCENE_FLOOR}")
+    lines.append("")
+    lines.append("    // §10 Intent Search vocabulary. Generated for the same reason the")
+    lines.append("    // scene map is: a search that recognises 身份证 on one side and not")
+    lines.append("    // the other is two products, and nobody would notice until a user")
+    lines.append("    // typed it into the wrong one.")
+    lines.append("    public static let categoryWords: [String: String] = [")
+    for k in sorted(I.CATEGORY_WORDS):
+        lines.append(f"        {swift_string(k)}: {swift_string(I.CATEGORY_WORDS[k])},")
+    lines.append("    ]\n")
+    lines.append("    public static let multiSideWords: [String] = [")
+    for w in sorted(I.MULTI_SIDE_WORDS, key=lambda x: (-len(x), x)):
+        lines.append(f"        {swift_string(w)},")
+    lines.append("    ]\n")
+    lines.append("    public static let mediaWords: [String: String] = [")
+    for k in sorted(I.MEDIA_WORDS):
+        lines.append(f"        {swift_string(k)}: {swift_string(I.MEDIA_WORDS[k])},")
+    lines.append("    ]\n")
+    lines.append("    public static let searchFiller: [String] = [")
+    for w in sorted(I._FILLER):
+        lines.append(f"        {swift_string(w)},")
+    lines.append("    ]\n")
+    lines.append("    /// Stripped as substrings, longest first: Chinese is not space-separated.")
+    lines.append("    public static let searchFillerCJK: [String] = [")
+    for w in I._FILLER_CJK:
+        lines.append(f"        {swift_string(w)},")
+    lines.append("    ]\n")
     lines.append("")
     lines.append("    /// §6 category → risk, in order: the first prefix that matches wins,")
     lines.append("    /// and the highest match across all of an asset's paths is taken.")
