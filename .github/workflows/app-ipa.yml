@@ -17,10 +17,24 @@ name: Unsigned .ipa for sideloading
 # secrets and the $99, and it uploads to TestFlight so other people can install it.
 # This one only ever reaches one phone: the owner's.
 #
-# MANUAL ONLY, like every other macOS job here — they bill at ten times the Linux rate.
+# Nearly manual-only, like every other macOS job here — they bill at ten times the
+# Linux rate. The `push` trigger below is scoped to this one file and exists for a
+# mechanical reason, not a policy one.
+#
+# **A `workflow_dispatch`-only workflow that lives on a non-default branch cannot be
+# dispatched.** GitHub never registers it: the API returns 404 for a file it can see
+# perfectly well, and no Run button appears. Every other workflow here that IS
+# dispatchable got registered by a `push` trigger at some point. So this one carries a
+# `push` trigger narrowed to its own path — it fires when this file changes, which is
+# exactly when you would want to re-verify that the .ipa still builds, and never
+# otherwise. Once this branch reaches `main`, `workflow_dispatch` starts working on its
+# own and this trigger can go.
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/app-ipa.yml'
 
 concurrency:
   group: app-ipa-${{ github.ref }}
