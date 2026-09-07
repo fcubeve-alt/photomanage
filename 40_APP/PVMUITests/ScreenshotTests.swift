@@ -144,10 +144,13 @@ final class ScreenshotTests: XCTestCase {
         // cells, so "the first cell" was a folder — the previous version drilled into
         // `Identity`, tapped cell 0 again, landed in `Passports`, and concluded that an
         // asset could not explain itself without ever having opened one.
-        let asset = firstAsset(maxDepth: 3)
-        XCTAssertTrue(asset.exists,
-                      "no photo was reachable under Documents — the fixture files "
-                      + "seven there, so either the tree or the browse view is wrong")
+        guard let asset = firstAsset(maxDepth: 3) else {
+            XCTFail("no photo was reachable under Documents — the fixture files seven "
+                    + "there, so either the tree, the browse view, or this test's idea "
+                    + "of what an asset row looks like is wrong. On screen: "
+                    + identifiersOnScreen())
+            return
+        }
         capture("03-inside-documents")
 
         asset.tap()
@@ -165,17 +168,52 @@ final class ScreenshotTests: XCTestCase {
     ///
     /// Scoped to `app.cells` for the same reason as `element(_:)`: a predicate over
     /// `.any` re-snapshots the whole hierarchy every time it is evaluated.
-    private func firstAsset(maxDepth: Int) -> XCUIElement {
-        let assets = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'asset-'"))
-        let children = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'child-'"))
-        for depth in 0...maxDepth {
-            if assets.firstMatch.waitForExistence(timeout: depth == 0 ? 10 : 3) {
-                return assets.firstMatch
-            }
-            guard children.firstMatch.exists else { break }
-            children.firstMatch.tap()
+    /// Every element type a SwiftUI List row can surface as.
+    ///
+    /// `app.cells` alone is not enough: which of cell / button / other a `NavigationLink`
+    /// inside a `List` reports as is an implementation detail of SwiftUI and of the iOS
+    /// version, and a test that hard-codes one of them fails on a screen the user can
+    /// see perfectly well. `descendants(matching: .any)` would cover all of them and is
+    /// deliberately not used — it took this step from four minutes to over fifteen.
+    private func matching(_ prefix: String) -> [XCUIElementQuery] {
+        let predicate = NSPredicate(format: "identifier BEGINSWITH %@", prefix)
+        return [app.cells.matching(predicate),
+                app.buttons.matching(predicate),
+                app.otherElements.matching(predicate)]
+    }
+
+    private func firstMatch(_ prefix: String, timeout: TimeInterval) -> XCUIElement? {
+        for query in matching(prefix) where query.firstMatch.waitForExistence(timeout: timeout) {
+            return query.firstMatch
         }
-        return assets.firstMatch
+        return nil
+    }
+
+    /// What the accessibility tree actually holds, for a failure message.
+    ///
+    /// Guessing which identifier is missing costs a run on a macOS runner billed at ten
+    /// times the Linux rate. Printing them costs nothing and ends the guessing.
+    private func identifiersOnScreen(limit: Int = 40) -> String {
+        var seen: [String] = []
+        for query in [app.cells, app.buttons, app.otherElements] {
+            for element in query.allElementsBoundByIndex.prefix(limit)
+            where !element.identifier.isEmpty {
+                seen.append(element.identifier)
+            }
+        }
+        return seen.isEmpty ? "(nothing carries an identifier)"
+                            : Array(Set(seen)).sorted().prefix(limit).joined(separator: ", ")
+    }
+
+    private func firstAsset(maxDepth: Int) -> XCUIElement? {
+        for depth in 0...maxDepth {
+            if let asset = firstMatch("asset-", timeout: depth == 0 ? 10 : 3) {
+                return asset
+            }
+            guard let child = firstMatch("child-", timeout: 2) else { break }
+            child.tap()
+        }
+        return nil
     }
 
     /// §2 Remember, on screen.    /// §2 Remember, on screen.    /// §2 Remember, on screen. The catalogue says which shelf a photo is on; this says
