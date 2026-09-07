@@ -106,6 +106,12 @@ jobs:
       - name: The app's shared Swift still matches the engine
         run: python 40_APP/generate_shared.py --check
 
+      # Both implementations open the same database file. A column one of them does not
+      # know about is a query that fails at runtime — and in the case this was written
+      # for, failed silently and reported "no matches".
+      - name: Both catalogues have the same shape
+        run: python 40_APP/check_schema.py
+
       - name: Generators are deterministic
         run: |
           cd 20_TIER0/study_assets && python build_prototype.py > /dev/null && cd -

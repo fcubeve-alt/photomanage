@@ -171,6 +171,16 @@ public final class Catalog: @unchecked Sendable {
         );
         CREATE INDEX IF NOT EXISTS idx_decisions_path ON decisions(path);
 
+        -- §24 Gate 2: 低置信度只能进入 Review Queue，不自动合并/删除. A pair the
+        -- Category-Specific Entity Resolver would not decide is a question for the
+        -- user, and a question nobody is shown is the same as a merge nobody agreed to.
+        CREATE TABLE IF NOT EXISTS entity_review(
+          asset_a TEXT NOT NULL,
+          asset_b TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          PRIMARY KEY(asset_a, asset_b)
+        );
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
     }
@@ -613,6 +623,34 @@ public final class Catalog: @unchecked Sendable {
                 frames: decode(Catalog.text(st, 7), []),
                 framesSeen: Int(sqlite3_column_int64(st, 8)),
                 why: Catalog.text(st, 9)))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+    public func writeEntityReview(_ pairs: [(String, String, String)]) {
+        exec("DELETE FROM entity_review;")
+        begin()
+        for (a, b, reason) in pairs {
+            guard let st = prepared("""
+                INSERT OR REPLACE INTO entity_review(asset_a,asset_b,reason)
+                VALUES(?,?,?);
+                """) else { continue }
+            sqlite3_bind_text(st, 1, a, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 2, b, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_bind_text(st, 3, reason, -1, Catalog.SQLITE_TRANSIENT)
+            sqlite3_step(st); sqlite3_finalize(st)
+        }
+        commit()
+    }
+
+    public func entityReviewQueue(limit: Int = 50) -> [(String, String, String)] {
+        guard let st = prepared("SELECT asset_a,asset_b,reason FROM entity_review LIMIT ?;")
+        else { return [] }
+        sqlite3_bind_int(st, 1, Int32(limit))
+        var out: [(String, String, String)] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            out.append((Catalog.text(st, 0), Catalog.text(st, 1), Catalog.text(st, 2)))
         }
         sqlite3_finalize(st)
         return out

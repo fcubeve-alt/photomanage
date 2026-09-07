@@ -61,6 +61,12 @@ run_all() {
   # The one that would have caught the invoice drift.
   step "The app's shared Swift still matches the engine" \
     python3 40_APP/generate_shared.py --check
+
+  # And the one that would have caught the media_type drift. The generator covers the
+  # taxonomy and the rules because those are generated; the schema is hand-written in
+  # both files, so nothing was comparing them.
+  step "Both catalogues have the same shape" \
+    python3 40_APP/check_schema.py
 }
 
 # `./verify.sh --selftest` breaks something on purpose and checks that this script

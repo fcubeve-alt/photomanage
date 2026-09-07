@@ -203,6 +203,11 @@ public enum Pipeline {
             stats.entities = graph.entities.count
             stats.observations = graph.observations.count
         }
+        // Written after the scoring loop, not with the relations. `entity_review` is
+        // keyed on assets that `upsert` rewrites with INSERT OR REPLACE, and in SQLite
+        // a REPLACE deletes the old row first — which is how the engine's copy of this
+        // table silently emptied when it was written too early.
+        catalog.writeEntityReview(report.needsEntityReview)
         stats.entityReview = report.needsEntityReview.count
 
         stats.wallSeconds = Date().timeIntervalSince(started)
