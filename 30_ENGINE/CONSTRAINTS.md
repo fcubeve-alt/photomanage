@@ -86,7 +86,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S12-CANDIDATES | 建立 Exact / Near Duplicate / Same Moment / Same Entity 候选 | L1:168 | DONE | `pvm/dedup.py::analyse` |
 | S12-SMALLQUEUE | 真正需要用户决定的内容进入极小 Review Queue | L1:170 | DONE | measured, not asserted: `pvm/kpi.py::human_review_burden` |
 | S13-HYGIENE | 每一张新拍摄、下载、截图或视频都自动经过同一管线 | L1:173 | PARTIAL | new stills re-enter automatically (`tests/test_catalog.py::Incrementality`); **video does not enter the pipeline** |
-| S14-PERSONAL | 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy | L1:182 | MISSING | not built. `decide_action` accepts a `personal_preference` and can only ever be made more careful by it, but nothing produces one — Tier 2-G |
+| S14-PERSONAL | 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy | L1:182 | PARTIAL | `pvm/personal.py` learns per-category preferences from a logged decision history (`pvm/catalog.py::record_decision`), and `pvm/risk.py::decide_action` now honours 系统以后可以更激进 below R4 while refusing it at R4+. `tests/test_personal.py` (19 tests) holds that line. PARTIAL because **no real user has ever fed it**: the mechanism and its limits are built and tested, the learning curve is not observed — that needs users, which is T0-B/Tier 2-G |
 
 ## L1 §16–§23 — boundaries, KPIs, validation, positioning
 
@@ -95,7 +95,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S15-DERIVED | Wardrobe / Clothing View | L1:189 | OUT-OF-SCOPE | Tier 2 §15 — an explicit later value layer that must derive from existing data, not skipped work. The data it has to derive from now exists: clothing and purchase entities with their sightings (`pvm/memory.py`) |
 | S16-BOUNDARY | 对性格、健康、政治、宗教、亲密关系等敏感属性作推断 | L1:204 | DONE | `pvm/rules.py::MEDICAL_IS_DOCUMENT_ONLY`, `tests/test_engine.py::RiskRedLines` |
 | S17-POSITION | 第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager | L1:206 | NOT-CODE | a positioning statement that shapes what gets built rather than a clause to implement; its executable consequence is that classification precedes cleanup, which is S9-ORDER |
-| S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | seven of eight in `pvm/kpi.py::report`; Personalization Gain requires S14-PERSONAL, and Retrieval Success requires real users (T0-B) |
+| S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | all eight are in `pvm/kpi.py::report` — Personalization Gain measured as review questions avoided rather than rules learned. PARTIAL because Retrieval Success cannot be self-reported: it needs real users on real tasks (T0-B) |
 | S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | DONE | `eval/evaluate.py` prints coverage and a confusion matrix over the scored roots — rows are the true root, columns what was filed, and an asset filed correctly *and* elsewhere appears in both cells so over-filing cannot hide |
 | S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
 | S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | all four exist. PARTIAL because their success rates have not been measured — Tier 1-E wants 成功率、步骤数、耗时 on real tasks, which needs users |
@@ -166,7 +166,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | T2D-HOME | Tier 2-D 完整 Structure First 首页原型 | OUT-OF-SCOPE | needs an app; the 82 hand-authored prototype pages in `20_TIER0/study_assets/prototype` have no engine behind them |
 | T2E-ABLATION | 输出 ablation：只 OCR、只视觉、组合信号分别表现如何 | PARTIAL | `eval/evaluate.py` ablates metadata-only against full; **the OCR-only and vision-only arms are not run** |
 | T2F-ECONOMICS | 规模化单位经济 10k / 100k / 1M | OUT-OF-SCOPE | Tier 2-F, commercial modelling rather than engine work |
-| T2G-LEARNING | Global Policy + Personal Policy 反馈学习 | MISSING | nothing records the user's Keep/Delete/Protect/Correction decisions, so there is no feedback to learn from and no way to show Review volume falling over time; see S14-PERSONAL |
+| T2G-LEARNING | Global Policy + Personal Policy 反馈学习 | PARTIAL | the loop exists end to end: decisions are recorded, a policy is derived on read, it changes the action, and `pvm/kpi.py` reports the review questions it avoided. What cannot be shown here is Review volume falling **over time for a real user** — that is the Tier 2-G measurement and it needs people |
 
 ---
 
@@ -202,7 +202,11 @@ place to hide than a gap.
    applied across categories, which is not built.
 5. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
    an action the engine can name and cannot perform.
-6. **S14-PERSONAL / T2G-LEARNING** — Personal Policy, and the feedback loop §14 and
+6. **Real users** — every remaining PARTIAL that is not blocked on photographs is
+   blocked on people: Retrieval Success (§18), the four paths' success rates
+   (Tier 1-E), and whether a Personal Policy actually reduces review volume over time
+   (Tier 2-G). The mechanisms are built and tested; the curves cannot be invented.
+   Previously listed here as S14-PERSONAL / T2G-LEARNING, and
    Tier 2-G both require. Without it §5's sixth factor has no source and §18's
    Personalization Gain cannot exist.
 7. **S19-RISKEVAL** — risk grading has never been evaluated against labels. The scale
