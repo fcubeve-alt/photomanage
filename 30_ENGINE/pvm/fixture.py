@@ -64,6 +64,17 @@ def build() -> List[AssetSignals]:
         ocr_text="PASSPORT", geo=GeoFix(*LONDON), place=PlaceName(*UK, 0.9))
     add("doc-id-front", created_at=_at(2025, 6, 18, 14), source="camera", ocr_ran=True,
         ocr_text="ID CARD — FRONT", geo=GeoFix(*LONDON), place=PlaceName(*UK, 0.9))
+    # §10's Browse path — Documents → IDs → Person → ID Card. The holder's name is read
+    # off the document, so the fixture has to carry one that says it.
+    add("doc-passport-jane", created_at=_at(2025, 6, 19), source="camera", ocr_ran=True,
+        ocr_text="PASSPORT  NAME: JANE DOE  ISSUED 2019",
+        geo=GeoFix(*LONDON), place=PlaceName(*UK, 0.9))
+    # ...and one that names two people, which this rule must refuse rather than file
+    # under both. A conformance fixture that only carries the success would let the two
+    # implementations disagree about the refusal with both suites green.
+    add("doc-passport-two-holders", created_at=_at(2025, 6, 20), source="camera",
+        ocr_ran=True, ocr_text="PASSPORT  NAME: JANE DOE  HOLDER: BEN SMITH",
+        geo=GeoFix(*LONDON), place=PlaceName(*UK, 0.9))
     # Contract pages: near-identical to look at, unrelated in content.
     for page in range(1, 5):
         add(f"doc-contract-{page}", created_at=_at(2025, 3, 2, 9 + page), source="camera",

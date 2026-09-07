@@ -93,6 +93,14 @@ def gen_taxonomy() -> str:
         lines.append(f"        {swift_string(r)},")
     lines.append("    ]\n")
 
+    lines.append("    /// Branches that may grow where their root may not, with the")
+    lines.append("    /// depth each allows. §10's Documents → IDs → Person → ID Card is")
+    lines.append("    /// why this exists — see `taxonomy.py`.")
+    lines.append("    public static let extensibleBranches: [String: Int] = [")
+    for prefix, limit in sorted(T._EXTENSIBLE_BRANCHES.items()):
+        lines.append(f"        {swift_string(prefix)}: {limit},")
+    lines.append("    ]\n")
+
     lines.append("    /// `_also_in`: the same asset under two entries, one original (§3).")
     lines.append("    public static let crossListing: [String: String] = [")
     for p in T.ALL_PATHS:

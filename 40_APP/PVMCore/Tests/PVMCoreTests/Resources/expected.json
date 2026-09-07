@@ -131,6 +131,27 @@
   ],
   "risk": 5
  },
+ "doc-passport-jane": {
+  "action": "protect",
+  "asset_class": "identity_financial",
+  "importance": 2,
+  "paths": [
+   "Documents > Identity > Jane Doe > Passports",
+   "Documents > Identity > Passports",
+   "Timeline > 2025 > 06 June > 19"
+  ],
+  "risk": 5
+ },
+ "doc-passport-two-holders": {
+  "action": "protect",
+  "asset_class": "identity_financial",
+  "importance": 2,
+  "paths": [
+   "Documents > Identity > Passports",
+   "Timeline > 2025 > 06 June > 20"
+  ],
+  "risk": 5
+ },
  "home-0": {
   "action": "keep",
   "asset_class": "everyday_photo",

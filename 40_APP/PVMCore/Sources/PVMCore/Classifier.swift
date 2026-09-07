@@ -59,6 +59,10 @@ public struct Classifier {
         // their place. Location is context; it is not what the thing IS.
         places(a, &c)
         travel(a, &c)
+        // After the text pass has decided what kind of identity document this is, and
+        // before pruning, because the person shelf is a cross-listing of a leaf the
+        // text pass produced.
+        documentHolder(a, &c)
         pruneImpliedAncestors(&c)
         crossList(&c)
         unfiled(&c)
@@ -366,6 +370,55 @@ public struct Classifier {
     /// count the asset twice in its own parent. The ancestor's evidence is merged into
     /// the descendant rather than discarded — it is half the reason the leaf is right,
     /// and the user is owed the whole reason.
+    /// An identity document filed under a holder's name has to be this clear about
+    /// whose it is. Below this it stays on the type shelf alone, which is still
+    /// findable — the failure being avoided is a shelf labelled with one person's name
+    /// holding another person's passport.
+    private static let holderFloor = 0.80
+
+    /// §10's first retrieval path: Documents → IDs → Person → ID Card.
+    ///
+    /// A cross-listing, not a replacement: the document stays on its type shelf and
+    /// also appears under the holder's name, which is §10's ordering. §3 blesses the
+    /// shape — 同一 asset 可以出现在多个入口，但保留一个原始归属.
+    ///
+    /// The name is READ, not inferred. `Resolver.holderNames` requires an explicit
+    /// NAME / SURNAME / HOLDER / 姓名 label followed by capitals, so this is
+    /// transcription of what is printed on the document. §16 forbids inferring
+    /// sensitive attributes; it does not forbid reading a field, and nothing here
+    /// derives anything further about the person.
+    private func documentHolder(_ a: AssetSignals, _ c: inout Classification) {
+        guard a.ocrRan, let text = a.ocrText, !text.isEmpty else { return }
+        let identity = c.assignments.filter {
+            $0.path.hasPrefix("Documents > Identity" + Taxonomy.separator)
+                && $0.confidence >= Classifier.holderFloor
+        }
+        guard !identity.isEmpty else { return }
+
+        // Two holders named on one document is a document this rule does not
+        // understand — a second signatory, or an OCR error that produced a name from a
+        // caption. Filing it under both puts a stranger's name on a shelf of the
+        // user's own papers.
+        let names = Resolver.holderNames(in: text).sorted()
+        guard names.count == 1, let raw = names.first else { return }
+        let holder = raw.split(separator: " ").map { $0.capitalized }.joined(separator: " ")
+
+        for assignment in identity {
+            guard let kind = assignment.path.components(separatedBy: Taxonomy.separator).last
+            else { continue }
+            guard let path = TaxonomyRuntime.ensure(
+                ["Documents", "Identity", holder, kind].joined(separator: Taxonomy.separator))
+            else { continue }
+            if let e = Evidence(signal: "document.holder", tier: .text,
+                                weight: assignment.confidence,
+                                reason: "this document is in the name of \(holder)"),
+               let entry = Assignment(path: path, evidence: [e], isPrimary: false,
+                                      crossListedFrom: assignment.path) {
+                c.add(entry)
+            }
+        }
+    }
+
     private func pruneImpliedAncestors(_ c: inout Classification) {
         let held = Set(c.assignments.map { $0.path })
         for assignment in c.assignments {

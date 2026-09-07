@@ -32,18 +32,48 @@ public final class TaxonomyRuntime {
         return minted.contains(path)
     }
 
+    /// The branch prefix that permits a path, and the depth it allows.
+    ///
+    /// Some branches are extensible where their root is not. §10 spells the first
+    /// retrieval path out as `Documents → IDs → Person → ID Card` — a person level
+    /// inside Documents — and adding `Documents` to `extensibleRoots` would have
+    /// bought that at the cost of the guard: the point of that set is that a rule
+    /// inventing `Documents > Crypto` fails here rather than being discovered in the
+    /// browse UI. Longest prefix wins.
+    static func extensibleBranch(_ path: String) -> (String, Int)? {
+        var best: (String, Int)?
+        for (prefix, limit) in Taxonomy.extensibleBranches {
+            guard path == prefix || path.hasPrefix(prefix + Taxonomy.separator) else { continue }
+            if best == nil || prefix.count > best!.0.count { best = (prefix, limit) }
+        }
+        return best
+    }
+
     /// Register a data-derived node. Returns nil when the path is not something the
     /// tree allows to grow.
     @discardableResult
     public static func ensure(_ path: String) -> String? {
         if isKnown(path) { return path }
         let parts = path.components(separatedBy: Taxonomy.separator)
-        guard let root = parts.first, Taxonomy.extensibleRoots.contains(root) else { return nil }
-        guard parts.count >= 2, parts.count <= (maxDepthByRoot[root] ?? maxDepth)
-        else { return nil }
+        guard let root = parts.first else { return nil }
+
+        let floor: Int
+        let limit: Int
+        if Taxonomy.extensibleRoots.contains(root) {
+            floor = 2
+            limit = maxDepthByRoot[root] ?? maxDepth
+        } else if let (prefix, branchLimit) = extensibleBranch(path) {
+            // A branch may only grow BELOW itself: `Documents > Identity` is canonical
+            // and nothing is minted at that depth.
+            floor = prefix.components(separatedBy: Taxonomy.separator).count + 1
+            limit = branchLimit
+        } else {
+            return nil
+        }
+        guard parts.count >= floor, parts.count <= limit else { return nil }
         // Every ancestor is registered too, so a browse view can render the path it
         // was given without discovering a gap halfway down it.
-        for depth in 2..<parts.count {
+        for depth in floor..<parts.count {
             guard ensure(parts[0..<depth].joined(separator: Taxonomy.separator)) != nil
             else { return nil }
         }

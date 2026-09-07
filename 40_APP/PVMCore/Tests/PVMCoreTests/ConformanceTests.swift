@@ -122,7 +122,7 @@ final class ConformanceTests: XCTestCase {
     /// The number of assets the fixture is known to contain. A conformance test that
     /// silently compares nothing and passes is the exact failure this file exists to
     /// prevent, so it is guarded against itself.
-    private static let expectedFixtureSize = 81
+    private static let expectedFixtureSize = 83
 
     func testTheFixtureAndTheExpectationsAreActuallyThere() throws {
         let assets = try loadFixture()
@@ -240,6 +240,39 @@ final class ConformanceTests: XCTestCase {
             XCTAssertFalse(c.assignments.contains { $0.path.hasPrefix("Places") },
                            "an asset that already has a home does not need a guessed one")
         }
+    }
+
+    /// §10's Browse path — Documents → IDs → Person → ID Card — and the refusal
+    /// beside it, named explicitly for the same reason the §11 pair is: "assets are
+    /// filed differently" is not a useful failure message when what differs is whether
+    /// a stranger's name appears on a shelf of the user's own papers.
+    func testTheAppGrowsThePersonLevelInsideDocumentsTheSameWay() throws {
+        TaxonomyRuntime.resetMinted()
+        let assets = try loadFixture()
+        let context = LibraryContextBuilder.build(assets)
+        let classifier = Classifier(context: context)
+
+        for asset in assets where asset.assetID == "doc-passport-jane" {
+            let paths = Set(classifier.classify(asset).assignments.map { $0.path })
+            XCTAssertTrue(paths.contains("Documents > Identity > Jane Doe > Passports"),
+                          "§10 spells the Browse path out as Documents → IDs → Person "
+                          + "→ ID Card; got \(paths.sorted())")
+            XCTAssertTrue(paths.contains("Documents > Identity > Passports"),
+                          "the person shelf is a cross-listing, not a replacement")
+        }
+        for asset in assets where asset.assetID == "doc-passport-two-holders" {
+            let paths = Set(classifier.classify(asset).assignments.map { $0.path })
+            XCTAssertFalse(paths.contains { $0.contains("Jane Doe") || $0.contains("Ben Smith") },
+                           "two holders named on one document must file under neither")
+        }
+
+        // The guard the branch mechanism exists to preserve. Opening `Documents` as an
+        // extensible root would have bought §10's path at the cost of this.
+        XCTAssertFalse(Taxonomy.extensibleRoots.contains("Documents"))
+        XCTAssertNil(TaxonomyRuntime.ensure("Documents > Crypto"))
+        XCTAssertNil(TaxonomyRuntime.ensure("Documents > Receipts > Jane Doe"))
+        XCTAssertNil(TaxonomyRuntime.ensure("Documents > Identity > Jane Doe > Passports > 2019"))
+        XCTAssertNotNil(TaxonomyRuntime.ensure("Documents > Identity > Someone New"))
     }
 
     /// The risk level and the action are the decisions that authorise doing something

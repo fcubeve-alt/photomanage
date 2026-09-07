@@ -179,6 +179,13 @@ public enum Taxonomy {
         "Travel",
     ]
 
+    /// Branches that may grow where their root may not, with the
+    /// depth each allows. §10's Documents → IDs → Person → ID Card is
+    /// why this exists — see `taxonomy.py`.
+    public static let extensibleBranches: [String: Int] = [
+        "Documents > Identity": 4,
+    ]
+
     /// `_also_in`: the same asset under two entries, one original (§3).
     public static let crossListing: [String: String] = [
         "Documents > Receipts": "Purchases > Receipts",

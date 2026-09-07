@@ -66,6 +66,21 @@ EXTENSIBLE_ROOTS = frozenset({"People", "Places", "Travel", "Timeline"})
 # anything — it is now just calibrated to the tree the Constitution describes.
 _MAX_DEPTH_BY_ROOT = {"Timeline": 5, "Places": 4}
 _MAX_DEPTH = 3
+
+# Some branches are extensible where their root is not, and `Documents` is the case
+# that forced the distinction. §10's first retrieval path is spelled out as
+#
+#     Browse：用户知道类别，直接 Documents → IDs → Person → ID Card
+#
+# — a person level *inside* Documents, between the category and the document type.
+# Adding `Documents` to `EXTENSIBLE_ROOTS` would have bought that at the cost of the
+# guard: the whole point of that frozenset is that a rule inventing `Documents > Crypto`
+# is a bug caught here rather than discovered in the browse UI, and opening the root
+# would have made every such invention legal.
+#
+# So extensibility is per branch as well as per root. Only the named branch may grow,
+# only to the named depth, and `Documents > Crypto` still raises.
+_EXTENSIBLE_BRANCHES = {"Documents > Identity": 4}
 _MINTED: set = set()
 
 
@@ -73,20 +88,44 @@ def max_depth(root: str) -> int:
     return _MAX_DEPTH_BY_ROOT.get(root, _MAX_DEPTH)
 
 
+def extensible_branch(path: str):
+    """The branch prefix that permits this path, and the depth it allows — or None.
+
+    Longest prefix wins, so a future narrower branch inside a wider one behaves the
+    way every other prefix rule in this engine does.
+    """
+    best = None
+    for prefix, limit in _EXTENSIBLE_BRANCHES.items():
+        if path == prefix or path.startswith(prefix + SEP):
+            if best is None or len(prefix) > len(best[0]):
+                best = (prefix, limit)
+    return best
+
+
 def ensure_node(path: str) -> str:
     """Register a data-derived node, or raise. Returns the path for chaining."""
     if path in _ALL or path in _MINTED:
         return path
     parts = path.split(SEP)
-    if parts[0] not in EXTENSIBLE_ROOTS:
+    branch = extensible_branch(path)
+    if parts[0] in EXTENSIBLE_ROOTS:
+        limit = max_depth(parts[0])
+        floor = 2
+        where = parts[0]
+    elif branch is not None:
+        prefix, limit = branch
+        # A branch may only grow BELOW itself. `Documents > Identity` is canonical and
+        # nothing is being minted at that depth; the person level is the one after it.
+        floor = len(prefix.split(SEP)) + 1
+        where = prefix
+    else:
         raise InvalidPath(
             f"{path!r} does not exist and {parts[0]!r} is not an extensible root. "
             "A classification rule may not invent a category."
         )
-    limit = max_depth(parts[0])
-    if not 2 <= len(parts) <= limit:
+    if not floor <= len(parts) <= limit:
         raise InvalidPath(
-            f"{path!r} is at depth {len(parts)}; {parts[0]} allows 2..{limit}")
+            f"{path!r} is at depth {len(parts)}; {where} allows {floor}..{limit}")
     # Every ancestor is registered too, so a browse view can render the path it was
     # given without discovering a gap halfway down it.
     for depth in range(2, len(parts)):

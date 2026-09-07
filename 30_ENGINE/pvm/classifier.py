@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from typing import Iterable, List, Optional
 
-from . import rules, taxonomy
+from . import rules, taxonomy, resolver
 from .context import LibraryContext
 from .signals import AssetSignals, Tier
 from .verdict import Assignment, Classification, Evidence, REVIEW_FLOOR
@@ -81,6 +81,10 @@ class Classifier:
         # their place. Location is context; it is not what the thing IS.
         self._places(a, c)
         self._travel(a, c)
+        # After the text pass has decided what kind of identity document this is, and
+        # before pruning, because the person shelf is a cross-listing of a leaf the
+        # text pass produced.
+        self._document_holder(a, c)
         self._prune_implied_ancestors(c)
         self._cross_list(c)
         self._unfiled(a, c)
@@ -271,6 +275,61 @@ class Classifier:
             "geo+created_at", Tier.METADATA, 0.80,
             f"part of {span} days away from home in {trip.city or trip.country or 'another place'}, "
             f"{trip.start.strftime('%B %Y')}")]))
+
+    #: An identity document filed under a holder's name has to be *this* clear about
+    #: whose it is. Below this the document stays on the type shelf alone, which is
+    #: still findable — the failure being avoided is a shelf labelled with one person's
+    #: name holding another person's passport.
+    _HOLDER_FLOOR = 0.80
+
+    def _document_holder(self, a: AssetSignals, c: Classification) -> None:
+        """§10's first retrieval path: Documents → IDs → Person → ID Card.
+
+        The Person level did not exist, so the worked example the Constitution gives
+        for Browse could not be walked. It exists now, as a cross-listing rather than a
+        replacement: the document stays on its type shelf (`Documents > Identity >
+        Passports`) and also appears under `Documents > Identity > JANE DOE >
+        Passports`, which is §10's ordering. §3 already blesses this shape — 同一 asset
+        可以出现在多个入口，但保留一个原始归属 — and it means a user who thinks
+        "where are the passports" and a user who thinks "where are Jane's documents"
+        both arrive.
+
+        The name is READ, not inferred. `resolver.holder_names` requires an explicit
+        NAME / SURNAME / HOLDER / 姓名 label followed by capitals, so this is
+        transcription of what is printed on the document. §16 forbids inferring
+        sensitive attributes; it does not forbid reading a field. Nothing here derives
+        anything further about the person — no nationality from a passport, no age from
+        a date of birth, no relationship to the owner of the library.
+        """
+        if not a.ocr_ran or not a.ocr_text:
+            return
+        identity = [x for x in c.assignments
+                    if x.path.startswith("Documents > Identity" + taxonomy.SEP)
+                    and x.confidence >= self._HOLDER_FLOOR]
+        if not identity:
+            return
+
+        names = sorted(resolver.holder_names(a.ocr_text))
+        # Two holders named on one document is a document this rule does not
+        # understand — a form with a second signatory, or an OCR error that produced a
+        # name from a caption. Filing it under both would put a stranger's name on a
+        # shelf of the user's own papers.
+        if len(names) != 1:
+            return
+        holder = names[0].title()
+
+        for assignment in list(identity):
+            kind = assignment.path.split(taxonomy.SEP)[-1]
+            try:
+                path = taxonomy.ensure_node(
+                    taxonomy.SEP.join(["Documents", "Identity", holder, kind]))
+            except taxonomy.InvalidPath:
+                continue
+            c.add(Assignment(
+                path,
+                [Evidence("document.holder", Tier.TEXT, assignment.confidence,
+                          f"this document is in the name of {holder}")],
+                cross_listed_from=assignment.path))
 
     def _faces(self, a: AssetSignals, c: Classification) -> None:
         named = a.named_people

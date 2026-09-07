@@ -84,7 +84,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
-| S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | PARTIAL | `pvm/cli.py::cmd_tree` browses the tree; the Person level inside Documents does not exist |
+| S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | DONE | `pvm/cli.py::cmd_tree` browses the tree and `pvm/classifier.py::_document_holder` grows the Person level, in §10's own ordering: a passport reachable under Documents > Identity > Jane Doe > Passports as well as on its type shelf. A cross-listing rather than a replacement, which §3 blesses — 同一 asset 可以出现在多个入口，但保留一个原始归属 — so both 'where are the passports' and 'where are Jane's documents' arrive. The name is read off the document by `pvm/resolver.py::holder_names`, which requires an explicit NAME/SURNAME/HOLDER/姓名 label followed by capitals: transcription, not the inference §16 forbids, and nothing derives anything further about the person. Two names on one document files under neither. Making this possible needed `pvm/taxonomy.py::extensible_branch` rather than adding Documents to EXTENSIBLE_ROOTS, so an invented Documents > Crypto still raises — `tests/test_browse_person.py` (14 tests) holds both halves |
 | S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | 年月日 all work now (S3-TIME), as do city and trip; the missing piece is a *named place* within a city, which needs a place database this build does not have — S3-PLACE |
 | S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | PARTIAL | `pvm/intent.py` resolves a sentence against what the library actually indexes — categories, people, places, remembered entities, exact time windows, media type, and 正反面 — in Chinese and English, and `pvm/cli.py::cmd_find` answers the Constitution's first worked example. It cannot answer the second, 找所有有气球的照片, because there is no open-vocabulary visual index; it names 气球 as a term it cannot search and **refuses to answer broadly** rather than returning the whole library. `tests/test_intent.py` (18 tests) is mostly about that refusal |
 | S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | PARTIAL | `pvm/memory.py::MemoryGraph.history` goes from a person, object, purchase or trip to its assets and `pvm/cli.py::cmd_remember` exposes it. What is missing is the join: from a receipt to the warranty document, or from an order screenshot to the delivery photo — that needs the entity resolution T1B-RESOLVER tracks |
@@ -183,20 +183,20 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 **91 clauses audited — counted by `check_constraints.py`, and the table below is now
 checked against that count rather than remembered.** It previously claimed to be
 generated and was typed: it read 36 DONE and 11 MISSING when the register held 48 and
-5, and its own numbered list of the MISSING skipped item 4. That is this project's
+5 at the time, and its own numbered list of the MISSING skipped item 4. That is this project's
 recurring failure — the thing that reports is never exercised by the thing it reports
 on — so `check_constraints.py` now fails when any cell here disagrees with the rows.
 
 | status | count | share |
 |---|--:|--:|
-| DONE | 48 | 53% |
-| PARTIAL | 29 | 32% |
+| DONE | 49 | 54% |
+| PARTIAL | 28 | 31% |
 | MISSING | 5 | 5% |
 | OUT-OF-SCOPE (tier named) | 6 | 7% |
 | NOT-CODE (principle, explained) | 3 | 3% |
 
-**53% of the audited clauses are fully satisfied, and that is by an engine that does
-not ship.** The 32% PARTIAL is the number to look at hardest: a partial clause passes
+**54% of the audited clauses are fully satisfied, and that is by an engine that does
+not ship.** The 31% PARTIAL is the number to look at hardest: a partial clause passes
 its tests and still does not do what the document asks, which is a more comfortable
 place to hide than a gap.
 
