@@ -29,7 +29,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S2-UNDERSTAND | Understand：理解照片/视频内容 | PARTIAL | the engine consumes OCR text, scene labels and face clusters via `pvm/signals.py`, but produces none of them — Vision lives in `20_TIER0/harness`, and video is not understood at all |
 | S2-CLASSIFY | Classify：尽可能细地归入有实际决策意义的类别 | DONE | `pvm/classifier.py`, `pvm/rules.py`, `eval/evaluate.py` |
 | S2-INDEX | Index：内容、时间、地点、人物、物品、事件、风险多维索引 | PARTIAL | content/time/place/person/risk are indexed in `pvm/catalog.py`; object-entity and event indexes exist only as relation rows, not as traversable indexes |
-| S2-RISK | Assess Risk：判断误处理的潜在损失和内容重要性 | PARTIAL | `pvm/risk.py::classify_risk` grades consequence; **importance as a separate factor from risk is not modelled** |
+| S2-RISK | Assess Risk：判断误处理的潜在损失和内容重要性 | DONE | the clause names two outputs and the engine produces both: 误处理的潜在损失 is `pvm/risk.py::classify_risk` (§6 R0–R6), 内容重要性 is `pvm/importance.py::assess` (I0–I4). They are genuinely different axes rather than one renamed — on the 10k library 1,102 assets (11.0%) sit two or more levels apart, a passport photograph grading R5/ORDINARY and a recurring person R3/TREASURED |
 | S2-DECIDE | Decide：根据类别、风险、置信度、生命周期和可恢复性决定动作 | DONE | `pvm/risk.py::decide_action`, `pvm/risk.py::policy_table` |
 | S2-CLEAN | Clean/Protect：该大胆清理的大胆清理，该保护的保护 | PARTIAL | the engine proposes and protects; it cannot execute anything — no PhotoKit write path exists outside the Tier 0 harness |
 | S2-REMEMBER | Remember：把照片变成现实人物、物品、地点、文件、购买和事件的证据 | DONE | `pvm/memory.py` builds entities of all six kinds with evidence, `pvm/catalog.py::write_memory` persists them, `tests/test_memory.py` locks the claims it may not make, `pvm/cli.py::cmd_remember` answers L1-B's worked example. Objects and documents are **category-level** entities — see S3-ENTITY and T1B-RESOLVER, which track that limit rather than double-counting it here |
@@ -47,7 +47,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S3-PERSON | Person | DONE | `pvm/classifier.py::_faces` |
 | S3-ENTITY | Object / Entity：同一件衣服、设备、证件、商品 | PARTIAL | entities now persist and accumulate across the library (`pvm/memory.py::Entity`), so "every sighting of a suitcase" is answerable. **同一件** is not: telling one suitcase from another is per-category entity resolution (T1B-RESOLVER), so object and document entities stay category-level — and the answer says so out loud rather than implying an instance |
 | S3-EVENT | Event：旅行、生日、会议、活动 | PARTIAL | Travel becomes a first-class event entity with its photos attached (`pvm/memory.py::_events`); birthdays, meetings and other events are still not derived |
-| S3-RISKDIM | Risk / Importance | PARTIAL | risk is `pvm/risk.py`; importance is not a separate axis, and §5 treats it as one |
+| S3-RISKDIM | Risk / Importance | DONE | both are indexed dimensions: the risk, importance and asset_class columns of the assets table in `pvm/catalog.py`, the first two each with their own index. `eval/evaluate.py` reports the library against both and prints the cross-tabulation |
 | S3-LIFECYCLE | Lifecycle：Temporary / Active / Expired / Long-term | DONE | `pvm/risk.py::lifecycle_of`, `tests/test_engine.py::LifecycleIsWhenNotHowMuch` |
 | S3-EQUIV | Equivalence Group | DONE | `pvm/dedup.py`, `tests/test_engine.py::DuplicatesAndTheThingsThatOnlyLookLikeThem` |
 | S3-ONEASSET | 同一视觉资产同时拥有多个索引维度…底层只保存一个 Asset | DONE | `pvm/catalog.py` stores one asset row with many assignment rows; `tests/test_engine.py::Cascade` |
@@ -57,13 +57,13 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
 | S4-DECISION | 尽可能细，但只细到足以改变用户体验或处理决策 | L1:57 | DONE | `pvm/classifier.py` returns the deepest node the evidence supports and stops; `tests/test_engine.py::Cascade` |
-| S4-CATEGORIES | 分类不是为了展示 AI 很聪明，而是为了改变整理、风险、生命周期和动作策略 | L1:55 | PARTIAL | `pvm/risk.py::RISK_BY_PATH_PREFIX` maps the 11-root navigational tree to §6 risk; the §4 taxonomy is a *different, finer* 13-category scheme with its own default risks and is not implemented as such — Tier 1-A |
+| S4-CATEGORIES | 分类不是为了展示 AI 很聪明，而是为了改变整理、风险、生命周期和动作策略 | DONE | §4's thirteen 大类 are `pvm/importance.py::ASSET_CLASSES`, each carrying its 细分类示例 and 默认风险 verbatim, and every asset is stored under one, in the asset_class column of `pvm/catalog.py`. Two of the thirteen are not tree branches and never could be — 珍贵记忆 is a property of one asset, 连拍/同一时刻 a relation between assets — which is why the earlier attempt to map §4 onto the navigational tree stalled; `pvm/importance.py::classify_asset_class` takes both as arguments instead. A fourteenth entry, （§4 未描述）, exists so a fall-through says so rather than being filed under whichever class was nearest. It 改变动作策略 rather than only labelling: the class sets the importance baseline, and importance decides §8 pruning and the §14 ceiling. `tests/test_importance.py::TwoReadingsOfOneDocument` sweeps every node of the tree and fails when §4's 默认风险 band disagrees with what §6 assigns — it found two real disagreements on its first run |
 
 ## L1 §5–§9 — risk, philosophy, equivalence, ordering
 
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
-| S5-FORMULA | Category × Importance × Lifecycle × Confidence × Recoverability × Personal Preference → Action Policy | L1:101 | PARTIAL | `pvm/risk.py::Factors` and `decide_action` implement five of the six; **Importance is folded into Category rather than modelled separately**, and Personal Preference has no source because §14 is not built |
+| S5-FORMULA | Category × Importance × Lifecycle × Confidence × Recoverability × Personal Preference → Action Policy | L1:101 | DONE | all six are inputs to `pvm/risk.py::Factors` and are read by `pvm/risk.py::decide_action`. Importance became an axis of its own on 2026-09-07 (`pvm/importance.py`); Personal Preference is derived by `pvm/personal.py::learn` and is now passed at run time by `pvm/pipeline.py` — until that commit `pvm/risk.py::decide_action` honoured a preference nothing ever supplied. Two of the six change the outcome in ways nothing else could: §8's 同样的相似度，在 Meme 和家庭照片上采取不同策略 is decided by Importance, and a §14 habit is stopped from reaching MEANINGFUL content by it |
 | S6-SCALE | 建立 R0 Disposable / R1 Low Value / R2 Normal / R3 Personal / R4 Important / R5 Critical / R6 Irreplaceable 默认风险层 | T2:9 | DONE | `pvm/risk.py::Risk`, pinned to §6 by `tests/test_engine.py::TheRiskScaleIsTheConstitutionsNotMine` |
 | S6-R6 | 老照片、特殊家庭影像 | L1:133 | PARTIAL | the level exists and protects; **detection is a conservative heuristic** (`pvm/pipeline.py::looks_irreplaceable`) because real irreplaceability is knowledge only the user has — that is §14, which is missing |
 | S7-BALANCE | 产品不是以“零错误”作为唯一目标，而是优化 Automation Benefit 与 Weighted Error Cost 的平衡 | L1:141 | DONE | `pvm/kpi.py::automation_ratio`, `pvm/kpi.py::weighted_error_cost`, both printed by `eval/evaluate.py` |
@@ -85,7 +85,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S12-INDEXALL | 扫描全库并建立多维索引 | L1:166 | DONE | `pvm/pipeline.py::run` |
 | S12-CANDIDATES | 建立 Exact / Near Duplicate / Same Moment / Same Entity 候选 | L1:168 | DONE | `pvm/dedup.py::analyse` |
 | S12-SMALLQUEUE | 真正需要用户决定的内容进入极小 Review Queue | L1:170 | DONE | measured, not asserted: `pvm/kpi.py::human_review_burden` |
-| S13-HYGIENE | 每一张新拍摄、下载、截图或视频都自动经过同一管线 | L1:173 | PARTIAL | new stills re-enter automatically (`tests/test_catalog.py::Incrementality`); **video does not enter the pipeline** |
+| S13-HYGIENE | 每一张新拍摄、下载、截图或视频都自动经过同一管线 | PARTIAL | new stills re-enter automatically (`tests/test_catalog.py::Incrementality`) and video now enters too (`pvm/pipeline.py::_video_pass`, B4-RECORD) — this row said otherwise until 2026-09-07 and was stale. Still PARTIAL for the same reason as S2-MAINTAIN: nothing *schedules* a run when new photos arrive. On a device that is `BGProcessingTask`, which is C-4 and lives in the app |
 | S14-PERSONAL | 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy | L1:182 | PARTIAL | `pvm/personal.py` learns per-category preferences from a logged decision history (`pvm/catalog.py::record_decision`), and `pvm/risk.py::decide_action` now honours 系统以后可以更激进 below R4 while refusing it at R4+. `tests/test_personal.py` (19 tests) holds that line. PARTIAL because **no real user has ever fed it**: the mechanism and its limits are built and tested, the learning curve is not observed — that needs users, which is T0-B/Tier 2-G |
 
 ## L1 §16–§23 — boundaries, KPIs, validation, positioning
@@ -122,7 +122,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | P25-L2 | Layer 2 Visual Understanding | PARTIAL | the engine consumes scene labels and embeddings; it produces none — see S2-UNDERSTAND |
 | P25-L3 | Layer 3 Taxonomy | DONE | `pvm/classifier.py` |
 | P25-L4 | Layer 4 Category-Specific Entity Resolution | PARTIAL | `pvm/resolver.py` decides 现实实体 / 版本 / 页面 / Same Moment as four distinct relations (`Relation.SAME_INSTANCE`, `OTHER_VERSION`, `OTHER_PAGE`, and the review case). PARTIAL only for objects, where no embedding exists — T1B-EMBEDDING |
-| P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | PARTIAL | risk, lifecycle and recoverability are modelled; **importance is not a separate axis** |
+| P25-L5 | Layer 5 Risk + Lifecycle：重要性、生命周期、可恢复性 | DONE | 重要性 `pvm/risk.py::Importance` — the scale sits beside the other §5 factor scales, and `pvm/importance.py` is where it is explained and assessed — 生命周期 `pvm/risk.py::lifecycle_of`, 可恢复性 `pvm/risk.py::recoverability_of` — three scales, three functions, all three read by `pvm/risk.py::decide_action` |
 | P25-L6 | Layer 6 Policy Engine：Protect / Keep / Archive / Select Best / Auto-Clean / Review | DONE | `pvm/risk.py::Action`, `pvm/risk.py::policy_table` |
 | P25-L7 | Layer 7 Visual Library | DONE | `pvm/catalog.py::counts_by_path`, `pvm/cli.py::cmd_tree` |
 | P25-L8 | Layer 8 Personal Memory | OUT-OF-SCOPE | Tier 2. Its substrate now exists (S2-REMEMBER); what stays out of scope is the personal layer on top, which is S14-PERSONAL and separately tracked |
@@ -143,7 +143,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 | id | requirement | status | evidence |
 |---|---|---|---|
-| T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision, recall and the confusion matrix are all in `eval/evaluate.py`. Still PARTIAL for one reason only: the taxonomy evaluated is the 11-root navigational tree, not the finer §4 scheme — S4-CATEGORIES |
+| T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision, recall and the confusion matrix are all in `eval/evaluate.py`, over the 11-root navigational tree. The §4 scheme now exists and every asset carries a class (S4-CATEGORIES), and `eval/evaluate.py` reports the library's distribution across it — but **it is not scored**, because the 10k corpus carries no §4 labels to score against. Adding them means re-labelling the corpus along a second axis, which is a corpus job rather than an engine one |
 | T1A-UNKNOWN | 允许 Unknown + confidence，不强迫每个资产进入错误类别 | DONE | `pvm/verdict.py::REVIEW_FLOOR`, `pvm/classifier.py::_unfiled` |
 | T1B-RESOLVER | Tier 1-B Category-Specific Entity Resolver, per-category | DONE | `pvm/resolver.py`, `tests/test_resolver.py` (26 tests), measured by `eval/evaluate_entities.py` — 24 hand-built pairs, 9 hard negatives, 0 false merges, 0 false splits, 12.5% to review. Objects across occasions are deliberately downgraded to Review rather than guessed; see T1B-EMBEDDING |
 | T1B-FALSEMERGE | Document 类别单独统计 False Merge / False Split | PARTIAL | measured and reported separately: **Document False Merge 0 of 6, False Split 0 of 5** (`20_TIER0/evidence/GATE2_ENTITY_RESOLVER_2026-09-06.md`), across four hard negatives — two passports on one template, two ID cards on one template, page 1 of two contracts sharing boilerplate, two receipts from one shop. PARTIAL because **the pairs are hand-built**: the 10k corpus has no same-entity labels, so this is evidence about the hard cases and not a population rate |
@@ -172,46 +172,55 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 ## Honest totals
 
-**90 clauses audited — counted by `check_constraints.py`, not by hand:**
+**91 clauses audited — counted by `check_constraints.py`, and the table below is now
+checked against that count rather than remembered.** It previously claimed to be
+generated and was typed: it read 36 DONE and 11 MISSING when the register held 48 and
+5, and its own numbered list of the MISSING skipped item 4. That is this project's
+recurring failure — the thing that reports is never exercised by the thing it reports
+on — so `check_constraints.py` now fails when any cell here disagrees with the rows.
 
 | status | count | share |
 |---|--:|--:|
-| DONE | 36 | 40% |
-| PARTIAL | 34 | 38% |
-| MISSING | 11 | 12% |
+| DONE | 48 | 53% |
+| PARTIAL | 29 | 32% |
+| MISSING | 5 | 5% |
 | OUT-OF-SCOPE (tier named) | 6 | 7% |
 | NOT-CODE (principle, explained) | 3 | 3% |
 
-**40% of the audited clauses are fully satisfied, and that is by an engine that does
-not ship.** The 38% PARTIAL is the number to look at hardest: a partial clause passes
+**53% of the audited clauses are fully satisfied, and that is by an engine that does
+not ship.** The 32% PARTIAL is the number to look at hardest: a partial clause passes
 its tests and still does not do what the document asks, which is a more comfortable
 place to hide than a gap.
 
-**The eleven MISSING, in the order they would hurt:**
-1. **T1B-EMBEDDING** — a visual embedding for objects. The resolver now separates
+**The five MISSING, in the order they would hurt:**
+1. **T1B-EMBEDDING** — a visual embedding for objects. The resolver separates
    documents, screenshots and photographs cleanly; objects are the one category where
    it can only refuse to answer, because nothing joins two views of one chair or
    separates one chair on two days from two identical chairs. It is the ceiling on
-   S3-ENTITY and on Object Memory, and it is now the largest gap.
-2. **An open-vocabulary visual index** — the ceiling on S10-INTENT. 找所有有气球的
-   照片 is answerable only with embeddings, which is the same missing piece as
-   T1B-EMBEDDING and blocked on the same thing: real photographs.
-3. **S10-RELATIONS, the join** — going from a receipt to its warranty document, or
-   from an order screenshot to the delivery photo. The traversal from one entity to its
-   assets works; joining two entities that are the same purchase needs T1B-RESOLVER
-   applied across categories, which is not built.
-5. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
-   an action the engine can name and cannot perform.
-6. **Real users** — every remaining PARTIAL that is not blocked on photographs is
-   blocked on people: Retrieval Success (§18), the four paths' success rates
-   (Tier 1-E), and whether a Personal Policy actually reduces review volume over time
-   (Tier 2-G). The mechanisms are built and tested; the curves cannot be invented.
-   Previously listed here as S14-PERSONAL / T2G-LEARNING, and
-   Tier 2-G both require. Without it §5's sixth factor has no source and §18's
-   Personalization Gain cannot exist.
-7. **S19-RISKEVAL** — risk grading has never been evaluated against labels. The scale
-   is now correct against §6; whether the *assignment* to it is correct is unmeasured.
-8. **T2B-VALUELOSS** and **T1E-PATHS** — blocked by items 2, 3 and 5 above.
+   S3-ENTITY, on Object Memory, and on the open-vocabulary index S10-INTENT needs to
+   answer 找所有有气球的照片. Blocked on real photographs, not on effort.
+2. **T2B-SELECTBEST** — nothing selects a representative frame, so `SELECT_BEST` is
+   an action the engine can name and cannot perform. Sharpness, closed eyes, framing
+   and motion blur all need real images to be assessed or calibrated against.
+3. **S19-RISKEVAL** — risk grading has never been evaluated against labelled ground
+   truth. The scale is correct against §6 and now cross-checked against §4
+   (S4-CATEGORIES); whether the *assignment* of an asset to a level is correct is
+   unmeasured, because the corpus carries no risk labels. The same is true of the
+   importance axis built alongside it.
+4. **T2B-VALUELOSS** — Significant Value Loss Rate, blocked by item 2.
+5. **T1E-PATHS** — success rates for the four retrieval paths on real tasks. All four
+   paths now exist, so this is no longer blocked by missing code; it is blocked on
+   people.
+
+**What the remaining PARTIAL clauses are mostly waiting for** is one of two things,
+and neither is engineering time:
+- **Real photographs.** The study library is PIL-drawn placeholders with a manifest.
+  A visual embedding threshold fitted to flat rendered rectangles would not survive
+  contact with a camera, and shipping an unmeasured one on the category where a false
+  merge is expensive is the trade Tier 1-B exists to prevent.
+- **Real users.** Retrieval Success (§18), the four paths' success rates (Tier 1-E),
+  and whether a Personal Policy actually reduces review volume over time (Tier 2-G).
+  The mechanisms are built and tested; the curves cannot be invented.
 
 **The two defects this audit found in code that was already written:**
 - **S6-SCALE.** The previous `risk.py` used R0–R6 — the identifiers §6 and Tier 2-A

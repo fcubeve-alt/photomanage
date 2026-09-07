@@ -87,6 +87,7 @@ def load_source(key: str) -> str:
 
 def check(constraints_path: str, root: str, verbose: bool = True):
     failures, checked = [], 0
+    tally = {s: 0 for s in VALID_STATUS}
     rows = parse_rows(constraints_path)
     if not rows:
         return ["CONSTRAINTS.md contains no constraint rows — the register is empty"], 0
@@ -102,6 +103,7 @@ def check(constraints_path: str, root: str, verbose: bool = True):
             failures.append(f"{cid} (line {ln}): no valid status among {VALID_STATUS}")
             continue
         checked += 1
+        tally[status] = tally.get(status, 0) + 1
 
         # ---- 1. the quote must really be in the source --------------------
         source_cell = next((c for c in cells if SOURCE_RE.match(c)), None)
@@ -161,11 +163,64 @@ def check(constraints_path: str, root: str, verbose: bool = True):
                 "is indistinguishable from one nobody noticed, and an unexplained "
                 "out-of-scope is where skipped work hides.")
 
+    # ---- 4. the rollup table must be the tally, not a memory of it ---------
+    #
+    # The summary at the foot of CONSTRAINTS.md said "counted by
+    # `check_constraints.py`, not by hand" and was neither: it was typed once and then
+    # drifted, reporting eleven MISSING when there were five. Its own numbered list
+    # skipped item 4. This is the same failure this repository keeps finding — the
+    # thing that reports is never exercised by the thing it reports on — so the claim
+    # is now enforced rather than made.
+    failures.extend(_check_rollup(constraints_path, tally, checked))
+
     if verbose:
         for f in failures:
             print("FAIL:", f)
         print(f"\n{checked} constraints checked · {len(failures)} failure(s)")
     return failures, checked
+
+
+ROLLUP_HEADER = "| status | count | share |"
+
+
+def _check_rollup(constraints_path: str, tally, checked: int):
+    """Compare the register's own summary table against what was actually counted."""
+    with open(constraints_path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    if ROLLUP_HEADER not in text:
+        # A register with no rollup is fine; one that has a wrong rollup is not.
+        return []
+
+    failures = []
+    total_claim = re.search(r"\*\*(\d+) clauses audited", text)
+    if total_claim and int(total_claim.group(1)) != checked:
+        failures.append(
+            f"the rollup says {total_claim.group(1)} clauses audited; {checked} rows "
+            "were actually counted")
+
+    rows = re.findall(r"^\| (DONE|PARTIAL|MISSING|OUT-OF-SCOPE[^|]*|NOT-CODE[^|]*) "
+                      r"\| (\d+) \| +(\d+)% \|$", text, re.M)
+    if not rows:
+        failures.append("the rollup table is present but no status row could be parsed")
+        return failures
+    seen = set()
+    for label, count, share in rows:
+        status = label.split(" (")[0].strip()
+        seen.add(status)
+        actual = tally.get(status, 0)
+        if int(count) != actual:
+            failures.append(
+                f"the rollup says {status} = {count}; {actual} rows carry that status")
+        want_share = round(actual / checked * 100) if checked else 0
+        if abs(int(share) - want_share) > 1:
+            failures.append(
+                f"the rollup says {status} is {share}%; {actual} of {checked} is "
+                f"{want_share}%")
+    for status, actual in sorted(tally.items()):
+        if actual and status not in seen:
+            failures.append(
+                f"{actual} rows carry status {status} and the rollup does not list it")
+    return failures
 
 
 def selftest() -> int:
@@ -186,11 +241,31 @@ def selftest() -> int:
     bad_symbol = good.replace("`check_constraints.py`", "`check_constraints.py::no_such_function`")
     silent_gap = good.replace("DONE | `check_constraints.py`", "MISSING | todo")
 
+    # The rollup check, exercised on a register whose true tally is one DONE. Without
+    # these three cases the check would only ever run against a register that already
+    # agrees with itself, which is no test at all.
+    rollup = """
+
+**1 clauses audited — counted by `check_constraints.py`:**
+
+| status | count | share |
+|---|--:|--:|
+| DONE | 1 | 100% |
+"""
+    right_rollup = good + rollup
+    wrong_count = good + rollup.replace("| DONE | 1 | 100% |", "| DONE | 7 | 100% |")
+    wrong_share = good + rollup.replace("| DONE | 1 | 100% |", "| DONE | 1 | 40% |")
+    wrong_total = good + rollup.replace("**1 clauses audited", "**90 clauses audited")
+
     cases = [("a correct row passes", good, 0),
              ("a paraphrased quote is caught", paraphrased, 1),
              ("DONE with no file named is caught", no_evidence, 1),
              ("DONE citing a missing symbol is caught", bad_symbol, 1),
-             ("an unexplained gap is caught", silent_gap, 1)]
+             ("an unexplained gap is caught", silent_gap, 1),
+             ("a rollup that matches the rows passes", right_rollup, 0),
+             ("a rollup with the wrong count is caught", wrong_count, 1),
+             ("a rollup with the wrong share is caught", wrong_share, 1),
+             ("a rollup with the wrong total is caught", wrong_total, 1)]
 
     for name, body, expect in cases:
         with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False,
