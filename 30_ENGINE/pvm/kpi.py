@@ -51,6 +51,10 @@ class KPIReport:
     ttfuv_seconds: float
     assets: int
     outcome_based: bool
+    #: §18 Personalization Gain — 系统是否越来越懂这个用户. A string because "nothing
+    #: learned yet" is the honest reading for every new library and is not a zero.
+    personalization_gain: str = "nothing learned yet"
+    personalization_gain_value: float = 0.0
 
     def as_markdown(self) -> str:
         kind = "outcome (scored against ground truth)" if self.outcome_based else \
@@ -67,7 +71,8 @@ class KPIReport:
             + (f"{self.continuous_hygiene_rate*100:.1f}%" if self.continuous_hygiene_rate is not None else "n/a")
             + " | high |",
             f"| TTFUV (Time To First Useful View) | {self.ttfuv_seconds:.1f} s | low |",
-            f"| Personalization Gain | not built | — |",
+            f"| Personalization Gain | {self.personalization_gain} | "
+            f"{'rising' if self.personalization_gain_value else 'nothing learned yet'} |",
         ]
         return "\n".join(rows) + f"\n\nBasis: **{kind}**, over {self.assets:,} assets.\n"
 
@@ -194,7 +199,43 @@ def report(catalog, *, library_size: Optional[int] = None,
         ttfuv_seconds=time_to_first_useful_view(n),
         assets=n,
         outcome_based=errors_by_asset is not None,
+        **_personalization(catalog),
     )
+
+
+def _personalization(catalog) -> Dict[str, object]:
+    """§18 Personalization Gain.
+
+    Measured as *review questions the user was not asked because of what they had
+    already told us* — not as the number of preferences learned. A policy that fires on
+    nothing the user owns has taught the system nothing, and would score well on any
+    metric that counted rules instead of outcomes.
+    """
+    policy = catalog.personal_policy()
+    if not policy.preferences:
+        return {"personalization_gain": "nothing learned yet", "personalization_gain_value": 0.0}
+
+    rows = catalog.db.execute(
+        """SELECT a.asset_id, a.risk, p.action FROM assets a
+           LEFT JOIN proposals p ON p.asset_id = a.asset_id""").fetchall()
+    paths: Dict[str, list] = {}
+    for asset_id, path in catalog.db.execute("SELECT asset_id, path FROM assignments"):
+        paths.setdefault(asset_id, []).append(path)
+
+    asked = avoided = 0
+    for asset_id, risk, action in rows:
+        if action != "review":
+            continue
+        asked += 1
+        if policy.preference_for(paths.get(asset_id, []), Risk(risk)) is not None:
+            avoided += 1
+    if not asked:
+        return {"personalization_gain": "nothing needed review anyway",
+                "personalization_gain_value": 0.0}
+    share = avoided / asked
+    return {"personalization_gain": f"{avoided:,} of {asked:,} review questions avoided "
+                                    f"({share * 100:.1f}%)",
+            "personalization_gain_value": share}
 
 
 def _one(catalog, sql: str, *params):

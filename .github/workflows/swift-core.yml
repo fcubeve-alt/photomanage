@@ -55,6 +55,19 @@ jobs:
         working-directory: 40_APP/PVMCore
         run: swift build -v 2>&1 | tail -40
 
+      # `swift test` prints failures where they happen, which on a suite of 150 is
+      # thousands of lines above the end of the log — and the log viewer shows the end.
+      # Three separate debugging rounds were spent unable to see which tests failed.
+      # The summary is reprinted at the bottom, where it can actually be read.
       - name: Test
         working-directory: 40_APP/PVMCore
-        run: swift test
+        run: |
+          set +e
+          swift test 2>&1 | tee test.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "===== FAILURES ====="
+            grep -E "error:|XCTAssert.*failed|: FAIL" test.log | head -40
+            echo "===== END ====="
+          fi
+          exit "$status"

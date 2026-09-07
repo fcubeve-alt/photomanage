@@ -256,10 +256,32 @@ def decide_action(f: Factors) -> Action:
     """The §5 formula, as a table rather than a paragraph. Tier 2-A requires this to be
     a Policy Table, so `policy_table()` below prints it."""
     if f.personal_preference is not None:
-        # §14: the user's own corrections outrank the global default — except that they
-        # can only ever make the system more careful, never less.
+        # §14: 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy,
+        # and 如果用户总是删除某类工作截图，系统以后可以更激进 — the Constitution
+        # explicitly allows a personal policy to make the system *less* careful, not
+        # only more. Honouring only PROTECT and KEEP, as this did, was safe and was not
+        # what §14 says.
+        #
+        # The resolution is not a compromise: §6's red lines are not preferences and
+        # are not negotiable by anyone, the user included.
         if f.personal_preference in (Action.PROTECT, Action.KEEP):
+            # More careful is always allowed, at any risk.
             return f.personal_preference
+        if f.personal_preference is Action.SUGGEST_DELETE:
+            # Less careful, only where acting is already permitted. Below R4 this turns
+            # "ask the user again about a category they have answered the same way a
+            # dozen times" into a proposal — §18's Human Review Burden falling for a
+            # real reason rather than by loosening a threshold. At R4 and above it is
+            # ignored: no amount of consistent behaviour makes a passport a disposable
+            # screenshot, and a policy that could reach up there would be a mechanism
+            # for a user to talk themselves out of the protection that exists precisely
+            # because one day they will be tired and wrong.
+            #
+            # SUGGEST_DELETE is also the most aggressive thing a preference can ever
+            # produce. AUTO_CLEAN is reachable only from byte-identical duplication,
+            # which is evidence rather than taste.
+            if f.risk < NEVER_DELETE_AT_OR_ABOVE:
+                return Action.SUGGEST_DELETE
 
     if f.risk >= Risk.R5_CRITICAL:
         return Action.PROTECT

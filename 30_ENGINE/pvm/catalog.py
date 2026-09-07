@@ -37,7 +37,7 @@ from .risk import NEVER_DELETE_AT_OR_ABOVE, Proposal, Risk
 from .verdict import Classification
 
 BATCH = 200          # C-3: one checkpoint batch, matching the indexer
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def _sqlite_int64(value):
@@ -219,6 +219,23 @@ class Catalog:
           why TEXT NOT NULL
         );
 
+        -- §14: 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal
+        -- Policy. The log is the durable thing; the policy is derived from it and can
+        -- be recomputed, which matters because a policy is a claim about the user and
+        -- they are owed the ability to see what it was built from.
+        --
+        -- No ON DELETE CASCADE here, deliberately: what the user decided about a photo
+        -- remains true after the photo is gone, and deleting the evidence for a policy
+        -- the moment its subject disappears would make the policy unexplainable.
+        CREATE TABLE IF NOT EXISTS decisions(
+          asset_id TEXT NOT NULL,
+          path TEXT NOT NULL,
+          action TEXT NOT NULL,
+          decided_at REAL NOT NULL,
+          PRIMARY KEY(asset_id, path, action, decided_at)
+        );
+        CREATE INDEX IF NOT EXISTS idx_decisions_path ON decisions(path);
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
         self.db.commit()
@@ -373,6 +390,35 @@ class Catalog:
             """SELECT asset_id,date,place,people,objects,event,segments,frames,
                       frames_seen,why FROM video_records ORDER BY date DESC LIMIT ?""",
             (limit,)).fetchall()
+
+    def record_decision(self, asset_id: str, path: str, action: str,
+                        at: Optional[float] = None) -> None:
+        """What the user just did. Validated through `personal.Decision` so the five
+        verbs §14 names are enforced in one place rather than at every call site."""
+        from datetime import datetime as _dt
+
+        from .personal import Decision
+        when = at if at is not None else time.time()
+        Decision(asset_id, path, action, _dt.fromtimestamp(when))   # raises on a bad verb
+        self.db.execute(
+            "INSERT OR REPLACE INTO decisions(asset_id,path,action,decided_at) VALUES(?,?,?,?)",
+            (asset_id, path, action, when))
+        self.db.commit()
+
+    def decisions(self, limit: int = 100000):
+        from datetime import datetime as _dt
+
+        from .personal import Decision
+        rows = self.db.execute(
+            "SELECT asset_id,path,action,decided_at FROM decisions ORDER BY decided_at LIMIT ?",
+            (limit,)).fetchall()
+        return [Decision(a, p, act, _dt.fromtimestamp(t)) for a, p, act, t in rows]
+
+    def personal_policy(self):
+        """Derived on read rather than stored. A stored policy is a cache of a claim
+        about the user, and a stale one is worse than none."""
+        from .personal import learn
+        return learn(self.decisions())
 
     def write_entity_review(self, pairs) -> None:
         self.db.execute("DELETE FROM entity_review")
