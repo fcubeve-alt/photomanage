@@ -27,7 +27,13 @@ concurrency:
 jobs:
   app:
     runs-on: macos-15          # standard arm64 runner. Do NOT switch to -large/-xlarge.
-    timeout-minutes: 45
+    # 20, not 45. The UI screenshot suite hangs unpredictably on this runner image —
+    # it completed in four minutes once and then ran past thirty on the next attempt
+    # with no code change between them — and a hang costs the full timeout at ten times
+    # the Linux rate. The per-test allowance below caps a slow *test*; it does not cap a
+    # stuck app launch, which is what this appears to be. Twenty minutes is generous for
+    # a suite whose one good run took four.
+    timeout-minutes: 20
 
     env:
       XCODE_VERSION: '16.4'
