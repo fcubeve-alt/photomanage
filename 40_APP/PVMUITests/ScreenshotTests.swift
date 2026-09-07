@@ -86,10 +86,28 @@ final class ScreenshotTests: XCTestCase {
         if app.cells.firstMatch.waitForExistence(timeout: 20) == false {
             return app.cells[identifier]
         }
+
+        // A bounded wait for THIS element before scrolling at all.
+        //
+        // The first version checked once and swiped immediately, and `swipeUp` only
+        // goes one way: a row that had not finished rendering was scrolled PAST, and
+        // then hunted for below where it actually sat. That is how `browse-Documents`
+        // came back "no matches found" while the captured screen text for the same run
+        // showed Documents as the second row on the home. The screen dumps are what
+        // made it obvious, and they were only added because the failures were
+        // unreadable before.
+        if element(identifier).waitForExistence(timeout: 5) { return element(identifier) }
+
         for _ in 0...swipes {
+            app.swipeUp()
             let found = element(identifier)
             if found.exists { return found }
-            app.swipeUp()
+        }
+        // Back up, in case it was above where the search started.
+        for _ in 0...(swipes * 2) {
+            app.swipeDown()
+            let found = element(identifier)
+            if found.exists { return found }
         }
         return element(identifier)
     }
@@ -178,8 +196,18 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Anna"].waitForExistence(timeout: 5))
         capture("08-entity")
         // The red line, on screen: an entity has to say why it is believed to exist.
-        XCTAssertTrue(app.staticTexts["Why the library thinks this exists"].exists,
+        // By identifier, and by the account itself. Matching the header's TEXT failed
+        // for a reason that had nothing to do with the product: iOS renders a plain
+        // Section header uppercased, so the lookup for "Why the library thinks this
+        // exists" missed the "WHY THE LIBRARY THINKS THIS EXISTS" that was on screen,
+        // and the test reported the red line broken while the app was keeping it.
+        XCTAssertTrue(app.staticTexts["entity-why"].exists,
                       "an entity is shown with no account of why it exists")
+        XCTAssertTrue(
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@",
+                                                   "face you named")).firstMatch.exists,
+            "the section header is there but says nothing — the red line is that an "
+            + "entity can explain itself, not that it has a heading")
     }
 
     /// The paced depth pass is offered, not imposed (§24 Gate 1, DEC-029).

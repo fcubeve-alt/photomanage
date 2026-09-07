@@ -110,7 +110,13 @@ struct EntityView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             } header: {
+                // Identified, not matched by its text. iOS renders a plain Section
+                // header uppercased, so a test looking for "Why the library thinks
+                // this exists" never matched the "WHY THE LIBRARY THINKS THIS EXISTS"
+                // that was on the screen in front of it — and reported the red line as
+                // broken when the app was keeping it.
                 Text("Why the library thinks this exists")
+                    .accessibilityIdentifier("entity-why")
             }
 
             Section("Seen") {
