@@ -42,7 +42,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | id | dimension | status | evidence |
 |---|---|---|---|
 | S3-CONTENT | Content Taxonomy | DONE | `pvm/taxonomy.py`, `pvm/classifier.py` |
-| S3-TIME | Time：Year → Month → Day → Moment | PARTIAL | only Year is indexed (`Timeline > 2025`); Month/Day/Moment are not, so "find the photos from that afternoon" cannot be served |
+| S3-TIME | Time：Year → Month → Day → Moment | DONE | all four levels, in `pvm/classifier.py::_timeline` and `pvm/context.py::find_moments`, ported to `40_APP/PVMCore/Sources/PVMCore/Classifier.swift`. Moment is a capture session derived from neighbours, not a clock hour — an hour boundary splits a burst — and a lone photograph gets none. `tests/test_engine.py::Cascade` locks both |
 | S3-PLACE | Place：Country → City → Place | PARTIAL | Country and City are indexed; the third level (a named place within a city) is not |
 | S3-PERSON | Person | DONE | `pvm/classifier.py::_faces` |
 | S3-ENTITY | Object / Entity：同一件衣服、设备、证件、商品 | PARTIAL | entities now persist and accumulate across the library (`pvm/memory.py::Entity`), so "every sighting of a suitcase" is answerable. **同一件** is not: telling one suitcase from another is per-category entity resolution (T1B-RESOLVER), so object and document entities stay category-level — and the answer says so out loud rather than implying an instance |
@@ -77,7 +77,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | id | verbatim clause | source | status | evidence |
 |---|---|---|---|---|
 | S10-BROWSE | Browse：用户知道类别，直接 Documents → IDs → Person → ID Card | L1:155 | PARTIAL | `pvm/cli.py::cmd_tree` browses the tree; the Person level inside Documents does not exist |
-| S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | year, city and trip work; month/day and named places do not (see S3-TIME, S3-PLACE) |
+| S10-TIMEPLACE | Timeline / Places：按年月日、城市、地点、旅行/事件浏览 | L1:156 | PARTIAL | 年月日 all work now (S3-TIME), as do city and trip; the missing piece is a *named place* within a city, which needs a place database this build does not have — S3-PLACE |
 | S10-INTENT | Intent Search：用户直接说“找我的身份证正反面” | L1:157 | PARTIAL | `pvm/intent.py` resolves a sentence against what the library actually indexes — categories, people, places, remembered entities, exact time windows, media type, and 正反面 — in Chinese and English, and `pvm/cli.py::cmd_find` answers the Constitution's first worked example. It cannot answer the second, 找所有有气球的照片, because there is no open-vocabulary visual index; it names 气球 as a term it cannot search and **refuses to answer broadly** rather than returning the whole library. `tests/test_intent.py` (18 tests) is mostly about that refusal |
 | S10-RELATIONS | Relations：从某个人、物品、订单、旅行进入，找到相关照片、截图、文件和收据 | L1:158 | PARTIAL | `pvm/memory.py::MemoryGraph.history` goes from a person, object, purchase or trip to its assets and `pvm/cli.py::cmd_remember` exposes it. What is missing is the join: from a receipt to the warranty document, or from an order screenshot to the delivery photo — that needs the entity resolution T1B-RESOLVER tracks |
 | S11-INFER | 无 GPS 时可以利用相邻时间照片、地标等推断，但必须保存置信度 | L1:161 | PARTIAL | `pvm/signals.py::GeoFix` carries `source` and `confidence` and the classifier refuses to use an inferred fix as if measured — but **nothing actually infers**, so assets without GPS get no place at all |
@@ -96,7 +96,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 | S16-BOUNDARY | 对性格、健康、政治、宗教、亲密关系等敏感属性作推断 | L1:204 | DONE | `pvm/rules.py::MEDICAL_IS_DOCUMENT_ONLY`, `tests/test_engine.py::RiskRedLines` |
 | S17-POSITION | 第一阶段不是 AI Photo Cleaner，而是 Autonomous Photo Organizer / Visual Library Manager | L1:206 | NOT-CODE | a positioning statement that shapes what gets built rather than a clause to implement; its executable consequence is that classification precedes cleanup, which is S9-ORDER |
 | S18-KPI | 每 1,000 个资产需要用户人工判断多少 | L1:220 | PARTIAL | seven of eight in `pvm/kpi.py::report`; Personalization Gain requires S14-PERSONAL, and Retrieval Success requires real users (T0-B) |
-| S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | PARTIAL | coverage is reported; **no confusion matrix is produced** — Tier 1-A deliverable |
+| S19-CONFUSION | Visual Asset Taxonomy：分类覆盖率、混淆矩阵 | L1:235 | DONE | `eval/evaluate.py` prints coverage and a confusion matrix over the scored roots — rows are the true root, columns what was filed, and an asset filed correctly *and* elsewhere appears in both cells so over-filing cannot hide |
 | S19-RISKEVAL | Risk/Importance Classification：风险分级是否可靠 | L1:236 | MISSING | risk grading has never been evaluated against labelled ground truth; the corpus carries no risk labels |
 | S19-FOURPATHS | Browse / Timeline-Places / Intent Search / Relations 四种找回路径 | L1:240 | PARTIAL | all four exist. PARTIAL because their success rates have not been measured — Tier 1-E wants 成功率、步骤数、耗时 on real tasks, which needs users |
 | S20-PHILOSOPHY | 不要因为 AI 可能偶尔判断错，就把所有管理工作重新交还给用户 | L1:245 | NOT-CODE | the philosophy the KPIs operationalise; its measurable form is Automation Ratio against Human Review Burden, both of which are reported |
@@ -143,7 +143,7 @@ Status: `DONE` · `PARTIAL` · `MISSING` · `OUT-OF-SCOPE` (tier named) · `NOT-
 
 | id | requirement | status | evidence |
 |---|---|---|---|
-| T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision and recall are in `eval/evaluate.py`; **no confusion matrix**, and the taxonomy evaluated is the navigational tree rather than the §4 scheme |
+| T1A-TAXONOMY | Tier 1-A Visual Asset Taxonomy：Coverage、Precision/Recall、Confusion Matrix、Unknown 比例 | PARTIAL | coverage, precision, recall and the confusion matrix are all in `eval/evaluate.py`. Still PARTIAL for one reason only: the taxonomy evaluated is the 11-root navigational tree, not the finer §4 scheme — S4-CATEGORIES |
 | T1A-UNKNOWN | 允许 Unknown + confidence，不强迫每个资产进入错误类别 | DONE | `pvm/verdict.py::REVIEW_FLOOR`, `pvm/classifier.py::_unfiled` |
 | T1B-RESOLVER | Tier 1-B Category-Specific Entity Resolver, per-category | DONE | `pvm/resolver.py`, `tests/test_resolver.py` (26 tests), measured by `eval/evaluate_entities.py` — 24 hand-built pairs, 9 hard negatives, 0 false merges, 0 false splits, 12.5% to review. Objects across occasions are deliberately downgraded to Review rather than guessed; see T1B-EMBEDDING |
 | T1B-FALSEMERGE | Document 类别单独统计 False Merge / False Split | PARTIAL | measured and reported separately: **Document False Merge 0 of 6, False Split 0 of 5** (`20_TIER0/evidence/GATE2_ENTITY_RESOLVER_2026-09-06.md`), across four hard negatives — two passports on one template, two ID cards on one template, page 1 of two contracts sharing boilerplate, two receipts from one shop. PARTIAL because **the pairs are hand-built**: the 10k corpus has no same-entity labels, so this is evidence about the hard cases and not a population rate |
