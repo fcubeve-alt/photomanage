@@ -1,0 +1,130 @@
+name: Unsigned .ipa for sideloading
+
+# Puts the app on a real iPhone WITHOUT a paid Apple Developer account.
+#
+# Apple's free provisioning lets any free Apple ID install an app on its owner's own
+# device. The usual route needs Xcode on a Mac. This project is written on a machine
+# with no Mac, so the build happens here and the signing happens on the owner's Windows
+# PC with Sideloadly or AltStore, which drive free provisioning from Windows.
+#
+#     this workflow          →  PVM-unsigned.ipa (no certificate, no team, no secrets)
+#     Sideloadly on Windows  →  re-signs it with the owner's free Apple ID
+#     USB                    →  installs it on the phone
+#
+# See 40_APP/SIDELOAD_WITHOUT_A_DEVELOPER_ACCOUNT.md for the other half.
+#
+# This is NOT `ios-testflight.yml`. That one needs a paid team, three App Store Connect
+# secrets and the $99, and it uploads to TestFlight so other people can install it.
+# This one only ever reaches one phone: the owner's.
+#
+# MANUAL ONLY, like every other macOS job here — they bill at ten times the Linux rate.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: app-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 20
+
+    env:
+      XCODE_VERSION: '16.4'
+      SCHEME: PVM
+      PROJECT_DIR: 40_APP
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          xcodebuild -version
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Same guard as every other job: the app must not ship rules that disagree with
+      # the engine those rules were measured on.
+      - name: Shared Swift still matches the Python engine
+        run: python 40_APP/generate_shared.py --check
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: xcodegen generate --spec project.yml
+
+      # Release, and unsigned. Sideloadly replaces the signature anyway, so signing here
+      # would only require a certificate this workflow exists to avoid needing.
+      #
+      # Release rather than Debug on purpose: this build is going on a phone to answer
+      # A1 (how fast) and A3 (does it survive). A Debug build measures the wrong thing —
+      # Swift's Debug configuration disables optimisation, and a scale number taken from
+      # it would understate the product by a large factor and be quoted forever.
+      - name: Build for a device, unsigned
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project PVM.xcodeproj -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            | tee ipa-build.log
+
+      # An .ipa is a zip with the .app inside a folder called Payload. That is the whole
+      # format; there is nothing else to it for an unsigned build.
+      - name: Package it
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          APP="build-device/Build/Products/Release-iphoneos/PVM.app"
+          if [ ! -d "$APP" ]; then
+            echo "no .app was produced at $APP — the build step above is the thing to read"
+            ls -R build-device/Build/Products || true
+            exit 1
+          fi
+          rm -rf Payload PVM-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry PVM-unsigned.ipa Payload
+          rm -rf Payload
+          ls -la PVM-unsigned.ipa
+
+          # Say out loud what was built. A file called "unsigned" that turns out to be
+          # a simulator build wastes an evening on the far end of a USB cable, and the
+          # only cheap moment to catch that is here.
+          echo "===== WHAT IS IN THIS .ipa ====="
+          unzip -l PVM-unsigned.ipa | head -20
+          echo "--- architecture (must be arm64, NOT x86_64) ---"
+          lipo -info "$APP/PVM" || true
+          echo "--- minimum iOS version and platform ---"
+          plutil -extract MinimumOSVersion raw "$APP/Info.plist" || true
+          plutil -extract CFBundleSupportedPlatforms raw -o - "$APP/Info.plist" || true
+          echo "--- bundle id ---"
+          plutil -extract CFBundleIdentifier raw "$APP/Info.plist" || true
+
+      - name: Upload the .ipa
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PVM-unsigned-ipa
+          path: ${{ env.PROJECT_DIR }}/PVM-unsigned.ipa
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: What to do with it
+        if: always()
+        run: |
+          echo "Download the PVM-unsigned-ipa artifact from this run, then follow"
+          echo "40_APP/SIDELOAD_WITHOUT_A_DEVELOPER_ACCOUNT.md on the Windows PC."
+          echo "The signature is added on that side; nothing here is signed."

@@ -779,3 +779,30 @@ but not by month, day or moment; Places reaches city but not place; Object and E
 are relation rows rather than indexes. Those read as done in a demo.
 
 **Status.** ACTIVE. `check_constraints.py` verifies all 90 clauses in CI.
+
+## DEC-032 · 2026-09-07 · Money OS 包从工作树移除；历史清除待批准
+
+`90_ARCHIVE/OTHER_PROJECT_MONEY_OS/Project_M_Master_Development_Package_v1.3.1_COMPLETE.zip`
+（422 KB）是另一个项目的开发包，M0 引导时随文档一并提交，此后无任何代码或文档读过它。
+DEC-005 早已把它封存在范围之外。**仓库现在是公开的**，而它不属于这个项目，所以 Owner
+批准移除。
+
+已做：`git rm`，并在原位置留下 README 说明。
+
+**未做，需要 Owner 明确同意才能执行**：它仍在 commit `e62e073` 中，任何人知道该 SHA
+仍可从 GitHub 下载。真正清除必须重写历史：
+
+```bash
+# 在一个全新的克隆里做，不要在有未推送工作的仓库里做
+pip install git-filter-repo
+git clone --mirror https://github.com/fcubeve-alt/photomanage.git
+cd photomanage.git
+git filter-repo --invert-paths   --path '90_ARCHIVE/OTHER_PROJECT_MONEY_OS/Project_M_Master_Development_Package_v1.3.1_COMPLETE.zip'
+git push --force --mirror
+```
+
+**代价，说清楚再决定**：所有 commit SHA 全部改变；任何已有克隆（包括正在进行的分支）
+都必须重新克隆，否则下一次 push 会把旧历史推回去；GitHub 上已有的 PR 引用会失效。
+另外 GitHub 会在自己的服务器上缓存旧对象一段时间，彻底消失需要联系 GitHub Support
+或等待其垃圾回收。**如果那个包里有任何敏感内容，正确的做法是当作已经泄露处理
+（该轮换的轮换），而不是只依赖删除。**
