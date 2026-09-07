@@ -154,6 +154,23 @@ public final class Catalog: @unchecked Sendable {
           why TEXT NOT NULL
         );
 
+        -- §14: 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal
+        -- Policy. The log is the durable thing; the policy is derived from it, because
+        -- a policy is a claim about the user and they are owed the ability to see what
+        -- it was built from.
+        --
+        -- No ON DELETE CASCADE, deliberately: what the user decided about a photo stays
+        -- true after the photo is gone, and deleting the evidence under a policy the
+        -- moment its subject disappears would make the policy unexplainable.
+        CREATE TABLE IF NOT EXISTS decisions(
+          asset_id TEXT NOT NULL,
+          path TEXT NOT NULL,
+          action TEXT NOT NULL,
+          decided_at REAL NOT NULL,
+          PRIMARY KEY(asset_id, path, action, decided_at)
+        );
+        CREATE INDEX IF NOT EXISTS idx_decisions_path ON decisions(path);
+
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
     }
@@ -601,6 +618,43 @@ public final class Catalog: @unchecked Sendable {
         return out
     }
 
+    public func recordDecision(assetID: String, path: String, verb: UserDecision.Verb,
+                               at: Date = Date()) {
+        guard let st = prepared("""
+            INSERT OR REPLACE INTO decisions(asset_id,path,action,decided_at)
+            VALUES(?,?,?,?);
+            """) else { return }
+        sqlite3_bind_text(st, 1, assetID, -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_text(st, 2, path, -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_text(st, 3, verb.rawValue, -1, Catalog.SQLITE_TRANSIENT)
+        sqlite3_bind_double(st, 4, at.timeIntervalSince1970)
+        sqlite3_step(st); sqlite3_finalize(st)
+        commit()
+    }
+
+    public func decisions(limit: Int = 100_000) -> [UserDecision] {
+        guard let st = prepared("""
+            SELECT asset_id,path,action,decided_at FROM decisions
+            ORDER BY decided_at LIMIT ?;
+            """) else { return [] }
+        sqlite3_bind_int(st, 1, Int32(limit))
+        var out: [UserDecision] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            guard let verb = UserDecision.Verb(rawValue: Catalog.text(st, 2)) else { continue }
+            out.append(UserDecision(assetID: Catalog.text(st, 0), path: Catalog.text(st, 1),
+                                    verb: verb,
+                                    at: Date(timeIntervalSince1970: sqlite3_column_double(st, 3))))
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+    /// Derived on read rather than stored. A stored policy is a cache of a claim about
+    /// the user, and a stale one is worse than none.
+    public func personalPolicy() -> PersonalPolicy {
+        PersonalPolicy.learn(decisions())
+    }
+
     public func writeRelations(_ groups: [RelationGroup]) {
         exec("DELETE FROM relations;")
         begin()
@@ -796,13 +850,20 @@ public final class Catalog: @unchecked Sendable {
         public let action: String
         public let note: String
         public let why: String
+        /// The primary shelf. §14 learns per *category*, so a decision recorded without
+        /// one teaches nothing — it would be a fact about a single photo the user is
+        /// probably about to stop owning.
+        public let path: String
     }
 
     public func reviewQueue(limit: Int = 100) -> [ReviewItem] {
         var out: [ReviewItem] = []
         var st: OpaquePointer?
         sqlite3_prepare_v2(db, """
-            SELECT a.asset_id, p.action, p.note, p.why
+            SELECT a.asset_id, p.action, p.note, p.why,
+                   COALESCE((SELECT s.path FROM assignments s
+                             WHERE s.asset_id = a.asset_id
+                             ORDER BY s.is_primary DESC, s.confidence DESC LIMIT 1), '')
             FROM assets a JOIN proposals p ON p.asset_id = a.asset_id
             WHERE a.needs_review = 1 OR p.action = 'review'
             ORDER BY a.created_at DESC LIMIT ?;
@@ -813,7 +874,8 @@ public final class Catalog: @unchecked Sendable {
                   let c = sqlite3_column_text(st, 2), let d = sqlite3_column_text(st, 3)
             else { continue }
             out.append(ReviewItem(assetID: String(cString: a), action: String(cString: b),
-                                  note: String(cString: c), why: String(cString: d)))
+                                  note: String(cString: c), why: String(cString: d),
+                                  path: Catalog.text(st, 4)))
         }
         sqlite3_finalize(st)
         return out

@@ -203,6 +203,20 @@ public final class IngestionCoordinator: ObservableObject {
         return n
     }
 
+    /// §14: what the user just did, written down.
+    ///
+    /// Recorded at the moment of the decision rather than inferred later from the
+    /// catalogue's state, because "this asset is gone" and "the user chose to remove
+    /// it" are different facts and only one of them is feedback.
+    public func record(_ verb: UserDecision.Verb, assetID: String, path: String) {
+        catalog?.recordDecision(assetID: assetID, path: path, verb: verb)
+        refreshCounts()
+    }
+
+    public var personalPolicy: PersonalPolicy {
+        catalog?.personalPolicy() ?? PersonalPolicy()
+    }
+
     public func sightings(of entityID: String) -> [Catalog.SightingRow] {
         catalog?.sightings(of: entityID) ?? []
     }

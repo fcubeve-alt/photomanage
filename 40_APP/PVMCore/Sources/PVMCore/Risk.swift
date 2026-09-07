@@ -226,11 +226,31 @@ public enum RiskEngine {
 
     /// The §5 formula, as a table rather than a paragraph.
     public static func decide(_ f: Factors) -> Action {
-        // §14: the user's own corrections outrank the global default — but they can
-        // only ever make the system more careful, never less. Letting them loosen a
-        // protection would turn a red line into a setting.
-        if let pref = f.personalPreference, pref == .protectAsset || pref == .keep {
-            return pref
+        // §14: 用户的 Keep/Delete/Protect/Restore/Correction 逐渐形成 Personal Policy,
+        // and 如果用户总是删除某类工作截图，系统以后可以更激进 — the Constitution
+        // explicitly allows a personal policy to make the system *less* careful, not
+        // only more. Honouring only PROTECT and KEEP, as this did, was safe and was not
+        // what §14 says: it makes 系统越来越懂这个用户 impossible by construction.
+        //
+        // The resolution is not a compromise. §6's red lines are not preferences and
+        // are not negotiable by anyone, the user included.
+        if let pref = f.personalPreference {
+            // More careful is always allowed, at any risk.
+            if pref == .protectAsset || pref == .keep { return pref }
+            // Less careful, only where acting is already permitted. Below R4 this turns
+            // "ask again about a category they have answered the same way a dozen
+            // times" into a proposal. At R4 and above it is ignored: no amount of
+            // consistent behaviour makes a passport a disposable screenshot, and a
+            // policy that could reach up there would be a mechanism for a user to talk
+            // themselves out of the protection that exists precisely because one day
+            // they will be tired and wrong.
+            //
+            // SUGGEST_DELETE is also the most aggressive thing a preference can ever
+            // produce. AUTO_CLEAN is reachable only from byte-identical duplication,
+            // which is evidence rather than taste.
+            if pref == .suggestDelete, f.risk.rawValue < RiskPolicy.neverActAtOrAbove.rawValue {
+                return .suggestDelete
+            }
         }
 
         if f.risk >= .r5Critical { return .protectAsset }
