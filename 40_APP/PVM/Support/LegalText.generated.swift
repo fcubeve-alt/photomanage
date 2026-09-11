@@ -108,7 +108,7 @@ enum LegalText {
 - **Your rights.** We hold no data about you, so there is nothing to access, correct or delete. Removing the app removes everything.
 
 **Contact:** to be filled in by the owner (see `50_LAUNCH/SUPPORT.md`).
-    """#
+"""#
 
     static let termsOfService = #"""
 # 服务条款 · Terms of Service
@@ -183,6 +183,6 @@ Paid items, if any, are sold through Apple. **Subscriptions renew automatically*
 The app is provided "as is". Automatic classification makes mistakes, so its judgements are suggestions, not decisions — keep your own backups. To the maximum extent permitted by law we are not liable for data loss or indirect damages arising from use of the app.
 
 Governing law and the developer's legal identity are to be completed by the owner before submission.
-    """#
+"""#
 
 }

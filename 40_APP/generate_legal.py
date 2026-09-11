@@ -61,7 +61,11 @@ def render(bodies: dict[str, str]) -> str:
     for name, text in bodies.items():
         out.append(f"    static let {name} = #\"\"\"")
         out.append(text.rstrip("\n"))
-        out.append('    """#')
+        # The closing delimiter sits at column 0. Swift strips from every line of a
+        # multi-line literal exactly the indentation of its closing delimiter, so an
+        # indented `"""#` over unindented Markdown is "insufficient indentation of the
+        # next N lines" — a compile error, and the one this generator hit first.
+        out.append('"""#')
         out.append("")
     out.append("}")
     return "\n".join(out).rstrip("\n") + "\n"
@@ -83,6 +87,10 @@ def selftest() -> int:
     rendered = render({"x": "line\n"})
     assert 'static let x = #"""' in rendered, rendered
     assert rendered.rstrip().endswith("}"), rendered
+    # Swift strips from every line of a multi-line literal exactly the indentation of
+    # the CLOSING delimiter. An indented `"""#` over unindented Markdown is a compile
+    # error, and it is the first thing this generator got wrong.
+    assert '\n"""#\n' in rendered, "closing delimiter must sit at column 0"
     print("generate_legal selftest: ok")
     return 0
 
