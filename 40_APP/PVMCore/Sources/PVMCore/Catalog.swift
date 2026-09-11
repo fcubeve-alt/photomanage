@@ -849,6 +849,25 @@ public final class Catalog: @unchecked Sendable {
         return out
     }
 
+    // `db` is private to this file and `sqlite3_prepare_v2` needs the SQLite module
+    // imported here, so the one migration helper that talks to SQLite directly lives
+    // with the connection rather than next to the rest of the migration.
+    /// The columns a table actually has on disk, which is the only thing that decides
+    /// whether a migration can read it.
+    public func columnNames(of table: String) -> Set<String> {
+        var out: Set<String> = []
+        var st: OpaquePointer?
+        // `PRAGMA table_info` takes no bound parameters, and the table names here are
+        // compile-time constants from `CatalogMigration`, never user input.
+        sqlite3_prepare_v2(db, "PRAGMA table_info(\(table));", -1, &st, nil)
+        while sqlite3_step(st) == SQLITE_ROW {
+            if let c = sqlite3_column_text(st, 1) { out.insert(String(cString: c)) }
+        }
+        sqlite3_finalize(st)
+        return out
+    }
+
+
     public func countsByPath() -> [String: Int] {
         var out: [String: Int] = [:]
         var st: OpaquePointer?

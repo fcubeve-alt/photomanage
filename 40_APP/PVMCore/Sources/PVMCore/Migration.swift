@@ -143,21 +143,6 @@ extension Catalog {
                               unversionedLegacy: isUnversionedLegacyFile)
     }
 
-    /// The columns a table actually has on disk, which is the only thing that decides
-    /// whether a migration can read it.
-    public func columnNames(of table: String) -> Set<String> {
-        var out: Set<String> = []
-        var st: OpaquePointer?
-        // `PRAGMA table_info` takes no bound parameters, and the table names here are
-        // compile-time constants from `CatalogMigration`, never user input.
-        sqlite3_prepare_v2(db, "PRAGMA table_info(\(table));", -1, &st, nil)
-        while sqlite3_step(st) == SQLITE_ROW {
-            if let c = sqlite3_column_text(st, 1) { out.insert(String(cString: c)) }
-        }
-        sqlite3_finalize(st)
-        return out
-    }
-
     func tableExists(_ table: String) -> Bool {
         !columnNames(of: table).isEmpty
     }
