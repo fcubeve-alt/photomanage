@@ -92,10 +92,19 @@ final class LibrarySafetyTests: XCTestCase {
         }
     }
 
-    func testThePermissionRequestedIsNoWiderThanTheModeAllows() {
-        XCTAssertEqual(LibrarySafety.requiredAccessLevel, .read,
-                       "A read-only build must not ask for write access to someone's "
-                       + "photographs on first launch")
+    /// The permission is `.readWrite` and cannot be narrower, because iOS has no
+    /// read-only photo access level — `PHAccessLevel` is `.addOnly` or `.readWrite`,
+    /// and `.addOnly` is write-only. An audit recommended narrowing it; the compiler
+    /// settled it.
+    ///
+    /// So the property worth asserting is not the enum, it is that the app cannot act
+    /// on the access it is obliged to ask for. That is `testEveryWriteIsRefused`
+    /// above and `check_no_photo_writes.py` in `verify.sh`.
+    func testTheWidePermissionIsForcedByThePlatformNotByTheApp() {
+        XCTAssertEqual(LibrarySafety.requiredAccessLevel, .readWrite)
+        XCTAssertEqual(LibrarySafety.mode, .readOnly,
+                       "the permission is wide because iOS offers nothing narrower; "
+                       + "the behaviour must stay narrow by construction")
     }
 
     /// The strongest form of this check: no PhotoKit mutation API appears anywhere in

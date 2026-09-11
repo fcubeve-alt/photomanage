@@ -65,19 +65,33 @@ public enum LibrarySafety {
         }
     }
 
-    /// What the app needs from PhotoKit.
+    /// What the app needs from PhotoKit — and it is `.readWrite` in every mode,
+    /// because **iOS does not offer a read-only photo permission.**
     ///
-    /// `.readWrite` was requested until 2026-09-11, and there has never been a single
-    /// `PHAssetChangeRequest` in the app — so the most alarming permission iOS can
-    /// show for photographs was being asked for, on first launch, by a product whose
-    /// entire pitch is that it does not touch anything. That is a privacy claim and a
-    /// conversion cost paid for nothing.
+    /// A third-party audit on 2026-09-11 recommended narrowing this to read-only, and
+    /// that recommendation cannot be implemented: `PHAccessLevel` has exactly two
+    /// members, `.addOnly` and `.readWrite`, and `.addOnly` is *write*-only — it lets
+    /// an app add photos and not see any. An app that reads the library has one
+    /// choice. The first attempt at the fix used `.read`, which does not exist, and
+    /// the compiler said so.
     ///
-    /// It follows the mode rather than being hard-coded, so that raising the mode also
-    /// raises the request and the two cannot drift apart.
-    public static var requiredAccessLevel: PHAccessLevel {
-        mode == .readOnly ? .read : .readWrite
-    }
+    /// The audit's underlying point still stands and is answered elsewhere, because it
+    /// was never really about the enum:
+    ///
+    /// * **The app cannot write, structurally.** `permitWrite` refuses, and
+    ///   `check_no_photo_writes.py` fails the build if a PhotoKit mutation appears
+    ///   outside this file. The permission is wider than the behaviour because the
+    ///   platform gives no narrower permission — not because the behaviour is wide.
+    /// * **`NSPhotoLibraryAddUsageDescription` is gone.** That one was genuinely
+    ///   unnecessary, and it carried a promise — "recoverable for 30 days" — about
+    ///   behaviour nobody has observed on a device.
+    /// * **The sheet says so.** `NSPhotoLibraryUsageDescription` now ends with "this
+    ///   version never deletes or changes a photo", which is the only part of this a
+    ///   user actually reads.
+    ///
+    /// Kept as a computed property rather than a constant so that the day the mode
+    /// changes, this is where someone looks.
+    public static var requiredAccessLevel: PHAccessLevel { .readWrite }
 
     /// Shown wherever the UI would otherwise imply something will be removed.
     public static var userFacingNote: String {
