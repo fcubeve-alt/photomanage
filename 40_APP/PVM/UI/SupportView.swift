@@ -16,7 +16,15 @@ struct SupportView: View {
     @StateObject private var entitlements = Entitlements.shared
     @State private var crashReport: String? = CrashReporter.reportFromLastRun
 
-    private var diagnostics: String {
+    /// Built once when the screen appears, not in `body`.
+    ///
+    /// `body` runs on every redraw, and this report ends with `PRAGMA integrity_check`
+    /// over the whole catalogue — seconds of main-thread work on a 100k-asset library,
+    /// repeated on every scroll. Exactly the shape of the bug the third-party audit
+    /// found in the depth pass, in a place nobody would think to look at.
+    @State private var diagnostics = ""
+
+    private func buildDiagnostics() -> String {
         var text = Diagnostics.report(catalog: coordinator.catalog,
                                       phase: String(describing: coordinator.phase))
         if let migration = lastMigration, migration.derivedRowsCleared > 0 {
@@ -85,6 +93,7 @@ struct SupportView: View {
         }
         .navigationTitle("支持")
         .navigationBarTitleDisplayMode(.inline)
+        .task { if diagnostics.isEmpty { diagnostics = buildDiagnostics() } }
     }
 }
 

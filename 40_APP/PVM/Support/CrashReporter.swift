@@ -99,7 +99,7 @@ enum CrashReporter {
             let body = "\nexception: \(exception.name.rawValue)\nreason: \(reason)\n"
                 + exception.callStackSymbols.joined(separator: "\n") + "\n"
             body.withCString { pointer in
-                _ = write(crashLogFD, pointer, strlen(pointer))
+                _ = write(crashLogFD, pointer, Int(strlen(pointer)))
             }
             fsync(crashLogFD)
         }
@@ -162,7 +162,7 @@ private func crashSignalName(_ sig: Int32) -> UnsafePointer<CChar> {
 }
 
 private func crashWrite(_ text: UnsafePointer<CChar>) {
-    _ = write(crashLogFD, text, strlen(text))
+    _ = write(crashLogFD, text, Int(strlen(text)))
 }
 
 private let crashSignalHandler: @convention(c) (Int32) -> Void = { sig in
