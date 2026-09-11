@@ -14,12 +14,19 @@ import PVMCore
 /// instead of their phone, and would produce a spuriously catastrophic result.
 public enum PhotoLibrarySource {
 
+    /// `LibrarySafety.requiredAccessLevel`, not a hard-coded `.readWrite`.
+    ///
+    /// Until 2026-09-11 both of these asked for `.readWrite` while the app contained
+    /// no `PHAssetChangeRequest` anywhere — the most alarming photo permission iOS can
+    /// show, requested on first launch, by a product whose pitch is that it does not
+    /// touch anything. Tying it to the safety mode means the request can never again
+    /// be wider than what the build is actually allowed to do.
     public static func authorizationStatus() -> PHAuthorizationStatus {
-        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        PHPhotoLibrary.authorizationStatus(for: LibrarySafety.requiredAccessLevel)
     }
 
     public static func requestAuthorization(_ done: @escaping (PHAuthorizationStatus) -> Void) {
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+        PHPhotoLibrary.requestAuthorization(for: LibrarySafety.requiredAccessLevel) { status in
             DispatchQueue.main.async { done(status) }
         }
     }

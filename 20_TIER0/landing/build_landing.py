@@ -31,6 +31,22 @@ surveillance infrastructure would be the first broken promise, made before we sh
 
 Usage:  python build_landing.py
         python server.py          # local preview + event capture
+
+⚠️ **The copy in this file is UNVERIFIED EXPERIMENT MATERIAL, not product claims.**
+
+A third-party audit on 2026-09-11 listed four lines that read as capabilities and are
+not:
+
+    "You get asked about 23 things"                 — no user has ever been asked
+    "everything it removes is recoverable for 30 days" — never observed on a device;
+                                                      the app cannot remove anything
+    "handled the moment it lands"                   — background scheduling is untested
+    "12,000 photos come back as a library"          — never run on a real library
+
+They exist to measure which framing people respond to, which is a legitimate thing for
+a landing-page experiment to do and an illegitimate thing to publish as fact. The pages
+carry `noindex` and T0-C2 is cancelled (DEC-026), so none of this is live. Any sentence
+that survives into a real marketing page has to be backed by a measurement first.
 """
 
 import os

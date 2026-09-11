@@ -1,0 +1,37 @@
+name: CodeQL
+
+# P2-8. A third-party audit on 2026-09-11 found no automated security analysis of any
+# kind — no SAST, no dependency review, no secret-scanning configuration.
+#
+# Scoped to Python, and deliberately. CodeQL's Swift support needs a macOS runner and
+# a full build, which on a private-repo budget billed at ten times the Linux rate is a
+# cost this project has already been bitten by twice. The Python is where the analysis
+# and the evaluation live; the Swift is covered by a compiler, a test suite on two
+# platforms, and a conformance test against the Python. That is not equivalent to SAST
+# and is written down here rather than implied.
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['**/*.py', '.github/workflows/codeql.yml']
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"

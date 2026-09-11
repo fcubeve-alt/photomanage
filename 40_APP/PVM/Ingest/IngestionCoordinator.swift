@@ -42,11 +42,57 @@ public final class IngestionCoordinator: ObservableObject {
 
     /// `nonisolated` because it is used as a default argument, and a default argument
     /// expression cannot call into the main actor.
+    ///
+    /// **The catalogue is more sensitive than the photographs it describes.** A third-
+    /// party audit made this point on 2026-09-11 and it is correct: a photo of a
+    /// passport is one image among thousands; the catalogue holds its OCR text, the
+    /// places someone has been with dates, who appears in their life and how often, and
+    /// it is all indexed and searchable. It was being written with the iOS default
+    /// protection class and included in iCloud backup, and neither had been decided —
+    /// they were just what you get for not choosing.
+    ///
+    /// Both are chosen now:
+    ///
+    /// * `.completeUntilFirstUserAuthentication` — unreadable until the phone has been
+    ///   unlocked once after boot, which defeats offline extraction from a powered-down
+    ///   device. Not `.complete`, which would be stronger and would also stop
+    ///   `BGProcessingTask` dead, since that runs while the phone is locked. That is a
+    ///   real trade and this is the side of it the product needs.
+    /// * Excluded from iCloud backup — the catalogue is entirely derivable from the
+    ///   photo library, so backing it up buys nothing and would put OCR'd document text
+    ///   into iCloud, which is exactly the thing the product promises not to do.
     public nonisolated static func defaultCatalog() -> Catalog? {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory,
                                            in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return Catalog(path: dir.appendingPathComponent("pvm_catalog.sqlite").path)
+        let url = dir.appendingPathComponent("pvm_catalog.sqlite")
+        let catalog = Catalog(path: url.path)
+        guard catalog != nil else { return nil }
+        protectOnDisk(url)
+        return catalog
+    }
+
+    /// Applied to the database and to its write-ahead log and shared-memory siblings.
+    ///
+    /// The WAL is the one that gets forgotten, and it is not a lesser file: it holds
+    /// the most recent writes in full. Protecting `pvm_catalog.sqlite` and leaving
+    /// `pvm_catalog.sqlite-wal` at the default would protect the history and expose
+    /// today.
+    nonisolated static func protectOnDisk(_ url: URL) {
+        #if canImport(UIKit)
+        let manager = FileManager.default
+        for suffix in ["", "-wal", "-shm"] {
+            let sibling = URL(fileURLWithPath: url.path + suffix)
+            guard manager.fileExists(atPath: sibling.path) else { continue }
+            try? manager.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: sibling.path)
+            var excluded = sibling
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try? excluded.setResourceValues(values)
+        }
+        #endif
     }
 
     // MARK: - entry points
@@ -132,9 +178,46 @@ public final class IngestionCoordinator: ObservableObject {
         phase = .ready
     }
 
+    /// How many assets are enriched and classified before the UI hears about it.
+    ///
+    /// Small enough that progress moves visibly and a cancellation lands within about a
+    /// second; large enough that the actor hop and the catalogue transaction are not
+    /// paid per asset. `Catalog.batchSize` is 200 for the same reason and this is
+    /// deliberately smaller — that one bounds data loss on a kill, this one bounds how
+    /// long the user stares at a number that is not moving.
+    private static let depthBatch = 25
+
+    /// The in-flight depth pass, so a second call replaces it rather than racing it.
+    private var depthTask: Task<Void, Never>?
+
+    /// Stop the paced pass. The batch in flight finishes; nothing after it starts.
+    public func cancelDepthPass() {
+        depthTask?.cancel()
+        depthTask = nil
+    }
+
     /// The paced half. `limit` is what the chosen option allows in one go, so a plan of
     /// "2,000 a day" is honoured by calling this with 2,000 and stopping.
+    ///
+    /// **Everything expensive here runs off the main actor, and that is not a nicety.**
+    /// Until 2026-09-11 this was a synchronous method on a `@MainActor` class that
+    /// looped `VisionSignals.enrich` — an image decode plus Vision, measured at
+    /// 105–154 ms per asset — and then `Pipeline.run`, without ever calling the
+    /// `offMain` helper defined sixty lines above it. A 2,000-asset slice was therefore
+    /// about four and a half minutes of completely frozen UI, which is past the point
+    /// where the iOS watchdog kills the app, and the paced design whose entire purpose
+    /// is not to take the phone away would have taken the phone away.
+    ///
+    /// The comment on `offMain` described this correctly the whole time. The code did
+    /// the opposite. A third-party audit found it; no test could have, because there
+    /// was no test that asserted where the work runs — there is one now
+    /// (`IngestionThreadingTests`).
     public func runDepthPass(limit: Int? = nil) {
+        depthTask?.cancel()
+        depthTask = Task { [weak self] in await self?.performDepthPass(limit: limit) }
+    }
+
+    private func performDepthPass(limit: Int?) async {
         guard let catalog else { return }
         let pending = assets.filter { catalog.needsClassification($0) }
         let slice = limit.map { Array(pending.prefix($0)) } ?? pending
@@ -144,12 +227,50 @@ public final class IngestionCoordinator: ObservableObject {
         }
         phase = .depth(done: 0, total: slice.count)
 
+        // Snapshotted on the main actor, once, so the background work never reads
+        // actor state. `PHAsset` is a class and not Sendable; see `offMain`.
+        let index = phAssets
+        var done = 0
+
+        for start in stride(from: 0, to: slice.count, by: Self.depthBatch) {
+            if Task.isCancelled {
+                // Everything already classified is committed — the pass is resumable
+                // because `needsClassification` is the only thing that decides what is
+                // pending, and it reads the catalogue rather than a cursor in memory.
+                phase = .ready
+                return
+            }
+            let batch = Array(slice[start..<min(start + Self.depthBatch, slice.count)])
+            let result = await Self.offMain {
+                let enriched = Self.enrich(batch, using: index)
+                return Pipeline.run(assets: enriched, catalog: catalog, budget: .text,
+                                    reconcileDeletions: false)
+            }
+            self.stats = result
+            done += batch.count
+            phase = .depth(done: done, total: slice.count)
+        }
+
+        refreshCounts()
+        phase = pending.count == slice.count ? .complete : .ready
+        depthTask = nil
+    }
+
+    /// The expensive per-asset work. `nonisolated` so that calling it from the main
+    /// actor is a compile error rather than a four-minute freeze, which is the shape
+    /// the original defect had.
+    ///
+    /// Serial within the batch on purpose: Vision already parallelises internally, and
+    /// a second layer of concurrency on top of it raises peak memory on exactly the
+    /// old devices where jetsam is the thing being guarded against (A3).
+    nonisolated static func enrich(_ batch: [AssetSignals],
+                                   using index: [String: PHAsset]) -> [AssetSignals] {
         var enriched: [AssetSignals] = []
-        enriched.reserveCapacity(slice.count)
-        for base in slice {
+        enriched.reserveCapacity(batch.count)
+        for base in batch {
             var s = base
             #if canImport(UIKit)
-            if let ph = phAssets[base.assetID] {
+            if let ph = index[base.assetID] {
                 let vision = VisionSignals.enrich(asset: ph, base: base)
                 s.dhash = vision.dhash
                 s.ocrRan = vision.ocrRan
@@ -164,11 +285,7 @@ public final class IngestionCoordinator: ObservableObject {
             #endif
             enriched.append(s)
         }
-        let stats = Pipeline.run(assets: enriched, catalog: catalog, budget: .text,
-                                 reconcileDeletions: false)
-        self.stats = stats
-        refreshCounts()
-        phase = pending.count == slice.count ? .complete : .ready
+        return enriched
     }
 
     private func classify(budget: Tier, phaseLabel: Phase) async {

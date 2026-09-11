@@ -48,7 +48,13 @@ jobs:
       # project here instead, so CI is reproducible and nobody has to keep a
       # binary project file in sync by hand.
       - name: Install XcodeGen
-        run: brew install xcodegen
+        # Pinned. An unpinned `brew install` takes whatever Homebrew ships that day,
+        # so a build that worked on Monday can fail on Tuesday for a reason
+        # nobody changed. XcodeGen generates the project every build, which
+        # makes its version part of the build, not part of the environment.
+        run: |
+          brew install xcodegen
+          xcodegen --version
 
       - name: Generate Xcode project
         working-directory: ${{ env.PROJECT_DIR }}

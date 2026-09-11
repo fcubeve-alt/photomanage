@@ -46,11 +46,17 @@ targets:
         # Read access. Everything the product does starts here.
         NSPhotoLibraryUsageDescription: >-
           Reads the photos already on your phone so they can be catalogued and found
-          again. Nothing is uploaded and no photo leaves this device.
-        # Write access is for acting on proposals the user confirms — never silently.
-        NSPhotoLibraryAddUsageDescription: >-
-          Only used to act on changes you have confirmed. Removals go to Recently
-          Deleted and stay undoable for 30 days.
+          again. Nothing is uploaded, no photo leaves this device, and this version
+          never deletes or changes a photo.
+        # NSPhotoLibraryAddUsageDescription is deliberately ABSENT.
+        #
+        # It was here, promising "removals go to Recently Deleted and stay undoable for
+        # 30 days" — a claim about behaviour that has never been observed on a physical
+        # device, made by a build that contains no `PHAssetChangeRequest` at all. An
+        # unused usage-description string is not harmless: iOS shows it, so it is a
+        # promise the product was making on its permission sheet and could not keep.
+        #
+        # It comes back when `LibrarySafety.mode` leaves `.readOnly`, and not before.
         UIBackgroundModes:
           - processing
         # C-4: BGProcessingTask must be declared here or scheduling silently fails.
@@ -63,6 +69,31 @@ targets:
       - sdk: Vision.framework
       - sdk: BackgroundTasks.framework
       - sdk: libsqlite3.tbd
+
+  # Unit tests for the app layer — the half that `PVMCore` cannot reach because it
+  # lives in the app target: the ingestion coordinator, the PhotoKit adapter, the
+  # safety gate.
+  #
+  # This target exists because of a specific miss. A third-party audit found that the
+  # depth pass ran on the main actor and froze the UI for minutes, and NOTHING in the
+  # suite could have caught it: `PVMCore` has hundreds of tests and no access to this
+  # code, and `PVMUITests` is a UI bundle in a separate process that cannot
+  # `@testable import PVM`. There was no place to assert a property of the app layer,
+  # so nobody asserted one.
+  PVMTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PVMTests
+    dependencies:
+      - target: PVM
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pvm.app.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PVM.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PVM"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
 
   # Screenshots, so the UI can be looked at rather than imagined. The app is written on
   # a machine with no Mac and no iPhone; without this, "the UI is built" would rest on
@@ -85,9 +116,11 @@ schemes:
     build:
       targets:
         PVM: all
+        PVMTests: [test]
         PVMUITests: [test]
     test:
       targets:
+        - PVMTests
         - PVMUITests
     run:
       config: Debug

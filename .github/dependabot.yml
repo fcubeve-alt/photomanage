@@ -1,0 +1,15 @@
+# P2-8. Nothing here had an automated eye on its dependencies.
+#
+# The supply-chain surface is genuinely small — the Python engine imports only the
+# standard library and `PVMCore` depends on Foundation and SQLite — so the exposure is
+# not in the code, it is in the BUILD: pinned actions, the Swift container, Homebrew.
+# Those are where an unreviewed change would enter, and they are what this watches.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "CI"

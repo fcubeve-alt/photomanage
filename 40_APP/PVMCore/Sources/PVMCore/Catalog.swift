@@ -44,8 +44,50 @@ public final class Catalog: @unchecked Sendable {
         exec("PRAGMA synchronous=NORMAL;")
         exec("PRAGMA foreign_keys=ON;")
         createSchema()
+
+        // P1-10. The Python engine has written `schema_version` since its first
+        // version and the Swift port never did — so an app updated to a build with a
+        // new column would open an old database, find the column missing, and fail at
+        // the first query rather than at the point where something could be done about
+        // it. `openedSchemaVersion` records what was actually found so a caller can
+        // tell "fresh", "current" and "older than this build" apart.
+        let found = Int(meta("schema_version") ?? "") ?? 0
+        openedSchemaVersion = found
+        setMeta("schema_version", String(Catalog.schemaVersion))
         setMeta("engine_fingerprint", engineFingerprint)
         commit()
+    }
+
+    /// The shape this build writes. Must match `SCHEMA_VERSION` in
+    /// `30_ENGINE/pvm/catalog.py`; `check_schema.py` compares the two tables column by
+    /// column and this is the number that says which generation they belong to.
+    public static let schemaVersion = 6
+
+    /// What was in the file when it was opened. 0 for a database this build created.
+    public private(set) var openedSchemaVersion: Int = 0
+
+    /// True when the file predates this build. `CREATE TABLE IF NOT EXISTS` adds new
+    /// tables but never adds a column to an existing one, so an older file is missing
+    /// columns and the honest options are to migrate it or to rebuild it.
+    ///
+    /// Rebuilding is safe here in a way it is not for most apps: **the catalogue holds
+    /// no original data.** Every row is derived from the photo library and can be
+    /// recomputed. That is worth stating where the decision is made, because "delete
+    /// the database and start again" is normally a bad answer and here it is the
+    /// cheapest correct one.
+    public var needsMigration: Bool {
+        openedSchemaVersion != 0 && openedSchemaVersion < Catalog.schemaVersion
+    }
+
+    /// `PRAGMA integrity_check`. Cheap on a database this size and the difference
+    /// between "the index looks empty" and "the file is damaged", which a user has no
+    /// other way to tell apart.
+    public func integrityCheck() -> String {
+        guard let st = prepared("PRAGMA integrity_check;") else { return "unavailable" }
+        defer { sqlite3_finalize(st) }
+        guard sqlite3_step(st) == SQLITE_ROW, let text = sqlite3_column_text(st, 0)
+        else { return "unavailable" }
+        return String(cString: text)
     }
 
     deinit { if db != nil { sqlite3_close(db) } }

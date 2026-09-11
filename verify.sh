@@ -74,6 +74,24 @@ run_all() {
   # both files, so nothing was comparing them.
   step "Both catalogues have the same shape" \
     python3 40_APP/check_schema.py
+
+  # P0-2. The read-only guarantee, enforced at the only level that can enforce
+  # "this code does not exist yet": a grep over the shipping sources.
+  #
+  # Until a third-party audit pointed it out on 2026-09-11, "this app never deletes a
+  # photo" was true because nobody had written the code — a safety property holding by
+  # absence, which stops holding the day someone finishes the feature, with no test
+  # failing. `LibrarySafety` is the runtime gate; this is the one that notices a write
+  # arriving that never went through it.
+  step "No PhotoKit write reaches the library except through LibrarySafety" \
+    python3 40_APP/check_no_photo_writes.py
+
+  # The state documents claim things about the world — visibility, which branch the
+  # work is on, whether the product exists. `recovery_check.py` checks they are
+  # coherent; this checks they are TRUE, which is a different question and is the one
+  # a third-party audit answered for us on 2026-09-11.
+  step "The state documents still describe the actual repository" \
+    python3 check_repo_reality.py
 }
 
 # `./verify.sh --selftest` breaks something on purpose and checks that this script

@@ -48,9 +48,47 @@ FUNNEL = [
 ]
 
 
+#: Refuse a body larger than this. Without it a single request can fill the disk,
+#: which on a study machine means losing the study.
+MAX_BODY = 8 * 1024
+
+#: `ThreadingHTTPServer` handles requests on separate threads, so two events arriving
+#: together can interleave inside one append. A line-buffered write of a short line is
+#: usually atomic on Linux and "usually" is not a property to build a dataset on.
+_APPEND_LOCK = threading.Lock()
+
+#: The only values these fields may take. An open endpoint that accepts any string for
+#: `arm` lets anyone reshape the experiment it exists to measure.
+VALID_ARMS = {"A", "B", "C"}
+VALID_EVENTS = {code for code, _ in EVENTS}
+
+
+def valid(obj):
+    """Everything the endpoint requires, checked before anything is written.
+
+    The original accepted whatever JSON arrived and called `obj["sid"][:8]`, which
+    raises on a non-string and takes the handler down with it. A third-party audit
+    flagged the whole function on 2026-09-11; this is the narrow version of the fix —
+    enough that the local study cannot be corrupted by accident or by a passer-by.
+    """
+    if not isinstance(obj, dict):
+        return False
+    arm, event, sid = obj.get("arm"), obj.get("event"), obj.get("sid")
+    if not isinstance(sid, str) or not 8 <= len(sid) <= 64 or not sid.isalnum():
+        return False
+    if arm is not None and (not isinstance(arm, str) or arm not in VALID_ARMS):
+        return False
+    if not isinstance(event, str) or event not in VALID_EVENTS:
+        return False
+    return True
+
+
 def append(path, obj):
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    with _APPEND_LOCK:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -66,7 +104,13 @@ class Handler(SimpleHTTPRequestHandler):
             return
         try:
             n = int(self.headers.get("Content-Length", 0))
+            if n > MAX_BODY:
+                self.send_error(413)
+                return
             data = json.loads(self.rfile.read(n) or b"{}")
+            if not valid(data):
+                self.send_error(422)
+                return
         except Exception:
             self.send_error(400)
             return

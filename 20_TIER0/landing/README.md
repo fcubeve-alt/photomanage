@@ -57,7 +57,20 @@ python server.py --report   # funnel table against the pre-registered criteria
 
 ## Deploying (Owner, after HG-2b)
 
-`site/` is static. The only server-side requirement is a single `POST /event` route — `server.py` is the reference implementation, and the whole contract is: accept JSON, append to a file, return 204.
+`site/` is static. The only server-side requirement is a single `POST /event` route: accept JSON, append to a file, return 204.
+
+> ⚠️ **`server.py` is a LOCAL STUDY TOOL, not a reference implementation.** It was
+> described as one here until 2026-09-11, which a third-party audit correctly called
+> unsafe framing. It binds a `SimpleHTTPRequestHandler`, and it has no rate limiting, no
+> Origin or CSRF checking, no authentication, and it writes participant email addresses
+> to a plaintext JSONL file. It now caps the request body, validates `arm`/`event`/`sid`
+> against fixed sets, and locks and fsyncs the append — enough that a local study cannot
+> be corrupted by accident or by someone on the same network. That is the whole of its
+> ambition.
+>
+> **Do not deploy it.** A public endpoint needs schema validation, request limits, an
+> Origin allowlist, rate limiting, atomic writes and somewhere better than a flat file
+> for addresses collected from real people.
 
 1. Register a domain.
 2. Deploy `site/` to any static host; point `/a` `/b` `/c` at the three directories.

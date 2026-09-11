@@ -160,6 +160,11 @@ def shell(body, caption=""):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- 82 generated study pages with fixed content, near-identical structure and no
+     engine behind them. Indexed, they would be 82 thin duplicate pages attached to a
+     brand that has not launched. The landing pages have carried noindex since they
+     were written; these did not, which a third-party audit flagged on 2026-09-11. -->
+<meta name="robots" content="noindex,nofollow">
 <title>Visual Library</title><style>{CSS}</style></head><body>
 <div><div class="phone">
 <div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679; &#9646;</span></div>

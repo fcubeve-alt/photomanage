@@ -2,18 +2,35 @@
 
 Turn the Camera Roll from an unsorted file pile into a self-cataloguing, self-maintaining personal visual library.
 
-**Current stage: P0 Kill Test — Tier 0. This is validation, not product development.**
+**Current stage: internal alpha. Not shippable, not a product, and not on a phone.**
 
-> ## Nothing of the product is built. Zero lines.
-> Everything in this repository is **measuring equipment**, not the product:
-> ~1,650 lines of Swift that time how fast an iPhone can read a photo library,
-> 82 hand-authored prototype pages with fixed content and no engine behind them,
-> and ~3,100 lines of Python generators, analyzers and checkers that will never ship.
+> ## What is and is not true here
 >
-> **The classifier, the taxonomy engine, the entity resolver, the lifecycle engine
-> and the risk policy engine do not exist.** They are Tier 1 / Tier 2 work, they are
-> still LOCKED, and they are the hard part. A green test result here is evidence
-> about a *tool*. It is never evidence about the product. (`FAILURE_PATTERNS.md` PF-11)
+> This block said **"Nothing of the product is built. Zero lines"** until 2026-09-11.
+> That was written when it was true and was left standing for weeks after it stopped
+> being true, which is worse than never having written it. A third-party audit found it
+> on the repository's front page.
+>
+> **What exists.** A Python classification engine (`30_ENGINE/`) — classifier,
+> taxonomy, entity resolver, lifecycle and risk policy, all five of the things this
+> block called LOCKED — a Swift port of it (`40_APP/PVMCore/`) that CI compiles and
+> tests on Linux and against Apple's Foundation, a conformance test that replays the
+> engine's own answers and fails if the two implementations disagree, and a SwiftUI app
+> (`40_APP/PVM/`) that browses, searches, remembers and asks.
+>
+> **What is not true.** Nothing here has run on a physical iPhone. No real person has
+> used it. The accuracy figures come from a **synthetic fixture library**, not from
+> photographs — see the warning on them below. The app cannot delete or modify a photo
+> and is structurally prevented from doing so (`LibrarySafety`), because deletion
+> landing in Recently Deleted and being restorable has never been observed on a device
+> and §7's entire tolerance argument rests on it.
+>
+> PF-11 still holds and is why this block stays: **a green test is evidence about code,
+> never about a product.** It just has to describe the code that is actually here.
+>
+> ⚠️ **The default branch is behind.** Development happens on
+> `claude/classification-program-dev-yk88jj`. If you are reading `main`, you are
+> reading the state from before any of the above.
 
 ## Start here
 | File | Purpose |
