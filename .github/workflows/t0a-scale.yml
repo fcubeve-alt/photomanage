@@ -57,13 +57,22 @@ jobs:
         run: python3 20_TIER0/harness/analyze_scale.py --selftest
 
       - name: Install XcodeGen
-        # Pinned. An unpinned `brew install` takes whatever Homebrew ships that day,
-        # so a build that worked on Monday can fail on Tuesday for a reason
-        # nobody changed. XcodeGen generates the project every build, which
-        # makes its version part of the build, not part of the environment.
+        # NOT pinned, and the comment here used to say it was — a second audit caught
+        # that on 2026-09-12 and it was a plain false statement in the repository.
+        # `brew install` takes whatever Homebrew ships that day, so a build that
+        # worked on Monday can fail on Tuesday with nothing changed.
+        #
+        # Genuinely pinning it means downloading a tagged XcodeGen release and
+        # checking its SHA-256, which needs a checksum nobody here can verify
+        # offline. Until someone supplies one, this stays unpinned and says so; the
+        # resolved version is recorded in the run summary, so when a build starts
+        # failing for no reason anyone changed, the thing that moved is on the page.
         run: |
           brew install xcodegen
-          xcodegen --version
+          # Recorded in the run summary so that when a build starts failing for no
+          # reason anyone changed, the version that moved is on the page rather than
+          # buried in a step log. Not a substitute for pinning.
+          echo "XcodeGen: $(xcodegen --version | tr -d '\n')" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate Xcode project
         working-directory: ${{ env.PROJECT_DIR }}

@@ -33,7 +33,9 @@
 
 ## 4. 你的内容属于你
 
-你的照片是你的。我们不主张任何权利，不获得任何许可，也拿不到任何副本——App 不联网。
+你的照片是你的。我们不主张任何权利，不获得任何许可，也拿不到任何副本——App 中没有任何
+把照片或目录发送出去的代码。（购买时 Apple 的 StoreKit 会与 Apple 通信，那条通路属于
+Apple，且只传交易凭据，见《隐私政策》第 1 节。）
 
 ## 5. 购买（如适用）
 
@@ -76,7 +78,7 @@
 
 # Terms of Service (English summary)
 
-By installing Visual Library you accept these terms. The app reads the photos already on your device and builds a searchable catalogue entirely on-device. **This version cannot delete, move or modify any photo** — it links no PhotoKit mutation API. Your photos remain yours; we receive no copy, because the app has no network code.
+By installing Visual Library you accept these terms. The app reads the photos already on your device and builds a searchable catalogue entirely on-device. **This version cannot delete, move or modify any photo** — it links no PhotoKit mutation API. Your photos remain yours; we receive no copy, because the app contains no code that sends them anywhere. (Apple's StoreKit talks to Apple during a purchase; that connection is Apple's and carries a transaction credential, not your content.)
 
 Paid items, if any, are sold through Apple. **Subscriptions renew automatically** unless turned off at least 24 hours before the end of the current period; manage or cancel them in Settings → your name → Subscriptions. **Deleting the app does not cancel a subscription.** Refunds are handled by Apple, and the app's Support screen links directly to Apple's refund form.
 

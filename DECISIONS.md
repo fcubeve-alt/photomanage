@@ -850,10 +850,10 @@ DEC-032。
 **Decision.** 产品不设账号：不注册、不收邮箱、不接 Sign in with Apple。购买权益绑定在
 Apple ID 上，换设备用 `AppStore.sync()` 恢复。
 
-**Rationale.** 本产品不联网、不在任何服务器上保存任何东西。加一个账号意味着为了卖一件
+**Rationale.** 本产品没有自己的服务器，也不在任何服务器上保存任何东西。加一个账号意味着为了卖一件
 根本不需要邮箱的东西而去收集一个邮箱地址——它会把《隐私政策》第一条从真话变成假话。
 StoreKit 2 在设备上验证交易签名（`VerificationResult`），这是 Apple 自己推荐的路径，
-也是唯一与"不联网"相容的路径。
+也是唯一与"不向开发者传任何数据"相容的路径。
 
 **Evidence.** `40_APP/PVM/Store/Purchases.swift`；`50_LAUNCH/PRIVACY_POLICY.md` 第 6、7 节。
 
@@ -923,3 +923,36 @@ StoreKit 2 在设备上验证交易签名（`VerificationResult`），这是 App
 
 三个选项与建议见 `50_LAUNCH/PRICING_PROPOSAL.md`。裁决后改一行代码
 （`40_APP/PVM/Store/Commerce.swift`）并记 DEC-037。
+
+---
+
+## DEC-037 · 2026-09-12 · 迁移改为重建结构；守卫进 CI；收回过强的声明
+
+**Decision.** 三件事一起决定，因为它们是同一个第二次复核的结论：
+
+1. **目录迁移由"删行 + 挪版本戳"改为"DROP 派生表并按当前形状重建 + 逐列搬运用户表"**，
+   并新增 `Plan.unversionedLegacy` 处理无版本记录的旧库；迁移结果由 `PRAGMA table_info`
+   核对，而不是由它自己盖的版本戳作证。
+2. **`check_no_photo_writes` / `check_no_network` / `generate_legal --check` /
+   `check_repo_reality --ci` 全部进入 GitHub Actions**（`guards.yml`，无路径过滤），
+   并且每个先跑自检。`LibrarySafety.swift` 的整体豁免取消。
+3. **收回若干过强的表述**：不再说"CI 全绿"（当时 `Tooling check` 是红的）、不说
+   "`nonisolated` 让主线程调用变成编译错误"、不说"这个 App 不联网"（StoreKit 会与
+   Apple 通信）、不说 StoreKit 流程"已跑通"（一次没跑过）、不说 XcodeGen 版本"已固定"。
+
+**Rationale.** 第一版迁移是错的，不是不完整：`DELETE FROM assets` 不会给表加一列，而
+Swift 端直到 2026-09-11 才写 `schema_version`，所以在那之前写出的每个目录都会被判为
+"新文件"、盖上当前版本号、永不迁移。两者叠加的结果是升级后在第一条引用新列的查询上崩溃，
+且判断所需的证据已被覆盖。
+
+守卫进 CI 的理由更简单：**只在 `verify.sh` 里的检查，保障的是一个习惯，不是一个属性。**
+
+**Evidence.** `40_APP/PVMCore/Sources/PVMCore/Migration.swift`、
+`40_APP/PVMCore/Tests/PVMCoreTests/MigrationTests.swift`（fixture 用真实旧 DDL，核心断言
+是一条引用新列的 INSERT 迁移前失败、迁移后成功）、`.github/workflows/guards.yml`、
+`20_TIER0/evidence/AUDIT_RESPONSE_2026-09-12.md`。
+
+**Impact.** DEC-036 的策略方向（重建派生、保留用户写的）不变，实现方式被它取代。
+上线资格不变：仍是内部 Alpha。
+
+**Status.** ACTIVE，取代 DEC-036 的实现描述。

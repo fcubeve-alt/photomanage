@@ -52,6 +52,12 @@ enum Diagnostics {
         lines.append("PVM support report")
         lines.append(buildSummary)
         lines.append("library access: \(LibrarySafety.mode.rawValue)")
+        // Empty is the expected value. Printed either way, because a security control
+        // that quietly did not take effect is precisely the thing a support report
+        // exists to surface.
+        lines.append("catalogue protection: "
+                     + (protectionFailures.isEmpty ? "applied"
+                        : "INCOMPLETE — " + protectionFailures.joined(separator: ", ")))
         lines.append("phase: \(phase)")
 
         guard let catalog else {
@@ -64,9 +70,11 @@ enum Diagnostics {
         case .fresh: plan = "fresh"
         case .current: plan = "current"
         case .rebuildDerived(let from): plan = "rebuilt from schema \(from)"
+        case .unversionedLegacy: plan = "rebuilt from an unversioned file"
         case .newerThanThisBuild(let found): plan = "file is schema \(found), newer than this build"
         }
         lines.append("catalogue schema: opened \(catalog.openedSchemaVersion) → \(plan)")
+
         lines.append("integrity: \(catalog.integrityCheck())")
         lines.append("size on disk: \(catalog.sizeOnDisk()) bytes")
         lines.append("indexed assets: \(catalog.scalar("SELECT COUNT(*) FROM assets;"))")
@@ -78,6 +86,12 @@ enum Diagnostics {
         // library — every possible value is in the binary already — so this reveals
         // how many of each class exist and nothing about any one of them.
         let byClass = catalog.classCounts()
+        // The file's own answer about its shape, not the version stamp's claim about
+        // it. Non-empty here means a migration reported success and did not work.
+        let gaps = catalog.missingColumns()
+        if !gaps.isEmpty {
+            lines.append("SCHEMA GAPS: " + gaps.joined(separator: " "))
+        }
         if !byClass.isEmpty {
             lines.append("by class: " + byClass.sorted { $0.key < $1.key }
                 .map { "\($0.key)=\($0.value)" }.joined(separator: " "))

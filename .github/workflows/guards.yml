@@ -1,0 +1,71 @@
+name: Guards
+
+# THE CHECKS THAT SAY WHAT THE PRODUCT CANNOT DO — run where they cannot be skipped.
+#
+# A second audit on 2026-09-12 made a point that was exactly right: `check_no_photo_writes`,
+# `check_no_network` and `check_repo_reality` all lived in `verify.sh`, which runs on a
+# developer's machine when a developer remembers. Nothing in GitHub Actions ran any of
+# them. So every claim they back — "this version cannot delete a photo", "no analytics
+# SDK", "the documents describe the real repository" — rested on a habit.
+#
+# They run here, on every push and pull request, with no path filter. The whole job is
+# a few seconds of Linux time; the reason there is no path filter is that a guard which
+# only runs when someone touches the right directory is a guard with a hole in it.
+#
+# `--ci` on the reality check is deliberate: in this environment a network failure means
+# the claim went unverified, and an unverified claim under a green tick is the exact
+# failure mode this repository keeps finding.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: guards-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # check_repo_reality compares against origin/main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Each guard proves it can still catch the thing it exists for before it is
+      # trusted to say nothing is wrong. Without this, "0 problems found" and "the
+      # scanner is broken" look identical.
+      - name: The guards can still catch what they exist for
+        run: |
+          python 40_APP/check_no_photo_writes.py --selftest
+          python 40_APP/check_no_network.py --selftest
+          python 40_APP/generate_legal.py --selftest
+          python check_repo_reality.py --selftest
+
+      - name: This version cannot delete or modify a photo
+        run: python 40_APP/check_no_photo_writes.py
+
+      - name: No networking API and no analytics SDK in the app
+        run: python 40_APP/check_no_network.py
+
+      - name: The in-app legal text matches the published documents
+        run: python 40_APP/generate_legal.py --check
+
+      - name: The documents still describe the actual repository
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python check_repo_reality.py --ci
+
+      - name: Both catalogues have the same shape
+        run: python 40_APP/check_schema.py
+
+      - name: The app's shared Swift still matches the engine
+        run: python 40_APP/generate_shared.py --check

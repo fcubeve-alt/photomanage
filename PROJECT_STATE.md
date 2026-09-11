@@ -80,6 +80,27 @@ ruling; `Commerce.paywall` is deliberately empty until then).
 **This does not move the Tier 0 gate.** A3, delete→restore, real-photo accuracy and A1
 are still at zero data.
 
+**Second independent review — 2026-09-12 (`20_TIER0/evidence/AUDIT_RESPONSE_2026-09-12.md`).**
+A read-only re-audit of `4eea7e6` found nothing it got wrong, and its central finding was
+about the previous session's summary rather than about the code: **the claims ran ahead of
+what could be checked.** Concretely — "CI is green" was written about a HEAD where
+`Tooling check` was red; "82 prototype pages carry noindex" was true of the generator and
+false of all 82 committed files; the photo-write scan exempted the whole of
+`LibrarySafety.swift`; the no-network and no-photo-write guards were in `verify.sh` and in
+no GitHub workflow at all; `nonisolated` does not make a main-thread call a compile error;
+the app does go online, through StoreKit; and the StoreKit flow had never been run.
+
+All of those are fixed or corrected. The substantive one: **the first catalogue migration
+did not work.** It deleted rows and moved a version stamp, and `DELETE` does not add a
+missing column — and separately, a database with no `schema_version` (every catalogue any
+Swift build wrote before 2026-09-11) was indistinguishable from a brand-new one. Migration
+now drops and rebuilds the derived tables at this build's shape, carries the two authored
+tables across column by column, and verifies the result against `PRAGMA table_info` rather
+than against its own stamp. The tests were rewritten against genuinely old schemas.
+
+**Status accepted from that review: internal Alpha, not release-qualified.** The four
+device numbers are still at zero data and none of this moved them.
+
 **Owner decisions 2026-09-06:**
 - **T0-C and T0-D cancelled; the product is a GO** (DEC-026).
 - **T0-B stays** — OPEN-2 closed (DEC-027). No longer a kill test, still wanted work. Its materials are out of freeze.

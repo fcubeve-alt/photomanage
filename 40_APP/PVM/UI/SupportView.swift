@@ -6,7 +6,7 @@ import PVMCore
 /// Every one of these screens is normally a web view pointing at a URL. This app has no
 /// network code, so a web view is not available to it, and that turns out to be the
 /// better arrangement: the privacy policy is readable on a plane, and it is readable
-/// precisely when someone is checking whether the "never goes online" claim is true.
+/// precisely when someone is checking whether the privacy claim is true.
 ///
 /// The published documents at the two URLs App Store Connect requires are the *source*
 /// of this text — `generate_legal.py` turns `50_LAUNCH/*.md` into `LegalText`, and

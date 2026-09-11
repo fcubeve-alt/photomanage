@@ -5,10 +5,19 @@ import PVMCore
 import Combine
 #endif
 
+/// Whether the last block handed to `offMain` actually ran off the main thread.
+/// Written by `offMain`, read by `IngestionThreadingTests`; nothing in the product
+/// branches on it.
+var offMainLastRanOnMainThread = true
+
 /// What start-up's migration did, for the support report. File-scope rather than a
 /// static on the coordinator because `defaultCatalog()` is `nonisolated` — it is
 /// evaluated as a default argument — and a nonisolated function cannot write to a
 /// main-actor-isolated static.
+/// What `protectOnDisk` could not apply, for the support report. Empty is the expected
+/// state; anything in it is a security control that did not take effect.
+var protectionFailures: [String] = []
+
 var lastMigration: CatalogMigration.Outcome?
 var lastQuarantine: String?
 
@@ -75,7 +84,7 @@ public final class IngestionCoordinator: ObservableObject {
         let url = dir.appendingPathComponent("pvm_catalog.sqlite")
         var catalog = Catalog(path: url.path)
         guard let opened = catalog else { return nil }
-        protectOnDisk(url)
+        protectionFailures = protectOnDisk(url)
 
         // Migration runs here, on the launch that opens the file, before anything
         // queries it. See `50_LAUNCH/DATA_MIGRATION.md` — the short version is that
@@ -89,11 +98,17 @@ public final class IngestionCoordinator: ObservableObject {
             lastQuarantine = Catalog.quarantine(path: url.path)
             catalog = Catalog(path: url.path)
             guard let replacement = catalog else { return nil }
-            protectOnDisk(url)
+            protectionFailures = protectOnDisk(url)
             lastMigration = replacement.migrate()
+            protectionFailures += protectOnDisk(url)
             return replacement
         }
         lastMigration = opened.migrate()
+        // Applied a second time on purpose. The first call ran before SQLite had
+        // written anything, so `-wal` and `-shm` did not exist yet and were skipped —
+        // and the WAL is the file holding the most recent writes in full. By here the
+        // migration has forced them into existence.
+        protectionFailures += protectOnDisk(url)
         return opened
     }
 
@@ -104,22 +119,52 @@ public final class IngestionCoordinator: ObservableObject {
     /// the most recent writes in full. Protecting `pvm_catalog.sqlite` and leaving
     /// `pvm_catalog.sqlite-wal` at the default would protect the history and expose
     /// today.
-    nonisolated static func protectOnDisk(_ url: URL) {
+    /// Returns what it could not do. An earlier version was `try?` throughout and
+    /// therefore could not tell "protected" from "silently failed to protect" — a
+    /// second audit's P2, and the worst failure mode available to a security control,
+    /// because it fails into the appearance of success. Two things follow from the
+    /// return value: `protectionFailures` is shown in the support report, so a user
+    /// who cares can see it, and the caller re-applies after the database has written,
+    /// which is when the WAL and SHM siblings actually come into existence.
+    @discardableResult
+    nonisolated static func protectOnDisk(_ url: URL) -> [String] {
+        var failures: [String] = []
         #if canImport(UIKit)
         let manager = FileManager.default
         for suffix in ["", "-wal", "-shm"] {
             let sibling = URL(fileURLWithPath: url.path + suffix)
+            // A sibling that does not exist yet is not a failure: SQLite creates the
+            // WAL on the first write, and the re-application below is what covers it.
             guard manager.fileExists(atPath: sibling.path) else { continue }
-            try? manager.setAttributes(
-                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-                ofItemAtPath: sibling.path)
-            var excluded = sibling
-            var values = URLResourceValues()
-            values.isExcludedFromBackup = true
-            try? excluded.setResourceValues(values)
+            do {
+                try manager.setAttributes(
+                    [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                    ofItemAtPath: sibling.path)
+            } catch {
+                failures.append("protection\(suffix.isEmpty ? "" : suffix)")
+            }
+            do {
+                var excluded = sibling
+                var values = URLResourceValues()
+                values.isExcludedFromBackup = true
+                try excluded.setResourceValues(values)
+            } catch {
+                failures.append("backup-exclusion\(suffix.isEmpty ? "" : suffix)")
+            }
+        }
+        // Read the protection back rather than trusting the write. `setAttributes`
+        // succeeding is not the same as the file having the class — a distinction that
+        // matters on a device with no passcode, where iOS downgrades it.
+        if let actual = try? manager.attributesOfItem(atPath: url.path)[.protectionKey]
+            as? FileProtectionType,
+           actual != .completeUntilFirstUserAuthentication && actual != .complete {
+            failures.append("protection-not-applied(\(actual.rawValue))")
         }
         #endif
+        return failures
     }
+
+
 
     // MARK: - entry points
 
@@ -136,7 +181,15 @@ public final class IngestionCoordinator: ObservableObject {
     /// the reason it is safe.
     private static func offMain<T>(_ body: @escaping () -> T) async -> T {
         await withCheckedContinuation { continuation in
-            work.async { continuation.resume(returning: body()) }
+            work.async {
+                // Recorded so a test can assert the property about the PRODUCTION
+                // call path instead of about a function it dispatched itself — the
+                // difference the second audit asked for, and the difference between
+                // "this function can run off the main thread" and "the app runs it
+                // off the main thread".
+                offMainLastRanOnMainThread = Thread.isMainThread
+                continuation.resume(returning: body())
+            }
         }
     }
 
@@ -216,6 +269,15 @@ public final class IngestionCoordinator: ObservableObject {
     /// The in-flight depth pass, so a second call replaces it rather than racing it.
     private var depthTask: Task<Void, Never>?
 
+    /// Which pass is allowed to write progress.
+    ///
+    /// Cancelling a `Task` does not stop the batch already in flight — it finishes,
+    /// comes back, and then writes `stats` and `phase`. With only `depthTask` to go on,
+    /// that write lands on top of the pass that replaced it, so the UI jumps back to
+    /// the old pass's numbers for one batch. Second audit, P2, and correct. Each pass
+    /// takes a generation number and writes nothing once it is no longer the current one.
+    private var depthGeneration = 0
+
     /// Stop the paced pass. The batch in flight finishes; nothing after it starts.
     public func cancelDepthPass() {
         depthTask?.cancel()
@@ -240,15 +302,19 @@ public final class IngestionCoordinator: ObservableObject {
     /// (`IngestionThreadingTests`).
     public func runDepthPass(limit: Int? = nil) {
         depthTask?.cancel()
-        depthTask = Task { [weak self] in await self?.performDepthPass(limit: limit) }
+        depthGeneration += 1
+        let generation = depthGeneration
+        depthTask = Task { [weak self] in
+            await self?.performDepthPass(limit: limit, generation: generation)
+        }
     }
 
-    private func performDepthPass(limit: Int?) async {
+    private func performDepthPass(limit: Int?, generation: Int) async {
         guard let catalog else { return }
         let pending = assets.filter { catalog.needsClassification($0) }
         let slice = limit.map { Array(pending.prefix($0)) } ?? pending
         guard !slice.isEmpty else {
-            phase = .complete
+            if generation == depthGeneration { phase = .complete }
             return
         }
         phase = .depth(done: 0, total: slice.count)
@@ -263,7 +329,7 @@ public final class IngestionCoordinator: ObservableObject {
                 // Everything already classified is committed — the pass is resumable
                 // because `needsClassification` is the only thing that decides what is
                 // pending, and it reads the catalogue rather than a cursor in memory.
-                phase = .ready
+                if generation == depthGeneration { phase = .ready }
                 return
             }
             let batch = Array(slice[start..<min(start + Self.depthBatch, slice.count)])
@@ -272,19 +338,35 @@ public final class IngestionCoordinator: ObservableObject {
                 return Pipeline.run(assets: enriched, catalog: catalog, budget: .text,
                                     reconcileDeletions: false)
             }
+            // Back on the main actor after an await that may have taken a second. A
+            // newer pass may have started in the meantime, and the loser of that race
+            // must not narrate over the winner.
+            guard generation == depthGeneration else { return }
             self.stats = result
             done += batch.count
             phase = .depth(done: done, total: slice.count)
         }
 
+        guard generation == depthGeneration else { return }
         refreshCounts()
         phase = pending.count == slice.count ? .complete : .ready
         depthTask = nil
     }
 
-    /// The expensive per-asset work. `nonisolated` so that calling it from the main
-    /// actor is a compile error rather than a four-minute freeze, which is the shape
-    /// the original defect had.
+    /// The expensive per-asset work.
+    ///
+    /// **`nonisolated` does less than an earlier version of this comment claimed**, and
+    /// a second audit was right to say so. It does not make calling this from the main
+    /// actor a compile error — a nonisolated function is callable from anywhere,
+    /// including the main thread. What it does guarantee is the other direction: this
+    /// function cannot be moved back ONTO the coordinator's actor without breaking
+    /// every non-isolated caller, which is what `IngestionThreadingTests` pins.
+    ///
+    /// What keeps the main thread free is not the keyword, it is that the only caller
+    /// is `performDepthPass`, which goes through `offMain`. `testTheProductionDepthPass
+    /// RunsItsWorkOffTheMainThread` exercises that caller rather than this function, so
+    /// a future edit that calls `enrich` directly from the actor is caught by a test
+    /// failing rather than by a user's phone freezing.
     ///
     /// Serial within the batch on purpose: Vision already parallelises internally, and
     /// a second layer of concurrency on top of it raises peak memory on exactly the

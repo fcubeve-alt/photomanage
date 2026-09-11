@@ -7,9 +7,9 @@ legal text drift, and the drift is invisible — nobody diffs a Swift string lit
 against a web page. So the Markdown is the source and the Swift file is generated, the
 same arrangement `generate_shared.py` already uses for the taxonomy and the rules.
 
-The app carries the text rather than fetching it because the app has no network code at
-all. A privacy policy that is only reachable online, in an app whose whole claim is that
-it never goes online, is unreadable exactly when someone is trying to check the claim.
+The app carries the text rather than fetching it because the app has no code for fetching
+anything. A privacy policy that is only reachable online, in an app whose claim is that it
+sends nothing anywhere, is unreadable exactly when someone is trying to check the claim.
 
 Usage:
     python3 40_APP/generate_legal.py            # write the Swift file

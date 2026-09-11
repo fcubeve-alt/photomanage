@@ -57,6 +57,12 @@ def _read(path: str) -> str:
         return fh.read()
 
 
+# In CI the network is available and a token is provided, so "could not reach the API"
+# means the check did not run — and a check that silently does not run is worse than no
+# check, because the green tick still appears. `--ci` turns that into a failure.
+FAIL_CLOSED = False
+
+
 def check_visibility(state: str):
     """The claim that mattered most, and the one nothing was watching."""
     claims_private = bool(re.search(r"\bPRIVATE\b", state)) and \
@@ -73,8 +79,14 @@ def check_visibility(state: str):
         with urllib.request.urlopen(request, timeout=20) as response:
             private = json.loads(response.read()).get("private")
     except Exception as exc:                       # offline, rate-limited, no token
-        # Not a failure. A check that fails when the network is unavailable gets
-        # switched off, and then it is not checking anything at all.
+        # On a developer machine this is not a failure: a check that fails whenever the
+        # network is unavailable gets switched off, and then it checks nothing. In CI
+        # it IS a failure, because there the only reasons to land here are a missing
+        # token, a revoked one, or rate limiting — all of which mean the claim went
+        # unverified while the build reported success.
+        if FAIL_CLOSED:
+            return [f"the repository's visibility could not be verified "
+                    f"({type(exc).__name__}) and this run requires it"]
         print(f"  (visibility not verified: {type(exc).__name__}) ")
         return []
     if private is False:
@@ -141,6 +153,23 @@ def selftest() -> int:
         fails.append("a NEVER COMPILED claim was not caught")
     if check_never_compiled("NEVER COMPILED — that stopped being true on 2026-09-06"):
         fails.append("a narrated correction was reported as a stale claim")
+
+    # The fail-closed path, which is the whole point of --ci and was not covered.
+    # Pointed at a host that cannot resolve, so the request is guaranteed to raise.
+    global SLUG, FAIL_CLOSED
+    slug, closed = SLUG, FAIL_CLOSED
+    SLUG = "invalid.invalid/nothing"
+    try:
+        FAIL_CLOSED = False
+        if check_visibility("the repo must stay PRIVATE"):
+            fails.append("an unreachable API was reported as drift in the default mode")
+        FAIL_CLOSED = True
+        if not check_visibility("the repo must stay PRIVATE"):
+            fails.append("an unreachable API did not fail the check under --ci")
+        if check_visibility("the repo is **PUBLIC** by decision"):
+            fails.append("a document that does not claim PRIVATE still hit the network")
+    finally:
+        SLUG, FAIL_CLOSED = slug, closed
     for f in fails:
         print("FAIL:", f)
     print(f"\nselftest: {len(fails)} failure(s)")
@@ -151,9 +180,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--ci", action="store_true",
+                    help="treat an unverifiable claim as drift (see FAIL_CLOSED)")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
+
+    global FAIL_CLOSED
+    FAIL_CLOSED = args.ci
 
     problems = run(_read(STATE), _read(README))
     for problem in problems:

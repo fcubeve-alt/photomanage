@@ -43,16 +43,31 @@ public final class Catalog: @unchecked Sendable {
         exec("PRAGMA journal_mode=WAL;")
         exec("PRAGMA synchronous=NORMAL;")
         exec("PRAGMA foreign_keys=ON;")
+
+        // EVERYTHING HERE HAPPENS BEFORE `createSchema()`, AND THAT IS THE POINT.
+        //
+        // `createSchema()` is `CREATE TABLE IF NOT EXISTS` throughout. Run it first and
+        // it manufactures the `meta` table, after which "no version recorded" and "a
+        // database this build just created" are indistinguishable — the second audit's
+        // first migration defect, and the more dangerous of the two, because the Swift
+        // port did not write `schema_version` at all until 2026-09-11. Every catalogue
+        // written by an earlier Swift build is unversioned and has the OLD column set,
+        // and reading the version after `createSchema()` classifies all of them as
+        // fresh: stamped current, never migrated, missing columns, failing at the first
+        // query that names one.
+        //
+        // So the file is interrogated as found. `sqlite_master` is the one table that
+        // exists without being created.
+        let tablesBefore = scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table';")
+        let recorded = Int(meta("schema_version") ?? "") ?? 0
+
         createSchema()
 
-        // P1-10. The Python engine has written `schema_version` since its first
-        // version and the Swift port never did — so an app updated to a build with a
-        // new column would open an old database, find the column missing, and fail at
-        // the first query rather than at the point where something could be done about
-        // it. `openedSchemaVersion` records what was actually found so a caller can
-        // tell "fresh", "current" and "older than this build" apart.
-        let found = Int(meta("schema_version") ?? "") ?? 0
-        openedSchemaVersion = found
+        openedSchemaVersion = recorded
+        // Pre-existing tables with no version recorded. Not fresh, and not any known
+        // version either — it is whatever the Swift port wrote before it versioned
+        // anything, which migration has to treat as "older than everything".
+        isUnversionedLegacyFile = tablesBefore > 0 && recorded == 0
 
         // The stamp is written HERE only when there is nothing to migrate. Writing it
         // unconditionally — which this code did until the migration work — loses the
@@ -61,7 +76,7 @@ public final class Catalog: @unchecked Sendable {
         // the old shape, and the mismatch would then surface as a query error with no
         // remaining evidence of what happened. `migrate()` moves the stamp, after the
         // work, in the same transaction as the work.
-        if found == 0 || found == Catalog.schemaVersion {
+        if tablesBefore == 0 || recorded == Catalog.schemaVersion {
             setMeta("schema_version", String(Catalog.schemaVersion))
         }
         setMeta("engine_fingerprint", engineFingerprint)
@@ -73,8 +88,15 @@ public final class Catalog: @unchecked Sendable {
     /// column and this is the number that says which generation they belong to.
     public static let schemaVersion = 6
 
-    /// What was in the file when it was opened. 0 for a database this build created.
+    /// What was in the file when it was opened. 0 for a database this build created
+    /// AND for one written before the Swift port recorded a version at all — those two
+    /// are told apart by `isUnversionedLegacyFile`, never by this number alone.
     public private(set) var openedSchemaVersion: Int = 0
+
+    /// The file already had tables and recorded no version. Every catalogue written by
+    /// a Swift build before 2026-09-11 is in this state, and it is the case that looks
+    /// most like "brand new" while being the furthest from it.
+    public private(set) var isUnversionedLegacyFile = false
 
     /// True when the file predates this build. `CREATE TABLE IF NOT EXISTS` adds new
     /// tables but never adds a column to an existing one, so an older file is missing
@@ -86,7 +108,8 @@ public final class Catalog: @unchecked Sendable {
     /// the database and start again" is normally a bad answer and here it is the
     /// cheapest correct one.
     public var needsMigration: Bool {
-        openedSchemaVersion != 0 && openedSchemaVersion < Catalog.schemaVersion
+        isUnversionedLegacyFile
+            || (openedSchemaVersion != 0 && openedSchemaVersion < Catalog.schemaVersion)
     }
 
     /// The file was written by a LATER build than this one. Happens on a TestFlight
@@ -118,7 +141,10 @@ public final class Catalog: @unchecked Sendable {
 
     // MARK: - schema
 
-    private func createSchema() {
+    /// Internal rather than private: `migrate()` drops the derived tables and calls
+    /// this to recreate them at THIS build's shape, which is the only thing that
+    /// actually fixes a changed column, index or constraint.
+    func createSchema() {
         exec("""
         CREATE TABLE IF NOT EXISTS assets(
           asset_id TEXT PRIMARY KEY,

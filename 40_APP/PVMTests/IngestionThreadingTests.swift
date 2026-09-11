@@ -1,4 +1,5 @@
 import XCTest
+import PVMCore
 @testable import PVM
 
 /// **Where the work runs, asserted.**
@@ -20,9 +21,11 @@ final class IngestionThreadingTests: XCTestCase {
 
     /// The enrichment step must be callable from a non-main context.
     ///
-    /// `enrich` is `nonisolated static`, so a future edit that moves it back onto the
-    /// coordinator's actor makes this file fail to COMPILE rather than fail at runtime
-    /// on a user's phone. That is the strongest form this check can take.
+    /// `enrich` is `nonisolated static`, so moving it back ONTO the coordinator's actor
+    /// makes this file fail to COMPILE. That is a real guarantee and it is narrower
+    /// than the one this comment used to claim: `nonisolated` does NOT stop a caller
+    /// invoking it on the main thread, which a second audit pointed out on 2026-09-12.
+    /// The test below this one is the one that covers that half.
     func testEnrichmentDoesNotRunOnTheMainActor() async {
         let done = expectation(description: "enrichment ran off the main thread")
         DispatchQueue.global(qos: .utility).async {
@@ -36,6 +39,37 @@ final class IngestionThreadingTests: XCTestCase {
             done.fulfill()
         }
         await fulfillment(of: [done], timeout: 10)
+    }
+
+    /// THE PRODUCTION CALL PATH, not a function this test dispatched itself.
+    ///
+    /// The test above proves `enrich` *can* run off the main thread. That is not the
+    /// property that matters — the defect was that the app called it on the main
+    /// thread, and a test that dispatches the work itself would have passed throughout.
+    /// This drives `runDepthPass`, the entry point `PlanView`'s button calls, and reads
+    /// back where `offMain` actually put the work.
+    @MainActor
+    func testTheProductionDepthPassRunsItsWorkOffTheMainThread() async throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("pvm-depth-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let catalog = try XCTUnwrap(
+            Catalog(path: directory.appendingPathComponent("c.sqlite").path))
+
+        offMainLastRanOnMainThread = true          // so a pass that never ran is a failure
+        let coordinator = IngestionCoordinator(catalog: catalog)
+        coordinator.loadFixture(FixtureLibrary.make())
+        coordinator.runDepthPass(limit: 1)
+
+        let deadline = Date().addingTimeInterval(20)
+        while offMainLastRanOnMainThread && Date() < deadline {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        coordinator.cancelDepthPass()
+        XCTAssertFalse(offMainLastRanOnMainThread,
+                       "the app's own depth pass ran its Vision and pipeline work on "
+                       + "the main thread — this is the original defect, returned")
     }
 
     /// The paced pass must return to its caller immediately rather than blocking.

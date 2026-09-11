@@ -40,7 +40,19 @@ MUTATION = re.compile(
 
 #: The one file allowed to name them — it is the gate, and it has to describe what it
 #: is gating.
-ALLOWED = {"LibrarySafety.swift"}
+# NOTHING IS EXEMPT.
+#
+# This set used to contain `LibrarySafety.swift`, on the reasoning that the gate has to
+# be able to name the thing it gates. A second audit on 2026-09-12 pointed out what
+# that buys an attacker or a hurried future contributor: the one file exempt from the
+# scan is also the one file nobody would look at twice for a photo write, so a
+# `performChanges` added there — bypassing `permitWrite` entirely — would pass.
+#
+# The exemption also turned out to be unnecessary. `LibrarySafety.swift` names
+# `performChanges` exactly once, in a doc comment, and comment lines are skipped
+# already. So the correct allowlist is empty, and an empty allowlist is a much easier
+# thing to keep true than a justified one.
+ALLOWED: set[str] = set()
 
 #: A line that is only a comment is documentation, not a call. The first version of
 #: this check flagged its own docstring, which is the right failure for a new guard to
