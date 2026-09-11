@@ -55,8 +55,17 @@ final class MigrationTests: XCTestCase {
     /// Builds a real old-shaped file and returns a freshly opened handle to it — what
     /// the app sees on the first launch after the update.
     ///
-    /// `version` nil means no `meta` table at all, which is the unversioned legacy
-    /// case and the one that used to look identical to a brand-new database.
+    /// `version` nil means the `meta` table is there but carries no `schema_version`
+    /// row — which is exactly what a Swift build before 2026-09-11 wrote, since it
+    /// recorded `cursor` and `engine_fingerprint` and simply never recorded a version.
+    /// This is the case that used to look identical to a brand-new database.
+    ///
+    /// A first version of this fixture dropped `meta` outright. That failed a test
+    /// about preferences surviving, and the failure was the fixture's fault rather than
+    /// the migration's: preferences live in `meta`, so a fixture that deletes `meta`
+    /// has deleted them before the migration is asked to keep them. The harsher shape
+    /// is worth covering anyway and has its own test below — with an assertion that
+    /// says what can actually be true of it.
     private func makeLegacyFile(version: Int?) throws -> Catalog {
         do {
             let seed = try XCTUnwrap(Catalog(path: path))
@@ -70,7 +79,7 @@ final class MigrationTests: XCTestCase {
             if let version {
                 seed.setMeta("schema_version", String(version))
             } else {
-                seed.exec("DROP TABLE meta;")
+                seed.exec("DELETE FROM meta WHERE k = 'schema_version';")
             }
             seed.commit()
         }
@@ -167,6 +176,34 @@ final class MigrationTests: XCTestCase {
     /// Renaming a table takes its indexes with it, so the first `createSchema()` call
     /// found `idx_decisions_path` already taken and skipped it. Without the second
     /// call the rebuilt table would come out unindexed and nothing would say so.
+    /// The harsher shape: no `meta` table at all. Detection must still work, because
+    /// it counts tables in `sqlite_master` rather than trusting `meta` to exist.
+    ///
+    /// Preferences are NOT asserted here, and that is the honest assertion: they lived
+    /// in the table this fixture deleted. A migration cannot carry across data that was
+    /// gone before it started, and a test that claimed otherwise would be testing the
+    /// fixture rather than the code.
+    func testAFileWithNoMetaTableAtAllIsStillDetectedAndRebuilt() throws {
+        do {
+            let seed = try XCTUnwrap(Catalog(path: path))
+            seed.recordDecision(assetID: "A1", path: "/文档", verb: .keep)
+            seed.exec("DROP TABLE assets;")
+            seed.exec(Self.legacyAssets)
+            seed.exec("DROP TABLE meta;")
+            seed.commit()
+        }
+        let legacy = try XCTUnwrap(Catalog(path: path))
+        XCTAssertTrue(legacy.isUnversionedLegacyFile)
+        XCTAssertEqual(legacy.migrationPlan, .unversionedLegacy)
+        XCTAssertFalse(writeNamingTheNewColumns(legacy))
+
+        let outcome = legacy.migrate()
+        XCTAssertTrue(outcome.succeeded, "\(outcome.missingColumns) / \(outcome.integrity)")
+        XCTAssertTrue(writeNamingTheNewColumns(legacy))
+        XCTAssertEqual(outcome.decisionsKept, 1, "the authored table was not in `meta`")
+        XCTAssertEqual(legacy.meta("schema_version"), String(Catalog.schemaVersion))
+    }
+
     func testTheRebuiltTablesKeepTheirIndexes() throws {
         let legacy = try makeLegacyFile(version: nil)
         _ = legacy.migrate()

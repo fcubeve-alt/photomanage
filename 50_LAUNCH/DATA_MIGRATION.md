@@ -98,8 +98,11 @@ recorded     = meta 里的 schema_version（meta 不存在时读到 nil）
 完全相同。这个批评是对的。
 
 现在的 fixture 是把当前结构**拆掉**：`DROP TABLE assets` 后用旧 DDL 重建（没有
-`media_type`、`importance`、`asset_class`、`importance_why`），最坏情况下再
-`DROP TABLE meta` 让它完全没有版本记录。
+`media_type`、`importance`、`asset_class`、`importance_why`），并删掉 `meta` 里的
+`schema_version` 那一行——这正是 2026-09-11 之前 Swift 构建写出来的样子：它写
+`cursor` 和 `engine_fingerprint`，只是从不写版本。另有一条单独的测试覆盖更狠的形状
+（`meta` 表整个不存在），那一条不断言偏好设置能保留，因为偏好本来就存在被删掉的那张表里——
+**迁移搬不走在它开始之前就已经没了的数据，断言它能搬只是在测试 fixture 而不是测试代码。**
 
 而最关键的断言不是版本号，是：
 
