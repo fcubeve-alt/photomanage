@@ -806,3 +806,39 @@ git push --force --mirror
 另外 GitHub 会在自己的服务器上缓存旧对象一段时间，彻底消失需要联系 GitHub Support
 或等待其垃圾回收。**如果那个包里有任何敏感内容，正确的做法是当作已经泄露处理
 （该轮换的轮换），而不是只依赖删除。**
+
+## DEC-033 · 2026-09-11 · 仓库是 PUBLIC，与既有决定冲突；等待 Owner 裁决
+
+**事实**（2026-09-11 通过 GitHub API 核实，非推断）：
+
+```
+GET /repos/fcubeve-alt/photomanage → "private": false, "visibility": "public"
+forks 0 · stars 0 · watchers 0 · open PRs 0
+```
+
+`PROJECT_STATE.md` 的 Constraints 一节写着「**Repo must be PRIVATE**」，理由是公开会暴露
+产品宪法、定价策略、$39 测试和未发布的落地页文案。**这四样现在全部是公开的。**
+
+**最可能的成因**：2026-09-06 的 handoff 在「CI 分钟数耗尽」条目下列过三个选项，其中
+(c) 是「把仓库公开，Actions 就免费——这会公开一切，所以是个决定不是权宜之计」。看起来
+这个选项被采纳了，但从未写回决策记录，于是文档继续声称 PRIVATE。**这不是事故，更像是
+一个做过但没记录的决定**；只是没有证据能确认，所以这里两种可能都列出。
+
+**本次未执行任何设置更改。**改变可见性是 Owner 的决定，且如果公开是有意的，改回去反而
+会再次弄坏 CI。
+
+**需要 Owner 二选一：**
+
+- **A. 公开是有意的** → 撤销「Repo must be PRIVATE」这条约束，把理由写进决策记录，
+  并复核 `10_SOURCE_DOCS/`、`20_TIER0/evidence/`、定价矩阵这些内容是否都接受公开。
+- **B. 公开是意外** → 按事故处理：改为私有；检查 fork/clone/Actions artifact；
+  轮换任何曾进入历史的凭证；清理文档里的本机路径和用户名。
+
+**无论选哪个**，`check_repo_reality.py` 现在会在 `verify.sh` 里核对文档声明与 GitHub
+实际状态，不一致就失败。这个漂移之所以能存在几周，是因为**没有任何检查在看真实世界**——
+`recovery_check.py` 检查的是文档自洽，不是文档为真。
+
+**已知残留**：Money OS 的 zip（DEC-032）和 11.8 MB 的 `eval_catalog.sqlite.ablation`
+都仍在 git 历史中，任何人知道 commit SHA 就能取到。后者确认为合成数据（资产 ID
+A00001…，生成器产物），不是保密问题，只是体积。前者是另一个项目的包，清除方案和代价见
+DEC-032。
