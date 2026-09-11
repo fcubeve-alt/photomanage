@@ -5,10 +5,22 @@ import PVMCore
 struct PVMApp: App {
     @StateObject private var coordinator = IngestionCoordinator()
 
+    /// The crash handler is installed before anything else runs, because the crashes
+    /// worth catching are the ones during start-up. It writes to a file on this device
+    /// and sends nothing anywhere — see `CrashReporter` for why there is no SDK here.
+    init() {
+        CrashReporter.install(buildSummary: Diagnostics.buildSummary)
+    }
+
     var body: some Scene {
         WindowGroup {
             HomeView(coordinator: coordinator)
-                .task { LaunchFixture.applyIfRequested(to: coordinator) }
+                .task {
+                    LaunchFixture.applyIfRequested(to: coordinator)
+                    // Listens for transactions that arrive from outside the app. A
+                    // no-op today: nothing is for sale until a price is decided.
+                    Entitlements.shared.start()
+                }
         }
     }
 }

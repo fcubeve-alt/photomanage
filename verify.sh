@@ -92,6 +92,18 @@ run_all() {
   # a third-party audit answered for us on 2026-09-11.
   step "The state documents still describe the actual repository" \
     python3 check_repo_reality.py
+
+  # The privacy policy's first sentence is "this app collects nothing, because it does
+  # not go online", and the App Store privacy label will say Data Not Collected. Both
+  # are true today and would stay written down on the day someone adds a crash SDK to
+  # chase a bug. This is what stops that from being a silent change.
+  step "The app still has no networking API and no analytics SDK" \
+    python3 40_APP/check_no_network.py
+
+  # The published policy and the screen inside the app must be the same words. Nobody
+  # diffs a Swift string literal against a web page, so the Swift is generated.
+  step "The in-app legal text matches the published documents" \
+    python3 40_APP/generate_legal.py --check
 }
 
 # `./verify.sh --selftest` breaks something on purpose and checks that this script

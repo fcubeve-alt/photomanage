@@ -5,6 +5,13 @@ import PVMCore
 import Combine
 #endif
 
+/// What start-up's migration did, for the support report. File-scope rather than a
+/// static on the coordinator because `defaultCatalog()` is `nonisolated` — it is
+/// evaluated as a default argument — and a nonisolated function cannot write to a
+/// main-actor-isolated static.
+var lastMigration: CatalogMigration.Outcome?
+var lastQuarantine: String?
+
 /// Drives the two passes and owns the app's view of them.
 ///
 /// §12: a new user should not see a screen of tool buttons — they should see that the
@@ -66,11 +73,30 @@ public final class IngestionCoordinator: ObservableObject {
                                            in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("pvm_catalog.sqlite")
-        let catalog = Catalog(path: url.path)
-        guard catalog != nil else { return nil }
+        var catalog = Catalog(path: url.path)
+        guard let opened = catalog else { return nil }
         protectOnDisk(url)
-        return catalog
+
+        // Migration runs here, on the launch that opens the file, before anything
+        // queries it. See `50_LAUNCH/DATA_MIGRATION.md` — the short version is that
+        // almost every row is derived from the photo library and can be recomputed,
+        // and the two tables that are not (`decisions`, `entity_review`) are the ones
+        // the user wrote, so they are preserved rather than migrated.
+        if opened.isFromANewerBuild {
+            // A downgrade. This build cannot read the newer shape, so the file is set
+            // aside — not deleted, it belongs to a version the user may go back to —
+            // and a fresh one is opened in its place.
+            lastQuarantine = Catalog.quarantine(path: url.path)
+            catalog = Catalog(path: url.path)
+            guard let replacement = catalog else { return nil }
+            protectOnDisk(url)
+            lastMigration = replacement.migrate()
+            return replacement
+        }
+        lastMigration = opened.migrate()
+        return opened
     }
+
 
     /// Applied to the database and to its write-ahead log and shared-memory siblings.
     ///

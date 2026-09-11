@@ -842,3 +842,84 @@ forks 0 · stars 0 · watchers 0 · open PRs 0
 都仍在 git 历史中，任何人知道 commit SHA 就能取到。后者确认为合成数据（资产 ID
 A00001…，生成器产物），不是保密问题，只是体积。前者是另一个项目的包，清除方案和代价见
 DEC-032。
+
+---
+
+## DEC-034 · 2026-09-11 · 不做账号体系
+
+**Decision.** 产品不设账号：不注册、不收邮箱、不接 Sign in with Apple。购买权益绑定在
+Apple ID 上，换设备用 `AppStore.sync()` 恢复。
+
+**Rationale.** 本产品不联网、不在任何服务器上保存任何东西。加一个账号意味着为了卖一件
+根本不需要邮箱的东西而去收集一个邮箱地址——它会把《隐私政策》第一条从真话变成假话。
+StoreKit 2 在设备上验证交易签名（`VerificationResult`），这是 Apple 自己推荐的路径，
+也是唯一与"不联网"相容的路径。
+
+**Evidence.** `40_APP/PVM/Store/Purchases.swift`；`50_LAUNCH/PRIVACY_POLICY.md` 第 6、7 节。
+
+**Impact.** 「账号体系」这一项从待办变成已决定。代价：无法跨 Apple ID 迁移权益，
+无法做基于账号的客服查询——两者都不需要。
+
+**Status.** ACTIVE。若将来出现必须有服务器的功能，这条要先被推翻，而不是绕过。
+
+---
+
+## DEC-035 · 2026-09-11 · 崩溃上报不接任何第三方 SDK
+
+**Decision.** 崩溃记录写在设备本地文件，下次启动时**把全文展示给用户**，由用户自行决定
+是否用自己的邮件 App 发送。不接 Crashlytics / Sentry / Bugsnag / 任何同类服务。
+
+**Rationale.** 这类 SDK 的工作方式就是把报告发到别人的服务器。竞品拆解
+（`20_TIER0/evidence/COMPETITOR_PRICING_MATRIX.md`，2025-01-13 第三方技术分析）记录：
+用户付费 $7.99/周**之后**元数据仍经 6 个以上追踪 SDK 外传，隐私标签声称"未关联到你"
+而实际负载携带用户 ID。装一个那样的 SDK 再写"不收集任何数据"的隐私政策，是同一个谎言
+换了名字。
+
+**Cost, stated plainly.** 我们会漏掉绝大多数崩溃——只有愿意手动发邮件的用户会报告。
+这是为了那句承诺是真的所付的价，不是一个可以两全的设计。
+
+**Evidence.** `40_APP/PVM/Support/CrashReporter.swift`（signal-safe，写本地文件，
+自动重新抛出信号让系统照常记录）；`40_APP/check_no_network.py` 在 `verify.sh` 中
+强制"App 内不存在任何联网 API 与分析 SDK"。
+
+**Impact.** App Store 隐私问卷可以诚实地回答 **Data Not Collected**。
+
+**Status.** ACTIVE。
+
+---
+
+## DEC-036 · 2026-09-11 · 迁移策略：重建派生数据，保留用户写下的东西
+
+**Decision.** 目录数据库升级时清空并重算全部派生表，保留 `decisions`、`entity_review`
+与 `meta` 中 `pref.` 前缀的键；不复制文件、不做逐列迁移。更新版本戳与清空工作放在
+同一个事务里，且在工作**之后**。降级（文件版本高于当前构建）不做任何猜测，把文件连同
+`-wal`/`-shm` 改名挪走。
+
+**Rationale.** 这个产品的目录几乎全是派生数据，可以从照片库免费重算；而 `decisions` 是
+§14 Personal Policy 的证据来源，`entity_review` 是 §24 Gate 2 已经决定要问的问题——
+这两样丢了会悄悄改写系统对用户的认识。在装着 10 万张照片目录的手机上复制数据库，
+是用用户可能没有的存储空间去保护可以免费重算的数据。
+
+**Bug this fixed.** 原 `Catalog.init` 无条件写入当前版本戳。旧文件打开后立刻被标成
+"当前"，若迁移执行前进程被杀，下次启动会认为一切正常而表结构仍是旧的——**判断所需的
+证据被自己覆盖掉了**。
+
+**Evidence.** `40_APP/PVMCore/Sources/PVMCore/Migration.swift`；
+`40_APP/PVMCore/Tests/PVMCoreTests/MigrationTests.swift`（含
+`testOpeningAnOldFileDoesNotClaimItIsCurrent`）；`50_LAUNCH/DATA_MIGRATION.md`。
+
+**Impact.** 「数据迁移方案」从待办变成已实现。不做 iCloud 同步、不做目录导出——
+目录含 OCR 出的证件与银行文字，一个可以被导出的目录文件就是一个可以被误发的文件。
+
+**Status.** ACTIVE。
+
+---
+
+## OPEN-4 · 2026-09-11 · 定价待裁决（阻塞 App Store 商品）
+
+`Commerce.paywall` 当前是空集：全部功能免费，所有购买入口隐藏。这是一个**记录在案的
+状态，不是疏漏**——DEC-026 取消了 T0-C2（假门支付测试），本项目从未测量过任何人的付费
+意愿，现在定价等于凭空发明那次测试本该买到的证据。
+
+三个选项与建议见 `50_LAUNCH/PRICING_PROPOSAL.md`。裁决后改一行代码
+（`40_APP/PVM/Store/Commerce.swift`）并记 DEC-037。

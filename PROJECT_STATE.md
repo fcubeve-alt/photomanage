@@ -66,6 +66,20 @@ Within A: **A3 survivability failure is fatal**; an A1-only failure degrades sco
 > `30_ENGINE/CONSTRAINTS.md` is waiting for are **real photographs** and **real users**,
 > and neither is engineering time.
 
+**Launch readiness — added 2026-09-11 (`50_LAUNCH/`).**
+Ten non-engineering items were being deferred behind "wait for the device", and most of
+them had no device dependency at all. Now done: privacy policy, terms of service (both
+generated into the app so they read offline), support channel design + in-app Support
+screen, local crash reporting with no third-party SDK (DEC-035), catalogue migration
+with tests (DEC-036, which also fixed a real stamp-ordering bug), StoreKit 2 purchase /
+restore / cancel / refund paths testable in the Simulator against `PVM.storekit`, and
+the App Store submission field-by-field checklist. Decided rather than built: **no
+account** (DEC-034). Still blocked: **App Store products** (needs the developer
+account, which the Owner has taken on) and **pricing** (OPEN-4 — needs an Owner
+ruling; `Commerce.paywall` is deliberately empty until then).
+**This does not move the Tier 0 gate.** A3, delete→restore, real-photo accuracy and A1
+are still at zero data.
+
 **Owner decisions 2026-09-06:**
 - **T0-C and T0-D cancelled; the product is a GO** (DEC-026).
 - **T0-B stays** — OPEN-2 closed (DEC-027). No longer a kill test, still wanted work. Its materials are out of freeze.
@@ -145,7 +159,14 @@ Every Tier-0 workstream is prepared to the boundary of an Owner gate, and every 
 Two items of build-ahead work remain that need no approval (the 136 foreground images, and the FC-1 recommendation), so the mission is **not** blocked (S-03). Do not enter WAITING. When those two are exhausted, the S-04 condition for escalating **HG-9** is genuinely reached and should be escalated rather than filled with invented work.
 
 ## Next action for a recovering session
-**FC-1 + FC-1a.** It is the only substantive engineering item that is both unblocked and on the critical path — HG-1 is stuck on a payment instrument for an unknown time (DEC-027), and until it clears, FC-1 is the only thing that improves the T0-A result rather than just waiting for it. Read `ARCHITECTURE_METHODOLOGY.md` FC-1 and FC-1a first; the precondition is mandatory and is locked into `Layer1SignalsTests.testAWholeClassOfImagesHashesToZero`.
+**Get the build onto a physical iPhone.** The unsigned `.ipa` is built and waiting
+(`40_APP/SIDELOAD_WITHOUT_A_DEVELOPER_ACCOUNT.md`); A3 survivability is the only
+remaining Tier 0 kill criterion and it cannot be answered anywhere else. Four things
+need the Owner and nobody else: the Apple Developer account (taken on 2026-09-11), a
+support email address, two public URLs for the support and privacy pages, and the
+pricing ruling (OPEN-4). See `50_LAUNCH/README.md`.
+
+**Then FC-1 + FC-1a.** It is the only substantive engineering item that is both unblocked and on the critical path — HG-1 is stuck on a payment instrument for an unknown time (DEC-027), and until it clears, FC-1 is the only thing that improves the T0-A result rather than just waiting for it. Read `ARCHITECTURE_METHODOLOGY.md` FC-1 and FC-1a first; the precondition is mandatory and is locked into `Layer1SignalsTests.testAWholeClassOfImagesHashesToZero`.
 
 In parallel, T0-B is live again (DEC-027): the 136 foreground images can be sourced from `FOREGROUND_SOURCING_WORKSHEET.md` as soon as the Owner answers its two questions.
 

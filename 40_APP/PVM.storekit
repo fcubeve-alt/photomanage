@@ -1,0 +1,67 @@
+{
+  "identifier" : "PVM-LOCAL-STORE",
+  "nonRenewingSubscriptions" : [
+  ],
+  "products" : [
+    {
+      "displayPrice" : "14.99",
+      "familyShareable" : true,
+      "internalID" : "PVM-LIFETIME",
+      "localizations" : [
+        {
+          "description" : "One payment. Every feature, forever, on every device signed in to this Apple ID.",
+          "displayName" : "Visual Library — one payment",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.pvm.app.lifetime",
+      "referenceName" : "Lifetime unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "PVM-LOCAL",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "PVM-PRO",
+      "localizations" : [
+      ],
+      "name" : "PVM Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "PVM-PRO-YEARLY",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Every feature, renewed yearly. Cancel any time from Settings.",
+              "displayName" : "Visual Library Pro — yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.pvm.app.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro yearly",
+          "subscriptionGroupID" : "PVM-PRO",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

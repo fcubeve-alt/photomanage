@@ -53,7 +53,17 @@ public final class Catalog: @unchecked Sendable {
         // tell "fresh", "current" and "older than this build" apart.
         let found = Int(meta("schema_version") ?? "") ?? 0
         openedSchemaVersion = found
-        setMeta("schema_version", String(Catalog.schemaVersion))
+
+        // The stamp is written HERE only when there is nothing to migrate. Writing it
+        // unconditionally — which this code did until the migration work — loses the
+        // one fact a migration needs: an app killed between opening an old file and
+        // migrating it would reopen a file stamped "current" whose columns are still
+        // the old shape, and the mismatch would then surface as a query error with no
+        // remaining evidence of what happened. `migrate()` moves the stamp, after the
+        // work, in the same transaction as the work.
+        if found == 0 || found == Catalog.schemaVersion {
+            setMeta("schema_version", String(Catalog.schemaVersion))
+        }
         setMeta("engine_fingerprint", engineFingerprint)
         commit()
     }
@@ -77,6 +87,14 @@ public final class Catalog: @unchecked Sendable {
     /// cheapest correct one.
     public var needsMigration: Bool {
         openedSchemaVersion != 0 && openedSchemaVersion < Catalog.schemaVersion
+    }
+
+    /// The file was written by a LATER build than this one. Happens on a TestFlight
+    /// downgrade or a restore from a newer backup, and it is the one case migration
+    /// cannot handle: this build does not know what the newer shape means. Handled by
+    /// `CatalogMigration.Plan.newerThanThisBuild`, not by guessing.
+    public var isFromANewerBuild: Bool {
+        openedSchemaVersion > Catalog.schemaVersion
     }
 
     /// `PRAGMA integrity_check`. Cheap on a database this size and the difference
@@ -785,6 +803,24 @@ public final class Catalog: @unchecked Sendable {
         sqlite3_prepare_v2(db, sql, -1, &st, nil)
         defer { sqlite3_finalize(st) }
         return sqlite3_step(st) == SQLITE_ROW ? Int(sqlite3_column_int64(st, 0)) : 0
+    }
+
+    /// Counts per §4 大类, for the support report. Every possible key is a taxonomy
+    /// name compiled into the binary, so this says how many of each class exist and
+    /// nothing about any one asset — which is what makes it safe to put in something
+    /// the user may mail to us.
+    public func classCounts() -> [String: Int] {
+        var out: [String: Int] = [:]
+        var st: OpaquePointer?
+        sqlite3_prepare_v2(db, "SELECT COALESCE(asset_class,'unset'), COUNT(*) FROM assets GROUP BY 1;",
+                           -1, &st, nil)
+        while sqlite3_step(st) == SQLITE_ROW {
+            if let c = sqlite3_column_text(st, 0) {
+                out[String(cString: c)] = Int(sqlite3_column_int64(st, 1))
+            }
+        }
+        sqlite3_finalize(st)
+        return out
     }
 
     public func countsByPath() -> [String: Int] {

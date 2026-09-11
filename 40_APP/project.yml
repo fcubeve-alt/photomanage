@@ -68,6 +68,11 @@ targets:
       - sdk: PhotosUI.framework
       - sdk: Vision.framework
       - sdk: BackgroundTasks.framework
+      # Purchases go to Apple and nowhere else. `PVM.storekit` (next to this file) lets
+      # the whole purchase / restore / cancel / refund path be exercised in the
+      # Simulator with no developer account: Edit Scheme → Run → Options → StoreKit
+      # Configuration.
+      - sdk: StoreKit.framework
       - sdk: libsqlite3.tbd
 
   # Unit tests for the app layer — the half that `PVMCore` cannot reach because it

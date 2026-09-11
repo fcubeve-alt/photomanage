@@ -32,6 +32,16 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("Library")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SupportView(coordinator: coordinator)
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .accessibilityLabel("Support, privacy and terms")
+                    }
+                }
+            }
             .task { if coordinator.phase == .idle { coordinator.start() } }
             .sheet(isPresented: $showingPlan) {
                 if let plan = coordinator.plan { PlanView(plan: plan, coordinator: coordinator) }
