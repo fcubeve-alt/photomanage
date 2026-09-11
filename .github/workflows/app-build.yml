@@ -136,6 +136,27 @@ jobs:
           set -o pipefail
           swift test --package-path PVMCore | tee unit.log
 
+      # The app-layer unit tests. Fast, no screenshots, no waiting on elements — and
+      # they run BEFORE the UI suite so that a failure in them is not buried under a
+      # suite that has historically been the flaky one.
+      #
+      # This step exists because the Build step compiles `PVMTests` and nothing ran it.
+      # A test target that builds and never executes is the same defect as a comment
+      # describing behaviour the code does not have, which is what these particular
+      # tests were written to catch in the first place.
+      - name: App-layer unit tests (threading, safety gate)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project PVM.xcodeproj -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO \
+            -only-testing:PVMTests \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 60 \
+            | tee app-unit.log
+
       # `-maximum-test-execution-time-allowance` is a budget, not a nicety. A UI test
       # that waits on an element which will never appear does not fail — it waits, and
       # the whole suite then runs until the job timeout on a runner billed at ten times
@@ -212,7 +233,7 @@ jobs:
           # the fifth instance of one shape in this repository: the thing that reports
           # is never exercised by the thing it reports on.
           found=$(grep -E "error:|XCTAssert.*failed|Test Case .* failed|exceeded execution time allowance|Test session exited|Testing failed|Restarting after unexpected exit|crash" \
-            ui.log unit.log build.log 2>/dev/null \
+            ui.log app-unit.log unit.log build.log 2>/dev/null \
             | sed 's/.*photomanage\///' | sort -u | head -40 || true)
           if [ -n "$found" ]; then
             echo "$found"
@@ -221,7 +242,7 @@ jobs:
             # mode must never again produce an empty report. If nothing matched, show
             # the raw end of the log and say why.
             echo "(nothing matched the known failure patterns — the raw tail follows)"
-            for log in ui.log unit.log build.log; do
+            for log in ui.log app-unit.log unit.log build.log; do
               [ -s "$log" ] || continue
               echo "--- last 25 lines of $log ---"
               tail -25 "$log" | sed 's/.*photomanage\///'
